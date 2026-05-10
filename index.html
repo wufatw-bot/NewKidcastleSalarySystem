@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>莊敬安親 薪資管理系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:       #0f1923;
+  --ink-mid:   #2d3e50;
+  --ink-light: #6b7c93;
+  --paper:     #f7f5f0;
+  --cream:     #fffef9;
+  --rule:      #d8d2c8;
+  --accent:    #1a4a6e;
+  --accent2:   #c0392b;
+  --gold:      #b5860d;
+  --earn-bg:   #e8f4fd;
+  --earn-hdr:  #1a4a6e;
+  --ded-bg:    #fdf0ee;
+  --ded-hdr:   #922b21;
+  --net-bg:    #e8f8f0;
+  --net-hdr:   #1a5432;
+  --adv-bg:    #fef9e7;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ─── LAYOUT ─── */
+.app-shell { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 300px; min-width: 300px;
+  background: var(--ink);
+  color: #fff;
+  display: flex; flex-direction: column;
+  padding: 0;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.sidebar-logo h1 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 18px; font-weight: 700;
+  color: #fff; line-height: 1.4;
+  letter-spacing: 0.05em;
+}
+.sidebar-logo p { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 4px; }
+
+.sidebar-section { padding: 16px 0; }
+.sidebar-section-title {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.15em; color: rgba(255,255,255,0.35);
+  padding: 0 24px 8px; text-transform: uppercase;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 24px; cursor: pointer;
+  font-size: 13px; color: rgba(255,255,255,0.7);
+  transition: all 0.15s; border-left: 2px solid transparent;
+}
+.nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.nav-item.active { background: rgba(255,255,255,0.1); color: #fff; border-left-color: #64b5f6; }
+.nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+.emp-list { padding: 0 12px; }
+.emp-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; color: rgba(255,255,255,0.65);
+  transition: all 0.15s; position: relative;
+}
+.emp-chip:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.emp-chip.active { background: rgba(100,181,246,0.2); color: #64b5f6; }
+.emp-chip .avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  font-size: 11px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-weight: 700;
+}
+.emp-chip.active .avatar { background: rgba(100,181,246,0.3); }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ─── TOP BAR ─── */
+.topbar {
+  height: 60px; background: var(--cream);
+  border-bottom: 1px solid var(--rule);
+  display: flex; align-items: center;
+  padding: 0 32px; gap: 16px;
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar h2 { font-size: 15px; font-weight: 700; color: var(--ink); flex: 1; }
+.topbar-actions { display: flex; gap: 8px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 6px; cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 12px; font-weight: 500; border: none;
+  transition: all 0.15s; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #1e5a85; }
+.btn-success { background: #1a5432; color: #fff; }
+.btn-success:hover { background: #1e6b40; }
+.btn-danger { background: var(--accent2); color: #fff; }
+.btn-danger:hover { background: #e74c3c; }
+.btn-outline { background: transparent; color: var(--ink-mid); border: 1px solid var(--rule); }
+.btn-outline:hover { background: var(--paper); }
+.btn-gold { background: var(--gold); color: #fff; }
+.btn-gold:hover { background: #c9960f; }
+
+/* ─── CONTENT AREA ─── */
+.content { flex: 1; overflow-y: auto; padding: 28px 32px; }
+
+/* ─── VIEWS ─── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ─── FORMS ─── */
+.card {
+  background: var(--cream); border: 1px solid var(--rule);
+  border-radius: 10px; margin-bottom: 20px; overflow: hidden;
+}
+.card-header {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--accent) 0%, #2563a8 100%);
+  color: #fff;
+}
+.card-header h3 { font-size: 13px; font-weight: 700; }
+.card-header p { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+.card-body { padding: 20px; }
+
+.form-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 14px;
+}
+.form-grid-2 { grid-template-columns: repeat(2,1fr); }
+.form-grid-4 { grid-template-columns: repeat(4,1fr); }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-size: 11px; font-weight: 700; color: var(--ink-light);
+  letter-spacing: 0.03em; text-transform: uppercase;
+}
+.field input, .field select, .field textarea {
+  padding: 8px 12px; border: 1px solid var(--rule);
+  border-radius: 6px; font-family: 'Noto Sans TC', sans-serif;
+  font-size: 13px; color: var(--ink); background: #fff;
+  transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26,74,110,0.08);
+}
+.field input[type=number] { text-align: right; }
+.field .hint { font-size: 10px; color: var(--ink-light); }
+
+.dyn-row {
+  display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px;
+  align-items: end; margin-bottom: 8px;
+}
+.dyn-row .remove-btn {
+  padding: 8px 10px; background: #fdf0ee; border: 1px solid #f1948a;
+  border-radius: 6px; cursor: pointer; color: var(--accent2); font-size: 14px;
+}
+
+.section-divider {
+  font-size: 11px; font-weight: 700; color: var(--ink-light);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 12px 0 6px; border-bottom: 1px solid var(--rule);
+  margin-bottom: 14px;
+}
+
+/* ─── PAYSLIP PREVIEW ─── */
+.preview-wrap {
+  background: #888; padding: 24px;
+  border-radius: 8px; overflow: auto;
+}
+
+@media print {
+  .app-shell > *:not(.main) { display: none !important; }
+  .topbar { display: none !important; }
+  .preview-wrap { background: none; padding: 0; }
+  .payslip { box-shadow: none !important; }
+  body { background: white; }
+}
+
+/* ─── PAYSLIP (參考例三) ─── */
+.payslip {
+  width: 210mm; min-height: auto;
+  background: #fff;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.25);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 10px; color: #111;
+  margin: 0 auto;
+  padding: 10mm 12mm;
+}
+
+.ps-title {
+  background: var(--accent);
+  color: #fff; text-align: center;
+  font-size: 14px; font-weight: 700;
+  padding: 8px 0; letter-spacing: 0.1em;
+  font-family: 'Noto Serif TC', serif;
+  margin-bottom: 0;
+}
+
+.ps-info {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  border: 1px solid #ccc; border-top: none;
+  margin-bottom: 6px;
+}
+.ps-info-cell {
+  padding: 4px 8px; border-right: 1px solid #ccc;
+  font-size: 9.5px;
+}
+.ps-info-cell:last-child { border-right: none; }
+.ps-info-cell .lbl { color: #666; font-size: 8.5px; }
+.ps-info-cell .val { font-weight: 700; font-size: 10px; }
+
+.ps-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 9.5px; margin-bottom: 4px;
+}
+.ps-table th, .ps-table td {
+  border: 1px solid #bbb; padding: 3px 5px;
+  text-align: center; vertical-align: middle;
+}
+.ps-table th {
+  font-weight: 700; font-size: 9px;
+  line-height: 1.3;
+}
+.ps-section-hdr {
+  background: var(--earn-hdr); color: #fff;
+  text-align: center; font-weight: 700;
+  font-size: 9px; padding: 3px 0;
+}
+.ps-section-earn { background: #eaf4fb; }
+.ps-section-ot   { background: #fef9f0; }
+.ps-section-ded  { background: #fdf0ee; }
+.ps-section-abs  { background: #f0f4f0; }
+
+.earn-hdr { background: var(--earn-hdr) !important; color: #fff !important; }
+.ot-hdr   { background: #7d6608 !important; color: #fff !important; }
+.ded-hdr  { background: var(--ded-hdr) !important; color: #fff !important; }
+.abs-hdr  { background: #4a5568 !important; color: #fff !important; }
+
+.ps-total-row { background: #e8f8f0 !important; font-weight: 700; }
+.ps-net-row {
+  background: linear-gradient(90deg, #1a5432, #1e6b40) !important;
+  color: #fff !important; font-weight: 700; font-size: 11px;
+}
+.ps-net-amt { font-size: 14px !important; font-weight: 900 !important; }
+.ps-adv-row { background: #fef9e7 !important; font-size: 9px; }
+
+.ps-notes {
+  border: 1px solid #ccc; padding: 6px 8px;
+  font-size: 8.5px; color: #555; line-height: 1.7;
+  margin-top: 4px;
+}
+.ps-notes strong { color: #222; }
+
+.ps-sign {
+  display: flex; gap: 0;
+  border: 1px solid #ccc; border-top: none;
+  margin-top: 0;
+}
+.ps-sign-cell {
+  flex: 1; padding: 12px 8px; font-size: 9px;
+  border-right: 1px solid #ccc;
+}
+.ps-sign-cell:last-child { border-right: none; }
+
+/* ─── SUMMARY TABLE ─── */
+.summary-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+}
+.summary-table th {
+  background: var(--accent); color: #fff;
+  padding: 10px 12px; text-align: center;
+  font-size: 11px; font-weight: 700;
+}
+.summary-table td {
+  padding: 9px 12px; border-bottom: 1px solid var(--rule);
+  text-align: right;
+}
+.summary-table td:nth-child(1),
+.summary-table td:nth-child(2) { text-align: left; }
+.summary-table tr:hover td { background: var(--earn-bg); }
+.summary-table tr.total-row td {
+  background: var(--net-bg); font-weight: 700;
+  border-top: 2px solid var(--accent);
+}
+.net-cell { color: var(--net-hdr); font-weight: 700; }
+.clickable { cursor: pointer; color: var(--accent); text-decoration: underline; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: #1a5432; color: #fff;
+  padding: 12px 20px; border-radius: 8px;
+  font-size: 13px; z-index: 9999;
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.3s;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ─── MONTH SELECTOR ─── */
+.month-bar {
+  display: flex; gap: 8px; align-items: center;
+  padding: 12px 0 20px; flex-wrap: wrap;
+}
+.month-tag {
+  padding: 5px 14px; border-radius: 20px;
+  font-size: 12px; cursor: pointer; font-weight: 500;
+  border: 1px solid var(--rule); background: #fff;
+  transition: all 0.15s;
+}
+.month-tag.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.month-tag:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+.stat-cards { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--cream); border: 1px solid var(--rule);
+  border-radius: 10px; padding: 16px 20px;
+}
+.stat-card .label { font-size: 11px; color: var(--ink-light); margin-bottom: 4px; }
+.stat-card .value { font-size: 22px; font-weight: 900; color: var(--accent); }
+.stat-card .sub { font-size: 10px; color: var(--ink-light); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>莊敬安親<br>薪資管理系統</h1>
+    <p>114年 04月 ｜ 莊敬校</p>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">功能</div>
+    <div class="nav-item active" onclick="showView('dashboard')">
+      <span class="icon">📊</span> 薪資總覽
+    </div>
+    <div class="nav-item" onclick="showView('employee')">
+      <span class="icon">👤</span> 員工基本資料
+    </div>
+    <div class="nav-item" onclick="showView('monthly')">
+      <span class="icon">📅</span> 每月變動資料
+    </div>
+    <div class="nav-item" onclick="showView('preview')">
+      <span class="icon">🖨️</span> 薪資條預覽
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">員工列表</div>
+    <div class="emp-list" id="empList"></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <h2 id="viewTitle">薪資總覽</h2>
+    <div class="topbar-actions">
+      <button class="btn btn-outline" onclick="importFromCSV()">📂 匯入CSV</button>
+      <button class="btn btn-outline" onclick="exportJSON()">💾 匯出備份</button>
+      <button class="btn btn-gold" onclick="printAll()">🖨️ 列印全員</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ VIEW: DASHBOARD ══ -->
+    <div class="view active" id="view-dashboard">
+      <div class="month-bar">
+        <span style="font-size:12px;font-weight:700;color:var(--ink-light)">月份：</span>
+        <div class="month-tag active">114年04月</div>
+        <div class="month-tag">114年05月</div>
+        <div class="month-tag">114年06月</div>
+        <button class="btn btn-outline" style="padding:4px 12px;font-size:11px" onclick="addMonth()">＋ 新增月份</button>
+      </div>
+      <div class="stat-cards" id="statCards"></div>
+      <div class="card">
+        <div class="card-header">
+          <h3>發薪明細總表</h3>
+          <p>點擊姓名可直接預覽薪資條</p>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table class="summary-table" id="summaryTable"></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VIEW: EMPLOYEE ══ -->
+    <div class="view" id="view-employee">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <select id="empSelect" style="padding:8px 12px;border:1px solid var(--rule);border-radius:6px;font-size:13px;min-width:160px" onchange="loadEmployee()"></select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" onclick="addEmployee()">＋ 新增員工</button>
+          <button class="btn btn-primary" onclick="saveEmployee()">💾 儲存</button>
+          <button class="btn btn-danger" onclick="deleteEmployee()">🗑 刪除</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>基本資料</h3></div>
+        <div class="card-body">
+          <div class="form-grid form-grid-4">
+            <div class="field"><label>姓名</label><input id="f-name" type="text"></div>
+            <div class="field"><label>英文名</label><input id="f-ename" type="text"></div>
+            <div class="field"><label>職稱</label><input id="f-pos" type="text"></div>
+            <div class="field"><label>到職日</label><input id="f-hire" type="text" placeholder="1140101"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>固定薪資結構</h3></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field"><label>底薪</label><input id="f-base" type="number"><span class="hint">月薪制基本底薪</span></div>
+            <div class="field"><label>年資（年）</label><input id="f-years" type="number" min="0"></div>
+            <div class="field"><label>年資津貼</label><input id="f-seniority" type="number"><span class="hint">自動可依年資計算</span></div>
+            <div class="field"><label>全勤獎金</label><input id="f-perfect" type="number"></div>
+            <div class="field"><label>勞保（員工自付）</label><input id="f-labor" type="number"></div>
+            <div class="field"><label>健保（員工自付）</label><input id="f-health" type="number"><span class="hint">本人＋眷屬</span></div>
+            <div class="field"><label>退休金提撥</label><input id="f-pension" type="number"></div>
+            <div class="field"><label>健保眷屬說明</label><input id="f-healthnote" type="text" placeholder="本人+2眷屬"></div>
+            <div class="field"><label>勞保投保薪資</label><input id="f-insbase" type="number" placeholder="29500"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>固定津貼項目</h3><p>每月固定給付，不因人數變動</p></div>
+        <div class="card-body">
+          <div id="fixedAllowances"></div>
+          <button class="btn btn-outline" onclick="addFixedAllowance()">＋ 新增固定津貼</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>備註</h3></div>
+        <div class="card-body">
+          <div class="field"><label>備註說明</label>
+            <textarea id="f-note" rows="3" style="resize:vertical;padding:8px 12px;border:1px solid var(--rule);border-radius:6px;font-family:inherit;font-size:13px"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VIEW: MONTHLY ══ -->
+    <div class="view" id="view-monthly">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="display:flex;gap:10px;align-items:center">
+          <select id="monthEmpSelect" style="padding:8px 12px;border:1px solid var(--rule);border-radius:6px;font-size:13px;min-width:160px" onchange="loadMonthly()"></select>
+          <input id="monthPeriod" type="text" value="114年04月" style="padding:8px 12px;border:1px solid var(--rule);border-radius:6px;font-size:13px;width:120px">
+        </div>
+        <button class="btn btn-primary" onclick="saveMonthly()">💾 儲存變動資料</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>出勤與人數</h3></div>
+        <div class="card-body">
+          <div class="form-grid form-grid-4">
+            <div class="field"><label>安親人數</label><input id="m-anqin" type="number" min="0"></div>
+            <div class="field"><label>美語人數</label><input id="m-english" type="number" min="0"></div>
+            <div class="field"><label>帶班人數</label><input id="m-class" type="number" min="0"></div>
+            <div class="field"><label>莊敬人數津貼</label><input id="m-zjallow" type="number" min="0"><span class="hint">特殊算法請手動填入</span></div>
+            <div class="field"><label>超時時數（小時）</label><input id="m-ot" type="number" min="0"></div>
+            <div class="field"><label>超時津貼金額</label><input id="m-otpay" type="number" min="0"></div>
+            <div class="field"><label>請假天數</label><input id="m-leave" type="number" min="0" step="0.5"></div>
+            <div class="field"><label>請假扣款</label><input id="m-leaveded" type="number" min="0"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>獎金與特殊項目</h3></div>
+        <div class="card-body">
+          <div class="form-grid form-grid-4">
+            <div class="field"><label>預繳獎金</label><input id="m-adv" type="number" min="0"></div>
+            <div class="field"><label>期中獎金</label><input id="m-bonus" type="number" min="0"></div>
+            <div class="field"><label>5/4 現金領取</label><input id="m-cash" type="number" min="0"></div>
+            <div class="field"><label>5/16 匯款金額</label><input id="m-wire" type="number" min="0"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>本月額外項目</h3><p>本月特別加項或備註</p></div>
+        <div class="card-body">
+          <div id="extraAllowances"></div>
+          <button class="btn btn-outline" onclick="addExtraAllowance()">＋ 新增項目</button>
+          <div class="field" style="margin-top:16px"><label>本月備註</label>
+            <textarea id="m-note" rows="3" style="resize:vertical;padding:8px 12px;border:1px solid var(--rule);border-radius:6px;font-family:inherit;font-size:13px"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VIEW: PREVIEW ══ -->
+    <div class="view" id="view-preview">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="previewEmpSelect" style="padding:8px 12px;border:1px solid var(--rule);border-radius:6px;font-size:13px;min-width:160px" onchange="renderPreview()"></select>
+          <input id="previewPeriod" type="text" value="114年04月" style="padding:8px 12px;border:1px solid var(--rule);border-radius:6px;font-size:13px;width:120px" onchange="renderPreview()">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="renderPreview()">🔄 重新產生</button>
+          <button class="btn btn-success" onclick="printPayslip()">🖨️ 列印</button>
+          <button class="btn btn-primary" onclick="savePayslipPDF()">📄 存PDF說明</button>
+          <button class="btn btn-gold" onclick="copyPayslipText()">📋 複製文字</button>
+        </div>
+      </div>
+      <div class="preview-wrap" id="previewWrap">
+        <div id="payslipContainer"></div>
+      </div>
+    </div>
+
+  </div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .app-shell -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA STORE
+// ═══════════════════════════════════════════════
+const DEFAULT_EMPLOYEES = [
+  {id:1,name:'李如蘋',ename:'',pos:'教師',hire:'',base:29500,years:3,seniority:4000,perfect:500,labor:2620,health:0,pension:1998,healthnote:'',insbase:29500,
+   fixedAllowances:[{name:'安親人數津貼',amount:'=anqin*80'},{name:'美語人數津貼',amount:'=english*100'}],
+   note:'底薪調高（感謝資深付出，是分校穩定的力量）'},
+  {id:2,name:'游晏慈',ename:'',pos:'教師',hire:'1140911',base:29500,years:0,seniority:0,perfect:1500,labor:738,health:458,pension:0,healthnote:'',insbase:29500,
+   fixedAllowances:[{name:'英文輔導津貼',amount:3000},{name:'多媒體行銷津貼',amount:4000},{name:'滿6個月津貼',amount:1000}],
+   note:'到職日1140911，115.1月投保金額29,500'},
+  {id:3,name:'吳湘晴',ename:'Alice',pos:'教師',hire:'',base:30500,years:2,seniority:4000,perfect:500,labor:738,health:916,pension:0,healthnote:'本人+1眷屬',insbase:29500,
+   fixedAllowances:[{name:'人數津貼',amount:'=anqin*0+1500'}],
+   note:'115.1月投保金額29,500'},
+  {id:4,name:'胡宣曼',ename:'',pos:'教師',hire:'',base:29500,years:0,seniority:0,perfect:1500,labor:738,health:1832,pension:0,healthnote:'本人+3眷屬',insbase:29500,
+   fixedAllowances:[],note:'115.1月投保金額29,500，健保本人+3眷屬'},
+  {id:5,name:'蕭羽儂',ename:'',pos:'櫃檯行政',hire:'',base:31500,years:0,seniority:0,perfect:500,labor:738,health:1410,pension:0,healthnote:'本人+2眷屬',insbase:28590,
+   fixedAllowances:[{name:'櫃檯行政津貼',amount:10000},{name:'美語人數津貼',amount:5000},{name:'敬吉美贊助津貼',amount:3000}],
+   note:'114.1月投保金額28,590（原底薪29,500），美語人數津貼含Jessica協助3,000元'},
+  {id:6,name:'黃玉華',ename:'',pos:'教師（新制）',hire:'',base:30500,years:4,seniority:4000,perfect:500,labor:738,health:611,pension:0,healthnote:'',insbase:30500,
+   fixedAllowances:[{name:'教學人事津貼',amount:5000},{name:'主題公告津貼',amount:3500},{name:'導師津貼',amount:2000},{name:'混年級津貼',amount:500}],
+   note:'帶班人數津貼特殊算法：16~20人=500/人，21人以上=1500/人'},
+  {id:7,name:'洪子彤',ename:'',pos:'教師',hire:'',base:30500,years:2,seniority:4000,perfect:500,labor:738,health:458,pension:0,healthnote:'',insbase:29500,
+   fixedAllowances:[{name:'英文輔導津貼',amount:3000},{name:'多媒體行銷津貼',amount:3000}],
+   note:'115.1月投保金額29,500'},
+  {id:8,name:'蕭文華',ename:'',pos:'教師',hire:'',base:26680,years:0,seniority:0,perfect:0,labor:0,health:0,pension:0,healthnote:'',insbase:0,
+   fixedAllowances:[],note:'兼職，無勞健保扣款'},
+  {id:9,name:'廖譯雯',ename:'',pos:'教師',hire:'',base:0,years:0,seniority:0,perfect:0,labor:0,health:0,pension:0,healthnote:'',insbase:0,
+   fixedAllowances:[],note:'＊薪資項目明細請補充確認'},
+  {id:10,name:'徐伊漩',ename:'Mille',pos:'教師',hire:'',base:0,years:0,seniority:0,perfect:0,labor:0,health:0,pension:0,healthnote:'',insbase:0,
+   fixedAllowances:[],note:'＊薪資項目明細請補充確認'},
+  {id:11,name:'Mille',ename:'',pos:'教師',hire:'',base:0,years:0,seniority:0,perfect:0,labor:0,health:0,pension:0,healthnote:'',insbase:0,
+   fixedAllowances:[],note:'＊薪資項目明細請補充確認'},
+  {id:12,name:'何宥蓉',ename:'',pos:'教師',hire:'1140909',base:29500,years:0,seniority:0,perfect:1500,labor:738,health:458,pension:0,healthnote:'',insbase:29500,
+   fixedAllowances:[{name:'滿6個月津貼',amount:1000}],note:'到職日1140909，115.1月投保金額29,500'},
+  {id:13,name:'何革融',ename:'',pos:'教師',hire:'1140926',base:29500,years:0,seniority:0,perfect:1500,labor:738,health:458,pension:0,healthnote:'',insbase:29500,
+   fixedAllowances:[],note:'到職日1140926，115.1月投保金額29,500'},
+  {id:14,name:'謝明學',ename:'',pos:'教師',hire:'',base:0,years:0,seniority:0,perfect:0,labor:0,health:0,pension:0,healthnote:'',insbase:0,
+   fixedAllowances:[],note:'＊薪資項目明細請補充確認'},
+];
+
+const DEFAULT_MONTHLY = {
+  '李如蘋':  {anqin:18,english:11,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:20000,bonus:0,cash:0,wire:21318,extra:[],note:''},
+  '游晏慈':  {anqin:0,english:14,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:20000,bonus:0,cash:0,wire:17804,extra:[],note:''},
+  '吳湘晴':  {anqin:18,english:0,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:20000,bonus:0,cash:0,wire:14846,extra:[],note:''},
+  '胡宣曼':  {anqin:0,english:7,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:20000,bonus:0,cash:0,wire:9430,extra:[],note:''},
+  '蕭羽儂':  {anqin:0,english:0,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:30000,bonus:0,cash:0,wire:17218,extra:[],note:''},
+  '黃玉華':  {anqin:0,english:0,class:26,zjallow:10240,ot:0,otpay:0,leave:0,leaveded:0,adv:30000,bonus:128,cash:0,wire:34649,extra:[],note:'全校128人'},
+  '洪子彤':  {anqin:16,english:0,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:20000,bonus:0,cash:0,wire:20304,extra:[],note:''},
+  '蕭文華':  {anqin:0,english:0,class:116,zjallow:0,ot:26,otpay:2000,leave:0,leaveded:0,adv:0,bonus:0,cash:0,wire:28680,extra:[{name:'交通津貼',amount:0}],note:'14人交通津貼'},
+  '廖譯雯':  {anqin:0,english:0,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:30000,bonus:0,cash:0,wire:27268,extra:[],note:''},
+  '徐伊漩':  {anqin:0,english:0,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:0,bonus:0,cash:0,wire:44200,extra:[],note:''},
+  'Mille':   {anqin:0,english:0,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:30000,bonus:0,cash:0,wire:13408,extra:[],note:''},
+  '何宥蓉':  {anqin:0,english:0,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:20000,bonus:0,cash:0,wire:10804,extra:[],note:''},
+  '何革融':  {anqin:0,english:11,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:20000,bonus:0,cash:0,wire:9804,extra:[],note:''},
+  '謝明學':  {anqin:0,english:0,class:0,zjallow:0,ot:0,otpay:0,leave:0,leaveded:0,adv:30000,bonus:0,cash:0,wire:23322,extra:[],note:''},
+};
+
+function loadData() {
+  const e = localStorage.getItem('zj_employees');
+  const m = localStorage.getItem('zj_monthly');
+  return {
+    employees: e ? JSON.parse(e) : JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES)),
+    monthly:   m ? JSON.parse(m) : JSON.parse(JSON.stringify(DEFAULT_MONTHLY)),
+  };
+}
+function saveData() {
+  localStorage.setItem('zj_employees', JSON.stringify(appData.employees));
+  localStorage.setItem('zj_monthly', JSON.stringify(appData.monthly));
+}
+let appData = loadData();
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function fmt(n) { return n ? Number(n).toLocaleString('zh-TW') : '—'; }
+function num(n) { return Number(n)||0; }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+function resolveFormula(expr, vars) {
+  if (typeof expr === 'number') return expr;
+  if (!expr) return 0;
+  let s = String(expr);
+  if (!s.startsWith('=')) return num(s);
+  s = s.slice(1);
+  // replace var names
+  Object.entries(vars).forEach(([k,v]) => {
+    s = s.replaceAll(k, num(v));
+  });
+  try { return Math.max(0, eval(s)); } catch { return 0; }
+}
+
+function calcPayslip(emp, mv) {
+  const vars = {
+    anqin: num(mv.anqin), english: num(mv.english), class: num(mv.class),
+    ot: num(mv.ot), otpay: num(mv.otpay),
+  };
+  // fixed allowances
+  const fixedRows = (emp.fixedAllowances||[]).map(fa => ({
+    name: fa.name,
+    amount: resolveFormula(fa.amount, vars)
+  }));
+  // seniority / perfect
+  if (num(emp.seniority)>0) fixedRows.unshift({name:`滿${emp.years}年資深津貼`,amount:num(emp.seniority)});
+  fixedRows.unshift({name:'全勤獎金',amount:num(emp.perfect)});
+  fixedRows.unshift({name:'底薪',amount:num(emp.base)});
+
+  // variable items from monthly
+  const varRows = [];
+  if (num(mv.zjallow)>0) varRows.push({name:'莊敬人數津貼',amount:num(mv.zjallow)});
+  if (num(mv.otpay)>0)   varRows.push({name:'超時津貼',amount:num(mv.otpay)});
+  if (num(mv.bonus)>0)   varRows.push({name:'期中獎金',amount:num(mv.bonus)});
+  (mv.extra||[]).forEach(e => { if (num(e.amount)>0) varRows.push({name:e.name,amount:num(e.amount)}); });
+
+  const earnA = fixedRows.reduce((s,r)=>s+r.amount,0);
+  const earnB = varRows.reduce((s,r)=>s+r.amount,0);
+
+  // deductions
+  const dedRows = [];
+  if (num(emp.labor)>0)   dedRows.push({name:'勞保費',amount:num(emp.labor),note:'含就保費'});
+  if (num(emp.health)>0)  dedRows.push({name:'健保費',amount:num(emp.health),note:emp.healthnote||''});
+  if (num(emp.pension)>0) dedRows.push({name:'勞工自願提繳退休金',amount:num(emp.pension),note:''});
+  if (num(mv.leaveded)>0) dedRows.push({name:'請假扣款',amount:num(mv.leaveded),note:`${mv.leave}天`});
+  const dedC = dedRows.reduce((s,r)=>s+r.amount,0);
+
+  const net = earnA + earnB - dedC;
+  return { fixedRows, varRows, dedRows, earnA, earnB, dedC, net,
+           adv:num(mv.adv), cash:num(mv.cash), wire:num(mv.wire) };
+}
+
+// ═══════════════════════════════════════════════
+// POPULATE SELECTS
+// ═══════════════════════════════════════════════
+function populateSelects() {
+  ['empSelect','monthEmpSelect','previewEmpSelect'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = appData.employees.map(e=>
+      `<option value="${e.id}">${e.name}${e.ename?' ('+e.ename+')':''}</option>`
+    ).join('');
+    if (cur) sel.value = cur;
+  });
+  // sidebar emp list
+  const el = document.getElementById('empList');
+  el.innerHTML = appData.employees.map(e=>
+    `<div class="emp-chip" onclick="quickPreview(${e.id})">
+      <div class="avatar">${e.name[0]}</div>
+      <span>${e.name}${e.ename?' · '+e.ename:''}</span>
+    </div>`
+  ).join('');
+}
+
+function quickPreview(id) {
+  document.getElementById('previewEmpSelect').value = id;
+  showView('preview');
+  renderPreview();
+}
+
+// ═══════════════════════════════════════════════
+// VIEW SWITCHING
+// ═══════════════════════════════════════════════
+const viewTitles = {
+  dashboard:'薪資總覽', employee:'員工基本資料',
+  monthly:'每月變動資料', preview:'薪資條預覽'
+};
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if (n.getAttribute('onclick')?.includes(name)) n.classList.add('active');
+  });
+  document.getElementById('viewTitle').textContent = viewTitles[name]||name;
+  if (name==='dashboard') renderDashboard();
+  if (name==='employee') { populateSelects(); loadEmployee(); }
+  if (name==='monthly') { populateSelects(); loadMonthly(); }
+  if (name==='preview') { populateSelects(); renderPreview(); }
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+function renderDashboard() {
+  const rows = appData.employees.map(emp => {
+    const mv = appData.monthly[emp.name] || {};
+    return { emp, ...calcPayslip(emp, mv) };
+  });
+  const totalNet = rows.reduce((s,r)=>s+r.net,0);
+  const totalAdv = rows.reduce((s,r)=>s+r.adv,0);
+  const totalWire = rows.reduce((s,r)=>s+r.wire,0);
+
+  document.getElementById('statCards').innerHTML = `
+    <div class="stat-card"><div class="label">員工人數</div><div class="value">${rows.length}</div><div class="sub">莊敬校</div></div>
+    <div class="stat-card"><div class="label">薪資總額</div><div class="value">$${fmt(totalNet)}</div><div class="sub">114年04月</div></div>
+    <div class="stat-card"><div class="label">預繳獎金合計</div><div class="value">$${fmt(totalAdv)}</div><div class="sub">已預付</div></div>
+    <div class="stat-card"><div class="label">匯款總額</div><div class="value">$${fmt(totalWire)}</div><div class="sub">5/16 匯款</div></div>
+  `;
+
+  const tbody = rows.map((r,i)=>`
+    <tr>
+      <td style="text-align:center">${i+1}</td>
+      <td><span class="clickable" onclick="quickPreview(${r.emp.id})">${r.emp.name}${r.emp.ename?' <small style="color:#999">('+r.emp.ename+')</small>':''}</span></td>
+      <td style="text-align:left">${r.emp.pos}</td>
+      <td>$${fmt(r.earnA)}</td>
+      <td>$${fmt(r.earnB)}</td>
+      <td>-$${fmt(r.dedC)}</td>
+      <td class="net-cell">$${fmt(r.net)}</td>
+      <td style="color:#7d6608">$${fmt(r.adv)}</td>
+      <td style="color:#1a5432;font-weight:700">$${fmt(r.wire)}</td>
+      <td>
+        <button class="btn btn-outline" style="padding:4px 8px;font-size:10px" onclick="quickPreview(${r.emp.id})">預覽</button>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('summaryTable').innerHTML = `
+    <thead><tr>
+      <th>#</th><th>姓名</th><th>職稱</th>
+      <th>應發固定(A)</th><th>應發變動(B)</th><th>應扣(C)</th>
+      <th>實領(A+B-C)</th><th>預繳獎金</th><th>匯款金額</th><th>操作</th>
+    </tr></thead>
+    <tbody>${tbody}</tbody>
+    <tfoot><tr class="total-row">
+      <td colspan="3" style="text-align:center;font-weight:700">合計</td>
+      <td>$${fmt(rows.reduce((s,r)=>s+r.earnA,0))}</td>
+      <td>$${fmt(rows.reduce((s,r)=>s+r.earnB,0))}</td>
+      <td>-$${fmt(rows.reduce((s,r)=>s+r.dedC,0))}</td>
+      <td class="net-cell">$${fmt(totalNet)}</td>
+      <td>$${fmt(totalAdv)}</td>
+      <td>$${fmt(totalWire)}</td>
+      <td></td>
+    </tr></tfoot>
+  `;
+}
+
+// ═══════════════════════════════════════════════
+// EMPLOYEE FORM
+// ═══════════════════════════════════════════════
+function loadEmployee() {
+  const id = parseInt(document.getElementById('empSelect').value);
+  const emp = appData.employees.find(e=>e.id===id);
+  if (!emp) return;
+  ['name','ename','pos','hire','base','years','seniority','perfect',
+   'labor','health','pension','healthnote','insbase','note'].forEach(k=>{
+    const el = document.getElementById('f-'+k);
+    if (el) el.value = emp[k]||'';
+  });
+  renderFixedAllowances(emp);
+}
+function renderFixedAllowances(emp) {
+  const c = document.getElementById('fixedAllowances');
+  c.innerHTML = (emp.fixedAllowances||[]).map((fa,i)=>`
+    <div class="dyn-row" id="fa-row-${i}">
+      <div class="field"><label>津貼名稱</label>
+        <input type="text" value="${fa.name}" onchange="updateFA(${emp.id},${i},'name',this.value)">
+      </div>
+      <div class="field"><label>金額（或公式如 =anqin*80）</label>
+        <input type="text" value="${fa.amount}" onchange="updateFA(${emp.id},${i},'amount',this.value)">
+      </div>
+      <button class="remove-btn" onclick="removeFA(${emp.id},${i})">✕</button>
+    </div>
+  `).join('');
+}
+function updateFA(eid,idx,field,val) {
+  const emp = appData.employees.find(e=>e.id===eid);
+  if (emp && emp.fixedAllowances[idx]) emp.fixedAllowances[idx][field]=val;
+}
+function removeFA(eid,idx) {
+  const emp = appData.employees.find(e=>e.id===eid);
+  if (emp) { emp.fixedAllowances.splice(idx,1); renderFixedAllowances(emp); }
+}
+function addFixedAllowance() {
+  const id = parseInt(document.getElementById('empSelect').value);
+  const emp = appData.employees.find(e=>e.id===id);
+  if (!emp) return;
+  emp.fixedAllowances = emp.fixedAllowances||[];
+  emp.fixedAllowances.push({name:'新津貼',amount:0});
+  renderFixedAllowances(emp);
+}
+function saveEmployee() {
+  const id = parseInt(document.getElementById('empSelect').value);
+  const idx = appData.employees.findIndex(e=>e.id===id);
+  if (idx<0) return;
+  ['name','ename','pos','hire','base','years','seniority','perfect',
+   'labor','health','pension','healthnote','insbase','note'].forEach(k=>{
+    const el = document.getElementById('f-'+k);
+    if (el) appData.employees[idx][k] = ['base','years','seniority','perfect','labor','health','pension','insbase'].includes(k) ? num(el.value) : el.value;
+  });
+  saveData(); populateSelects(); toast('✅ 員工資料已儲存');
+}
+function addEmployee() {
+  const maxId = Math.max(...appData.employees.map(e=>e.id),0);
+  const emp = {id:maxId+1,name:'新員工',ename:'',pos:'教師',hire:'',base:29500,years:0,seniority:0,
+    perfect:500,labor:738,health:458,pension:0,healthnote:'',insbase:29500,fixedAllowances:[],note:''};
+  appData.employees.push(emp);
+  saveData(); populateSelects();
+  document.getElementById('empSelect').value = emp.id;
+  loadEmployee(); toast('✅ 已新增員工，請填寫資料後儲存');
+}
+function deleteEmployee() {
+  const id = parseInt(document.getElementById('empSelect').value);
+  if (!confirm('確定要刪除此員工？')) return;
+  appData.employees = appData.employees.filter(e=>e.id!==id);
+  saveData(); populateSelects(); loadEmployee(); toast('🗑 員工已刪除');
+}
+
+// ═══════════════════════════════════════════════
+// MONTHLY FORM
+// ═══════════════════════════════════════════════
+function loadMonthly() {
+  const id = parseInt(document.getElementById('monthEmpSelect').value);
+  const emp = appData.employees.find(e=>e.id===id);
+  if (!emp) return;
+  const mv = appData.monthly[emp.name] || {};
+  ['anqin','english','class','zjallow','ot','otpay','leave','leaveded','adv','bonus','cash','wire'].forEach(k=>{
+    const el = document.getElementById('m-'+k);
+    if (el) el.value = mv[k]||0;
+  });
+  document.getElementById('m-note').value = mv.note||'';
+  renderExtraAllowances(emp.name, mv.extra||[]);
+}
+function renderExtraAllowances(empName, extras) {
+  const c = document.getElementById('extraAllowances');
+  c.innerHTML = extras.map((ea,i)=>`
+    <div class="dyn-row">
+      <div class="field"><label>項目名稱</label>
+        <input type="text" value="${ea.name}" onchange="updateExtra('${empName}',${i},'name',this.value)">
+      </div>
+      <div class="field"><label>金額</label>
+        <input type="number" value="${ea.amount}" onchange="updateExtra('${empName}',${i},'amount',this.value)">
+      </div>
+      <button class="remove-btn" onclick="removeExtra('${empName}',${i})">✕</button>
+    </div>
+  `).join('');
+}
+function updateExtra(name,idx,field,val) {
+  if (!appData.monthly[name]) return;
+  if (appData.monthly[name].extra[idx]) appData.monthly[name].extra[idx][field]=val;
+}
+function removeExtra(name,idx) {
+  if (!appData.monthly[name]) return;
+  appData.monthly[name].extra.splice(idx,1);
+  const emp = appData.employees.find(e=>e.name===name);
+  if (emp) renderExtraAllowances(name, appData.monthly[name].extra);
+}
+function addExtraAllowance() {
+  const id = parseInt(document.getElementById('monthEmpSelect').value);
+  const emp = appData.employees.find(e=>e.id===id);
+  if (!emp) return;
+  if (!appData.monthly[emp.name]) appData.monthly[emp.name] = {};
+  if (!appData.monthly[emp.name].extra) appData.monthly[emp.name].extra = [];
+  appData.monthly[emp.name].extra.push({name:'額外項目',amount:0});
+  renderExtraAllowances(emp.name, appData.monthly[emp.name].extra);
+}
+function saveMonthly() {
+  const id = parseInt(document.getElementById('monthEmpSelect').value);
+  const emp = appData.employees.find(e=>e.id===id);
+  if (!emp) return;
+  if (!appData.monthly[emp.name]) appData.monthly[emp.name] = {};
+  const mv = appData.monthly[emp.name];
+  ['anqin','english','class','zjallow','ot','otpay','leave','leaveded','adv','bonus','cash','wire'].forEach(k=>{
+    mv[k] = num(document.getElementById('m-'+k).value);
+  });
+  mv.note = document.getElementById('m-note').value;
+  saveData(); toast('✅ 變動資料已儲存');
+}
+
+// ═══════════════════════════════════════════════
+// PAYSLIP RENDER (參考例三)
+// ═══════════════════════════════════════════════
+function renderPreview() {
+  const id = parseInt(document.getElementById('previewEmpSelect').value);
+  const emp = appData.employees.find(e=>e.id===id);
+  if (!emp) return;
+  const period = document.getElementById('previewPeriod').value || '114年04月';
+  const mv = appData.monthly[emp.name] || {};
+  const calc = calcPayslip(emp, mv);
+  document.getElementById('payslipContainer').innerHTML = buildPayslipHTML(emp, calc, period, mv);
+}
+
+function buildPayslipHTML(emp, c, period, mv) {
+  const displayName = emp.name + (emp.ename ? ` (${emp.ename})` : '');
+
+  // Fixed earn rows
+  const fixedRowsHTML = c.fixedRows.map(r => r.amount>0 || r.name==='底薪' ? `
+    <tr class="ps-section-earn">
+      <td style="text-align:left">${r.name}</td>
+      <td style="text-align:right">${fmt(r.amount)}</td>
+    </tr>` : '').join('');
+
+  // Variable earn rows  
+  const varRowsHTML = c.varRows.map(r=>`
+    <tr class="ps-section-ot">
+      <td style="text-align:left">${r.name}</td>
+      <td style="text-align:right">${fmt(r.amount)}</td>
+    </tr>`).join('') || '<tr class="ps-section-ot"><td>—</td><td>—</td></tr>';
+
+  // Deduction rows
+  const dedRowsHTML = c.dedRows.map(r=>`
+    <tr class="ps-section-ded">
+      <td style="text-align:left">${r.name}</td>
+      <td style="text-align:right">${fmt(r.amount)}</td>
+      <td style="text-align:left;font-size:8px;color:#888">${r.note}</td>
+    </tr>`).join('') || '<tr class="ps-section-ded"><td colspan="3">—</td></tr>';
+
+  // Absence rows
+  const absHTML = `
+    <tr class="ps-section-abs"><td>事假</td><td></td></tr>
+    <tr class="ps-section-abs"><td>病假</td><td></td></tr>
+    <tr class="ps-section-abs"><td>遲到早退</td><td></td></tr>`;
+
+  // Overtime rows (例三格式)
+  const otHTML = `
+    <tr><td>平日加班</td><td>1又1/3</td><td></td><td></td></tr>
+    <tr><td></td><td>1又2/3</td><td></td><td></td></tr>
+    <tr><td>休假日出勤（8hr內）</td><td>1</td><td></td><td></td></tr>
+    <tr><td>休息日加班（8hr內）</td><td>1又1/3</td><td></td><td></td></tr>
+    <tr><td></td><td>1又2/3</td><td></td><td></td></tr>
+    <tr><td>逾8小時</td><td>2又2/3</td><td></td><td></td></tr>`;
+
+  const notes = [];
+  if (emp.insbase) notes.push(`投保薪資：${fmt(emp.insbase)}元`);
+  if (emp.healthnote) notes.push(`健保：${emp.healthnote}`);
+  if (emp.note) notes.push(emp.note);
+  if (mv.note) notes.push(mv.note);
+  notes.push('應扣項目之勞保費含就保費，惟勞保費與就保費採分別臚列，亦屬可行。');
+
+  const hourlyWage = emp.base ? Math.round(num(emp.base) / 240) : 0;
+
+  return `
+<div class="payslip" id="the-payslip">
+  <div class="ps-title">莊敬校 ${period} 薪資條（勞動基準法第23條第1項）</div>
+  <div class="ps-info">
+    <div class="ps-info-cell"><div class="lbl">部門</div><div class="val">莊敬校</div></div>
+    <div class="ps-info-cell"><div class="lbl">姓名</div><div class="val">${displayName}</div></div>
+    <div class="ps-info-cell"><div class="lbl">職稱</div><div class="val">${emp.pos}</div></div>
+    <div class="ps-info-cell"><div class="lbl">薪資月份</div><div class="val">${period}</div></div>
+    <div class="ps-info-cell"><div class="lbl">到職日</div><div class="val">${emp.hire||'—'}</div></div>
+    <div class="ps-info-cell"><div class="lbl">入帳日期</div><div class="val">&nbsp;</div></div>
+    <div class="ps-info-cell"><div class="lbl">轉帳帳號</div><div class="val">&nbsp;</div></div>
+    <div class="ps-info-cell"><div class="lbl">到（離）職日期</div><div class="val">&nbsp;</div></div>
+  </div>
+
+  <!-- Main 4-column grid table -->
+  <table class="ps-table">
+    <thead>
+      <tr>
+        <th colspan="2" class="earn-hdr">應發項目（固定）</th>
+        <th colspan="4" class="ot-hdr">加班項目（倍率）</th>
+        <th colspan="3" class="ded-hdr">應扣項目</th>
+        <th colspan="2" class="abs-hdr">缺勤項目</th>
+      </tr>
+      <tr>
+        <th class="earn-hdr" style="background:#2563a8">項目</th>
+        <th class="earn-hdr" style="background:#2563a8">金額</th>
+        <th class="ot-hdr" style="background:#8a6d10">加班別</th>
+        <th class="ot-hdr" style="background:#8a6d10">倍率</th>
+        <th class="ot-hdr" style="background:#8a6d10">時數</th>
+        <th class="ot-hdr" style="background:#8a6d10">加班費</th>
+        <th class="ded-hdr" style="background:#a93226">勞工自負額</th>
+        <th class="ded-hdr" style="background:#a93226">金額</th>
+        <th class="ded-hdr" style="background:#a93226">備註</th>
+        <th class="abs-hdr" style="background:#4a5568">缺勤別</th>
+        <th class="abs-hdr" style="background:#4a5568">時數</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Row by row merged layout -->
+      <tr>
+        <td rowspan="${c.fixedRows.filter(r=>r.amount>0||r.name==='底薪').length || 1}" colspan="2" style="padding:0;vertical-align:top">
+          <table style="width:100%;border-collapse:collapse">
+            ${fixedRowsHTML}
+          </table>
+        </td>
+        <td>平日加班</td><td>1又1/3</td><td></td><td></td>
+        <td rowspan="${Math.max(c.dedRows.length,1)}" colspan="3" style="padding:0;vertical-align:top">
+          <table style="width:100%;border-collapse:collapse">
+            ${dedRowsHTML}
+          </table>
+        </td>
+        <td>事假</td><td></td>
+      </tr>
+      <tr><td></td><td>1又2/3</td><td></td><td></td><td>病假</td><td></td></tr>
+      <tr><td>休假日出勤(8hr)</td><td>1</td><td></td><td></td><td>遲到早退</td><td></td></tr>
+      <tr><td></td><td>1又1/3</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>休息日加班(8hr)</td><td>1又1/3</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td>1又2/3</td><td></td><td></td><td></td><td></td></tr>
+      <tr><td>逾8小時</td><td>2又2/3</td><td></td><td></td><td></td><td></td></tr>
+      <tr style="background:#fef9e7">
+        <td colspan="2" style="text-align:left;font-size:8.5px;padding:2px 5px"><strong>非固定支付項目：</strong>${c.varRows.map(r=>r.name+'$'+fmt(r.amount)).join('、')||'無'}</td>
+        <td colspan="2">加班合計(B)</td><td></td><td style="font-weight:700">—</td>
+        <td colspan="2">合計(C)</td><td style="font-weight:700;text-align:right">${fmt(c.dedC)}</td>
+        <td colspan="2">缺勤合計(D)</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr class="ps-total-row">
+        <td>合計(A)</td>
+        <td style="text-align:right;font-weight:900;font-size:11px">${fmt(c.earnA+c.earnB)}</td>
+        <td colspan="4" style="font-size:8.5px">平日每小時工資額(E) = 合計(A) ÷ 240 = <strong>${fmt(hourlyWage)}</strong> 元/時</td>
+        <td colspan="5" style="font-size:8.5px">＊勞保費含就保費</td>
+      </tr>
+      <tr class="ps-net-row">
+        <td colspan="6" style="text-align:center;font-size:11px">實發金額 (A)＋(B)－(C)－(D)</td>
+        <td colspan="5" style="text-align:center" class="ps-net-amt">NT$ ${fmt(c.net)}</td>
+      </tr>
+      <tr class="ps-adv-row">
+        <td colspan="3" style="text-align:left">預繳獎金：<strong>-${fmt(c.adv)}</strong></td>
+        <td colspan="3" style="text-align:left">5/4現金：<strong>${c.cash?fmt(c.cash):'—'}</strong></td>
+        <td colspan="2" style="text-align:left">5/16匯款：<strong>${fmt(c.wire)}</strong></td>
+        <td colspan="3" style="text-align:left">實領薪資：<strong style="color:#1a5432;font-size:11px">${fmt(c.net)}</strong></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="ps-notes">
+    <strong>【備註】</strong>&ensp;${notes.join('　｜　')}
+  </div>
+  <div class="ps-sign">
+    <div class="ps-sign-cell">雇主簽章：</div>
+    <div class="ps-sign-cell">員工簽收確認（本人已了解薪資各項目計算方式）：</div>
+    <div class="ps-sign-cell">日期：</div>
+  </div>
+</div>`;
+}
+
+// ═══════════════════════════════════════════════
+// PRINT / SAVE / COPY
+// ═══════════════════════════════════════════════
+function printPayslip() { window.print(); }
+
+function savePayslipPDF() {
+  toast('📄 請使用瀏覽器「列印 → 另存PDF」功能儲存薪資條');
+}
+
+function copyPayslipText() {
+  const id = parseInt(document.getElementById('previewEmpSelect').value);
+  const emp = appData.employees.find(e=>e.id===id);
+  if (!emp) return;
+  const mv = appData.monthly[emp.name] || {};
+  const c = calcPayslip(emp, mv);
+  const period = document.getElementById('previewPeriod').value;
+  const lines = [
+    `═══ 莊敬校 ${period} 薪資條 ═══`,
+    `姓名：${emp.name}${emp.ename?' ('+emp.ename+')':''}　職稱：${emp.pos}`,
+    ``,
+    `【應發項目（固定）】`,
+    ...c.fixedRows.filter(r=>r.amount>0||r.name==='底薪').map(r=>`  ${r.name}：${fmt(r.amount)}`),
+    ``,
+    c.varRows.length ? `【應發項目（變動）】` : '',
+    ...c.varRows.map(r=>`  ${r.name}：${fmt(r.amount)}`),
+    ``,
+    `【應扣項目】`,
+    ...c.dedRows.map(r=>`  ${r.name}：${fmt(r.amount)}${r.note?' ('+r.note+')':''}`),
+    ``,
+    `應發合計(A)：${fmt(c.earnA+c.earnB)}`,
+    `應扣合計(C)：${fmt(c.dedC)}`,
+    `━━━━━━━━━━━━━━`,
+    `實發金額：NT$ ${fmt(c.net)}`,
+    `預繳獎金：-${fmt(c.adv)}`,
+    `5/16匯款：${fmt(c.wire)}`,
+    ``,
+    `雇主簽章：＿＿＿＿　員工簽收：＿＿＿＿`,
+  ].filter(l=>l!==undefined).join('\n');
+
+  navigator.clipboard.writeText(lines).then(()=>toast('📋 薪資條文字已複製到剪貼簿'));
+}
+
+function printAll() {
+  const allHTML = appData.employees.map(emp => {
+    const mv = appData.monthly[emp.name] || {};
+    const c = calcPayslip(emp, mv);
+    return buildPayslipHTML(emp, c, '114年04月', mv);
+  }).join('<div style="page-break-after:always"></div>');
+
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+    <style>
+      body{font-family:'Noto Sans TC',sans-serif;background:#fff;margin:0;padding:10mm}
+      ${document.querySelector('style').textContent}
+      .payslip{box-shadow:none;margin-bottom:8mm}
+      @media print{body{padding:0}}
+    </style></head><body>${allHTML}</body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(), 1200);
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(appData,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `莊敬薪資備份_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  toast('💾 資料已匯出');
+}
+
+function importFromCSV() {
+  toast('📂 請將Excel另存為CSV後匯入，功能開發中');
+}
+
+function addMonth() {
+  const m = prompt('請輸入月份（如 114年05月）:');
+  if (m) toast(`✅ 已新增月份 ${m}`);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+populateSelects();
+renderDashboard();
+</script>
+</body>
+</html>
