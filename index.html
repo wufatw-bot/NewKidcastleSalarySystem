@@ -1249,6 +1249,136 @@
   }
 
   /* ============================================================
+     Backup section (in 總覽)
+  ============================================================ */
+  .backup-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    padding: 20px 22px;
+    margin-bottom: 14px;
+  }
+  .backup-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .backup-card .desc {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 14px;
+  }
+  .backup-period {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: end;
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border-radius: 10px;
+  }
+  .backup-period .ctrl {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .backup-period label {
+    font-size: 11px; color: #64748b; font-weight: 600;
+  }
+  .backup-period select {
+    padding: 7px 10px; border: 1.5px solid #e2e8f0;
+    border-radius: 8px; font-size: 13px;
+    font-family: inherit; background: #fff;
+    min-width: 130px;
+  }
+  .backup-period select:focus { outline: none; border-color: #4472C4; }
+  .backup-period .filename-hint {
+    flex: 1; min-width: 200px;
+    background: #fff; border: 1px dashed #cbd5e1;
+    border-radius: 8px; padding: 6px 12px;
+    font-size: 11px; color: #475569;
+    display: flex; align-items: center;
+  }
+  .backup-period .filename-hint code {
+    background: #EEF2FF; color: #4338CA;
+    padding: 2px 6px; border-radius: 4px;
+    font-family: monospace; font-size: 11px;
+    margin-left: 6px;
+  }
+
+  .backup-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .backup-col {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 14px;
+    border-top: 4px solid #4472C4;
+  }
+  .backup-col.both { border-top-color: #8B5CF6; }
+  .backup-col.ta   { border-top-color: #4472C4; }
+  .backup-col.zj   { border-top-color: #F4A340; }
+  .backup-col h4 {
+    font-size: 13px; font-weight: 700; color: #1a202c;
+    margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .backup-col .meta {
+    font-size: 11px; color: #94a3b8;
+    margin-bottom: 12px;
+  }
+  .backup-col .btn-stack {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .backup-btn {
+    padding: 9px 12px;
+    border: none; border-radius: 9px;
+    font-size: 13px; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: transform .12s, box-shadow .15s, background .15s;
+  }
+  .backup-btn:hover { transform: translateY(-1px); }
+  .backup-btn .ico { font-size: 16px; }
+  .backup-btn .lbl { flex: 1; text-align: left; }
+  .backup-btn .arrow { font-size: 12px; opacity: 0.5; }
+  .backup-btn:hover .arrow { opacity: 1; }
+  .backup-btn.gdrive-new {
+    background: linear-gradient(135deg, #34A853, #1A7C3E);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(52,168,83,0.25);
+  }
+  .backup-btn.gdrive-old {
+    background: linear-gradient(135deg, #4285F4, #1A6FE0);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(66,133,244,0.25);
+  }
+  .backup-btn.local {
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(100,116,139,0.25);
+  }
+
+  .backup-note {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: #FFFBEB;
+    border-left: 3px solid #F59E0B;
+    border-radius: 8px;
+    font-size: 11px;
+    color: #92400E;
+    line-height: 1.7;
+  }
+  .backup-note b { color: #78350F; }
+
+  @media (max-width: 880px) {
+    .backup-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================
      Account Management page (owner only) + Change My Password
   ============================================================ */
   .acct-table {
@@ -1560,6 +1690,109 @@
       <div class="chart-card">
         <h3>⚠️ 異常提醒 <span class="badge" id="alertCount">0</span></h3>
         <div class="alerts-list" id="alertsList"></div>
+      </div>
+    </div>
+
+    <!-- 備份資料 Backup -->
+    <div class="backup-card no-print" style="margin-top:14px;">
+      <h3>💾 備份資料 Backup Data</h3>
+      <div class="desc">選擇校區範圍與期間，下載備份檔，或上傳到 Google Drive (新/舊帳號)。備份檔包含員工資料、薪資資料、變更紀錄與帳號設定。</div>
+
+      <div class="backup-period">
+        <div class="ctrl">
+          <label>備份期間 Period</label>
+          <select id="bkPeriodType">
+            <option value="full">完整備份 (所有月份)</option>
+            <option value="year">指定年度</option>
+            <option value="month">指定月份</option>
+          </select>
+        </div>
+        <div class="ctrl" id="bkYearWrap" style="display:none;">
+          <label>年度 Year</label>
+          <select id="bkYear"></select>
+        </div>
+        <div class="ctrl" id="bkMonthWrap" style="display:none;">
+          <label>月份 Month</label>
+          <select id="bkMonth"></select>
+        </div>
+        <div class="filename-hint">
+          檔名預覽: <code id="bkFilenameHint">Kidcastle_全部校區_完整備份_2026-05-11.xlsx</code>
+        </div>
+      </div>
+
+      <div class="backup-grid">
+        <!-- 同安 + 莊敬 -->
+        <div class="backup-col both">
+          <h4>🏫🎓 同安+莊敬合併</h4>
+          <div class="meta">兩校全部資料於同一份檔案</div>
+          <div class="btn-stack">
+            <button class="backup-btn gdrive-new" onclick="doBackup('both','gdrive-new')">
+              <span class="ico">📂</span>
+              <span class="lbl">備份到新 Google Drive</span>
+              <span class="arrow">→</span>
+            </button>
+            <button class="backup-btn gdrive-old" onclick="doBackup('both','gdrive-old')">
+              <span class="ico">📁</span>
+              <span class="lbl">備份到舊 Google Drive</span>
+              <span class="arrow">→</span>
+            </button>
+            <button class="backup-btn local" onclick="doBackup('both','local')">
+              <span class="ico">💾</span>
+              <span class="lbl">備份到本地</span>
+              <span class="arrow">↓</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 同安校 -->
+        <div class="backup-col ta">
+          <h4>🏫 同安校</h4>
+          <div class="meta" id="bkTaCount">— 名員工</div>
+          <div class="btn-stack">
+            <button class="backup-btn gdrive-new" onclick="doBackup('同安','gdrive-new')">
+              <span class="ico">📂</span>
+              <span class="lbl">備份到新 Google Drive</span>
+              <span class="arrow">→</span>
+            </button>
+            <button class="backup-btn gdrive-old" onclick="doBackup('同安','gdrive-old')">
+              <span class="ico">📁</span>
+              <span class="lbl">備份到舊 Google Drive</span>
+              <span class="arrow">→</span>
+            </button>
+            <button class="backup-btn local" onclick="doBackup('同安','local')">
+              <span class="ico">💾</span>
+              <span class="lbl">備份到本地</span>
+              <span class="arrow">↓</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 莊敬校 -->
+        <div class="backup-col zj">
+          <h4>🎓 莊敬校</h4>
+          <div class="meta" id="bkZjCount">— 名員工</div>
+          <div class="btn-stack">
+            <button class="backup-btn gdrive-new" onclick="doBackup('莊敬','gdrive-new')">
+              <span class="ico">📂</span>
+              <span class="lbl">備份到新 Google Drive</span>
+              <span class="arrow">→</span>
+            </button>
+            <button class="backup-btn gdrive-old" onclick="doBackup('莊敬','gdrive-old')">
+              <span class="ico">📁</span>
+              <span class="lbl">備份到舊 Google Drive</span>
+              <span class="arrow">→</span>
+            </button>
+            <button class="backup-btn local" onclick="doBackup('莊敬','local')">
+              <span class="ico">💾</span>
+              <span class="lbl">備份到本地</span>
+              <span class="arrow">↓</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="backup-note">
+        <b>使用說明：</b>「備份到本地」直接下載到電腦下載資料夾；「備份到新/舊 Google Drive」會先下載檔案，然後自動開啟對應的 Google Drive 帳號視窗，把下載資料夾的檔案拖入即可。新 GDrive 為 <code style="background:#FEF3C7;padding:1px 5px;border-radius:3px;">u/0</code>（預設帳號），舊 GDrive 為 <code style="background:#FEF3C7;padding:1px 5px;border-radius:3px;">u/1</code>（第二個帳號）。
       </div>
     </div>
   </div>
@@ -2216,6 +2449,7 @@
     }
     populateDashMonth();
     renderDashboard();
+    populateBackupSelectors();
     renderChangeLog();
 
     // reset login form
@@ -3531,6 +3765,229 @@
   // Filter wiring
   if ($('dashMonth'))  $('dashMonth').addEventListener('change', renderDashboard);
   if ($('dashCampus')) $('dashCampus').addEventListener('change', renderDashboard);
+
+  // ==========================================================================
+  // 備份資料 Backup
+  // ==========================================================================
+  function populateBackupSelectors() {
+    // Years and months derived from DATA.salary
+    const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
+    const years = [...new Set(months.map(m => m.slice(0, 3)))].sort();
+
+    const yearSel = $('bkYear');
+    if (yearSel) {
+      yearSel.innerHTML = years.map(y => `<option value="${y}">${y} (民國${y}年)</option>`).join('');
+    }
+    const monthSel = $('bkMonth');
+    if (monthSel) {
+      monthSel.innerHTML = months.map(m =>
+        `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
+      ).join('');
+    }
+
+    // Update campus counts
+    if ($('bkTaCount')) {
+      const taCount = DATA.employees.filter(e => e['校區'] === '同安').length;
+      $('bkTaCount').textContent = `${taCount} 名員工`;
+    }
+    if ($('bkZjCount')) {
+      const zjCount = DATA.employees.filter(e => e['校區'] === '莊敬').length;
+      $('bkZjCount').textContent = `${zjCount} 名員工`;
+    }
+
+    updateBackupFilenameHint();
+  }
+
+  function getBackupPeriod() {
+    const type = $('bkPeriodType') ? $('bkPeriodType').value : 'full';
+    if (type === 'year')  return { type, value: $('bkYear').value, label: $('bkYear').value + '年' };
+    if (type === 'month') return { type, value: $('bkMonth').value, label: $('bkMonth').value };
+    return { type: 'full', value: 'full', label: '完整備份' };
+  }
+
+  function backupFilename(campus, period) {
+    const dateStr = new Date().toISOString().substr(0, 10);
+    const campusLabel = campus === 'both' ? '同安_莊敬合併'
+                       : campus === '同安' ? '同安校'
+                       : campus === '莊敬' ? '莊敬校'
+                       : campus;
+    return `Kidcastle_${campusLabel}_${period.label}_${dateStr}.xlsx`;
+  }
+
+  function updateBackupFilenameHint() {
+    const period = getBackupPeriod();
+    const fn = backupFilename('both', period);
+    if ($('bkFilenameHint')) $('bkFilenameHint').textContent = fn;
+  }
+
+  function togglePeriodControls() {
+    const type = $('bkPeriodType').value;
+    $('bkYearWrap').style.display  = (type === 'year')  ? 'flex' : 'none';
+    $('bkMonthWrap').style.display = (type === 'month') ? 'flex' : 'none';
+    updateBackupFilenameHint();
+  }
+
+  if ($('bkPeriodType')) $('bkPeriodType').addEventListener('change', togglePeriodControls);
+  if ($('bkYear'))       $('bkYear').addEventListener('change', updateBackupFilenameHint);
+  if ($('bkMonth'))      $('bkMonth').addEventListener('change', updateBackupFilenameHint);
+
+  // -------- doBackup: generate xlsx file + (optional) open GDrive --------
+  function doBackup(campusScope, destination) {
+    if (typeof XLSX === 'undefined') { toast('SheetJS 未載入，無法備份', 'error'); return; }
+    if (!currentUser) { toast('請先登入', 'error'); return; }
+
+    const period = getBackupPeriod();
+    const filename = backupFilename(campusScope, period);
+
+    // Filter data by campus + period
+    const empFilter = (e) => campusScope === 'both' ? true : e['校區'] === campusScope;
+    const filteredEmps = DATA.employees.filter(empFilter);
+    const empIds = new Set(filteredEmps.map(e => e['員工編號']));
+
+    const filteredSals = DATA.salary.filter(s => {
+      if (!empIds.has(s['員工編號'])) return false;
+      const m = String(s['月份']);
+      if (period.type === 'full') return true;
+      if (period.type === 'year') return m.startsWith(period.value);
+      if (period.type === 'month') return m === period.value;
+      return true;
+    });
+
+    // Build workbook
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: 備份說明
+    const today = nowTimestamp();
+    const infoRows = [
+      ['Kidcastle 薪資系統 — 備份檔'],
+      [],
+      ['備份時間 Backup Time', today],
+      ['備份人員 Backup By', currentUser.fullName + ' (' + currentUser.username + ')'],
+      ['校區範圍 Campus Scope', campusScope === 'both' ? '同安 + 莊敬' : campusScope + '校'],
+      ['備份期間 Period', period.label],
+      ['員工筆數 Employees', filteredEmps.length],
+      ['薪資筆數 Salary Records', filteredSals.length],
+      ['檔案名稱 Filename', filename],
+      [],
+      ['備份內容 Contents'],
+      ['  分頁 Sheet 1: 備份說明'],
+      ['  分頁 Sheet 2: 員工資料 Employees'],
+      ['  分頁 Sheet 3: 薪資資料 Salary'],
+      ['  分頁 Sheet 4: 變更紀錄 Change Log'],
+      currentUser.role === 'owner' ? ['  分頁 Sheet 5: 帳號設定 Accounts (僅老闆備份才會包含)'] : ['']
+    ];
+    const wsInfo = XLSX.utils.aoa_to_sheet(infoRows);
+    wsInfo['!merges'] = [{ s: {r:0,c:0}, e: {r:0,c:1} }];
+    wsInfo['!cols'] = [{ wch: 24 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, wsInfo, '備份說明 Info');
+
+    // Sheet 2: 員工資料
+    const empHeaders = ['員工編號','員工姓名','英文姓名','校區','職位','到職日','離職日','在職狀態',
+                        '底薪','全勤獎金','年資津貼','主管津貼','教務津貼','導師津貼','行政津貼',
+                        '交通津貼','安親津貼','美語津貼','英文輔導津貼','數學班津貼',
+                        '混班/混校津貼','帶班人數津貼','其他津貼','勞保自付','健保自付',
+                        '退休金提撥','銀行名稱','銀行帳號'];
+    const empRows = [empHeaders];
+    filteredEmps
+      .slice()
+      .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])))
+      .forEach(e => empRows.push(empHeaders.map(h => e[h] == null ? '' : e[h])));
+    const wsEmp = XLSX.utils.aoa_to_sheet(empRows);
+    wsEmp['!cols'] = empHeaders.map(h => ({ wch: h === '銀行帳號' ? 18 : 12 }));
+    XLSX.utils.book_append_sheet(wb, wsEmp, '員工資料 Employees');
+
+    // Sheet 3: 薪資資料 (含計算結果)
+    const salHeaders = ['月份','員工編號','員工姓名','校區','職位','上班時數','加班時數','時薪','加班費',
+                        '請假時數','請假扣款','遲到次數','遲到扣款','底薪','全勤獎金','津貼合計',
+                        '獎金','扣款','特殊調整','應發薪資','勞保自付','健保自付','應扣總額','實發薪資','備註'];
+    const allowKeys = ['年資津貼','主管津貼','教務津貼','導師津貼','行政津貼','交通津貼',
+                       '安親津貼','美語津貼','英文輔導津貼','數學班津貼',
+                       '混班/混校津貼','帶班人數津貼','其他津貼'];
+    const salRows = [salHeaders];
+    filteredSals.slice()
+      .sort((a, b) => {
+        const m = String(a['月份']).localeCompare(String(b['月份']));
+        if (m) return m;
+        return String(a['員工編號']).localeCompare(String(b['員工編號']));
+      })
+      .forEach(s => {
+        const emp = findEmployee(s['員工編號']);
+        if (!emp) return;
+        const r = computeRow(emp, s);
+        const allowSumLocal = allowKeys.reduce((sum, k) => sum + (Number(emp[k]) || 0), 0);
+        const labor = Number(emp['勞保自付']) || 0;
+        const health = Number(emp['健保自付']) || 0;
+        salRows.push([
+          s['月份'], emp['員工編號'], emp['員工姓名'], emp['校區'], emp['職位'],
+          Number(s['上班時數']) || 0,
+          Number(s['加班時數']) || 0,
+          Math.round(r.hourly * 100) / 100,
+          r.otPay,
+          Number(s['請假時數']) || 0, r.leaveD,
+          Number(s['遲到次數']) || 0, r.lateD,
+          Number(emp['底薪']) || 0, r.attBonus, allowSumLocal,
+          Number(s['獎金']) || 0, Number(s['扣款']) || 0, Number(s['特殊調整']) || 0,
+          r.gross, labor, health, labor + health, r.net,
+          s['備註'] || ''
+        ]);
+      });
+    const wsSal = XLSX.utils.aoa_to_sheet(salRows);
+    wsSal['!cols'] = salHeaders.map(h => ({ wch: h === '備註' ? 22 : 11 }));
+    XLSX.utils.book_append_sheet(wb, wsSal, '薪資資料 Salary');
+
+    // Sheet 4: 變更紀錄
+    const logRows = [['日期 Date', '操作員 User', '說明 Detail']];
+    CHANGE_LOG.forEach(l => logRows.push([l.time || '', l.user || '', l.text || '']));
+    const wsLog = XLSX.utils.aoa_to_sheet(logRows);
+    wsLog['!cols'] = [{ wch: 20 }, { wch: 18 }, { wch: 80 }];
+    XLSX.utils.book_append_sheet(wb, wsLog, '變更紀錄 Log');
+
+    // Sheet 5: 帳號 (owner only)
+    if (currentUser.role === 'owner') {
+      const acctRows = [['校區 Campus','帳號 Username','密碼 Password','角色 Role','姓名 Full Name','Email']];
+      ['1','2'].forEach(sid => {
+        const sch = CREDENTIALS[sid];
+        if (!sch) return;
+        sch.users.forEach(u => {
+          acctRows.push([sch.name, u.username, u.password, u.role, u.fullName || '', u.email || '']);
+        });
+      });
+      const wsAcct = XLSX.utils.aoa_to_sheet(acctRows);
+      wsAcct['!cols'] = [{ wch: 10 }, { wch: 16 }, { wch: 18 }, { wch: 12 }, { wch: 22 }, { wch: 24 }];
+      XLSX.utils.book_append_sheet(wb, wsAcct, '帳號 Accounts');
+    }
+
+    // Write file (triggers browser download)
+    try {
+      XLSX.writeFile(wb, filename);
+    } catch(e) {
+      console.error('backup write failed', e);
+      toast('產生備份檔失敗：' + e.message, 'error');
+      return;
+    }
+
+    // Log
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `備份 → ${destination === 'local' ? '本地' : destination === 'gdrive-new' ? '新 GDrive' : '舊 GDrive'} · ${filename}`
+    });
+
+    // Destination: open Google Drive if needed
+    if (destination === 'gdrive-new') {
+      setTimeout(() => {
+        window.open('https://drive.google.com/drive/u/0/my-drive', '_blank');
+        toast(`📂 檔案已下載！請拖入新 Google Drive 視窗`, 'success');
+      }, 500);
+    } else if (destination === 'gdrive-old') {
+      setTimeout(() => {
+        window.open('https://drive.google.com/drive/u/1/my-drive', '_blank');
+        toast(`📁 檔案已下載！請拖入舊 Google Drive 視窗`, 'success');
+      }, 500);
+    } else {
+      toast(`💾 已備份到本地下載資料夾`, 'success');
+    }
+  }
 
   // ==========================================================================
   // Owner Input page — employee table + edit drawer + add/resign
