@@ -6,6 +6,7 @@
 <title>Kidcastle 薪資管理系統 | 校區登入</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏰%3C/text%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1001,6 +1002,329 @@
     .own-table { font-size: 11px; }
     .own-table tbody td { padding: 6px 4px; }
   }
+
+  /* ============================================================
+     Dashboard / Overview page
+  ============================================================ */
+  .dash-controls {
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    padding: 14px 16px;
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: end;
+    margin-bottom: 14px;
+  }
+  .dash-controls .ctrl { display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto; }
+  .dash-controls label { font-size: 12px; color: #64748b; font-weight: 600; }
+  .dash-controls select {
+    padding: 9px 12px; border: 1.5px solid #e2e8f0;
+    border-radius: 10px; font-size: 14px;
+    font-family: inherit; background: #f8fafc; min-width: 160px;
+  }
+  .dash-controls select:focus { outline: none; border-color: #4472C4; background: #fff; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .kpi {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s;
+  }
+  .kpi:hover { transform: translateY(-2px); }
+  .kpi::before {
+    content: ''; position: absolute;
+    top: 0; right: 0;
+    width: 80px; height: 80px;
+    background: var(--kpi-accent, #4472C4);
+    opacity: 0.08;
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+  }
+  .kpi.blue   { --kpi-accent: #4472C4; }
+  .kpi.green  { --kpi-accent: #10B981; }
+  .kpi.orange { --kpi-accent: #F59E0B; }
+  .kpi.purple { --kpi-accent: #8B5CF6; }
+  .kpi.red    { --kpi-accent: #DC2626; }
+  .kpi.teal   { --kpi-accent: #0EA5E9; }
+
+  .kpi .icon {
+    font-size: 22px;
+    margin-bottom: 6px;
+    width: 38px; height: 38px;
+    background: var(--kpi-accent, #4472C4);
+    color: #fff;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  }
+  .kpi .label {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .kpi .value {
+    font-family: Arial;
+    font-size: 24px;
+    font-weight: 800;
+    color: #1a202c;
+    line-height: 1.2;
+  }
+  .kpi .value .unit { font-size: 14px; color: #64748b; font-weight: 600; margin-left: 3px; }
+  .kpi .sub {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  .chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .chart-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .chart-row.full { grid-template-columns: 1fr; }
+  .chart-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    padding: 18px 20px;
+    min-height: 320px;
+  }
+  .chart-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chart-card h3 .badge {
+    background: #EEF2FF;
+    color: #4472C4;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .chart-wrap {
+    position: relative;
+    height: 260px;
+  }
+  .chart-wrap.tall { height: 360px; }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .compare-table th, .compare-table td {
+    padding: 9px 12px;
+    text-align: right;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .compare-table th:first-child, .compare-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: #1a202c;
+  }
+  .compare-table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 11px;
+  }
+  .compare-table tbody td.num { font-family: Arial; font-weight: 600; }
+  .compare-table tbody tr:hover td { background: #f8fafc; }
+  .compare-table tfoot td {
+    background: #4472C4;
+    color: #fff;
+    font-weight: 700;
+    font-family: Arial;
+  }
+  .compare-table tfoot td:first-child { font-family: inherit; }
+
+  .alerts-list {
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .alert-item {
+    padding: 11px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: #FFFBEB;
+    border-left: 4px solid #F59E0B;
+    font-size: 13px;
+    display: flex;
+    align-items: start;
+    gap: 10px;
+  }
+  .alert-item.danger { background: #FEF2F2; border-left-color: #DC2626; }
+  .alert-item.info   { background: #EFF6FF; border-left-color: #3B82F6; }
+  .alert-item .icon  { font-size: 18px; flex-shrink: 0; }
+  .alert-item .body  { flex: 1; }
+  .alert-item .body strong { color: #1a202c; }
+  .alert-item .body small { color: #64748b; display: block; margin-top: 2px; }
+
+  .alerts-empty {
+    padding: 30px; text-align: center;
+    color: #94a3b8; font-style: italic;
+  }
+  .alerts-empty .big {
+    font-size: 36px; display: block; margin-bottom: 6px;
+  }
+
+  @media (max-width: 880px) {
+    .chart-row, .chart-row.three, .dash-grid { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ============================================================
+     Account Management page (owner only) + Change My Password
+  ============================================================ */
+  .acct-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    font-size: 13px;
+  }
+  .acct-table thead th {
+    position: sticky; top: 0;
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    color: #fff; font-weight: 700;
+    padding: 10px 8px; text-align: center;
+    white-space: nowrap; z-index: 2;
+  }
+  .acct-table thead th:first-child { border-top-left-radius: 14px; }
+  .acct-table thead th:last-child  { border-top-right-radius: 14px; }
+  .acct-table tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: center; background: #fff;
+  }
+  .acct-table tbody tr:nth-child(even) td { background: #fafbfd; }
+  .acct-table tbody tr:hover td { background: #F5F3FF; }
+  .acct-table .acct-name { text-align: left; }
+  .acct-table .acct-name b { color: #1a202c; }
+  .acct-table .acct-name small { color: #94a3b8; display: block; margin-top: 2px; }
+  .acct-table .pwd-cell {
+    font-family: monospace; font-size: 13px;
+    color: #475569; letter-spacing: 1px;
+  }
+  .acct-table .pwd-cell .reveal {
+    margin-left: 6px; font-size: 11px; cursor: pointer;
+    color: #8B5CF6; user-select: none;
+  }
+  .acct-table .role-chip {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 999px; font-size: 11px; font-weight: 700;
+  }
+  .acct-table .role-chip.owner   { background: #FEF3C7; color: #92400E; }
+  .acct-table .role-chip.manager { background: #DBEAFE; color: #1E40AF; }
+  .acct-table .acct-self {
+    background: #FEF9C3 !important;
+    border-left: 3px solid #F59E0B;
+  }
+  .acct-table .acct-self::before {
+    content: '👤 我'; font-size: 10px; color: #92400E;
+    background: #FEF3C7; padding: 1px 6px; border-radius: 4px;
+    margin-right: 6px; font-weight: 700;
+  }
+
+  /* Generic small modal (used for change-password etc.) */
+  .small-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,0.55);
+    backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 160; padding: 20px;
+  }
+  .small-modal-overlay.show { display: flex; }
+  .small-modal {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+    overflow: hidden;
+    animation: pop .3s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .small-modal .head {
+    padding: 18px 22px; color: #fff;
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .small-modal .head h2 { font-size: 17px; margin: 0; }
+  .small-modal .head .icon-l {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.22);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .small-modal .head .close {
+    margin-left: auto; width: 32px; height: 32px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.2);
+    border: none; color: #fff; cursor: pointer;
+    font-size: 16px; line-height: 1;
+  }
+  .small-modal .head .close:hover { background: rgba(255,255,255,0.35); }
+  .small-modal .body { padding: 22px 24px; }
+  .small-modal .body .field { margin-bottom: 14px; }
+  .small-modal .body .field label {
+    display: block; font-size: 12px; color: #64748b;
+    font-weight: 600; margin-bottom: 5px;
+  }
+  .small-modal .body .field input,
+  .small-modal .body .field select {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 14px; font-family: inherit; background: #f8fafc;
+  }
+  .small-modal .body .field input:focus,
+  .small-modal .body .field select:focus {
+    outline: none; border-color: #8B5CF6; background: #fff;
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.15);
+  }
+  .small-modal .body .alert {
+    padding: 10px 12px; border-radius: 9px;
+    font-size: 12px; margin-bottom: 12px;
+    display: none; align-items: center; gap: 6px;
+  }
+  .small-modal .body .alert.show { display: flex; }
+  .small-modal .body .alert.error   { background: #FEF2F2; color: #991B1B; border-left: 3px solid #DC2626; }
+  .small-modal .body .alert.success { background: #DCFCE7; color: #166534; border-left: 3px solid #10B981; }
+  .small-modal .foot {
+    padding: 12px 24px 18px;
+    background: #f8fafc; border-top: 1px solid #e2e8f0;
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .small-modal .foot .btn-mini { padding: 9px 18px; }
+
+  /* Topbar change-password link */
+  .change-pwd-link {
+    display: inline-block;
+    font-size: 11px; color: #8B5CF6;
+    text-decoration: none; cursor: pointer;
+    margin-top: 2px;
+  }
+  .change-pwd-link:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -1076,6 +1400,7 @@
       <div class="user-meta">
         <div class="u-name" id="dbUserName">—</div>
         <div class="u-role" id="dbRole">—</div>
+        <a class="change-pwd-link" onclick="openChangeMyPassword()">🔑 修改我的密碼</a>
       </div>
       <button class="btn-logout" onclick="logout()">登出</button>
     </div>
@@ -1086,15 +1411,106 @@
     <button class="tab" data-tab="manager">📝 主管輸入</button>
     <button class="tab owner-only" data-tab="owner">🔒 老闆輸入</button>
     <button class="tab active" data-tab="payslip">📄 薪水條</button>
+    <button class="tab owner-only" data-tab="accounts">🔐 帳號管理</button>
   </nav>
 
-  <!-- 總覽 -->
+  <!-- 總覽 Dashboard -->
   <div class="tab-pane" id="tab-overview">
-    <div class="placeholder-card">
-      <div class="ph-icon">📊</div>
-      <h3>總覽 Dashboard</h3>
-      <p>本月薪資總額、各校區薪資統計、員工總人數、在職人數、本月獎金與扣款總額、平均薪資、異常提醒，以及圖表分析、月份切換、快速搜尋與匯出功能。</p>
-      <span class="ph-tag">下一階段建置</span>
+    <div class="dash-controls no-print">
+      <div class="ctrl">
+        <label>月份 Month</label>
+        <select id="dashMonth"></select>
+      </div>
+      <div class="ctrl">
+        <label>校區 Campus</label>
+        <select id="dashCampus">
+          <option value="all">全部 / All</option>
+          <option value="同安">同安校區</option>
+          <option value="莊敬">莊敬校區</option>
+        </select>
+      </div>
+      <div class="ctrl" style="margin-left:auto;">
+        <label>&nbsp;</label>
+        <button class="btn-mini primary" onclick="renderDashboard()">↻ 重新整理</button>
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="kpi-row">
+      <div class="kpi blue">
+        <div class="icon">💰</div>
+        <div class="label">本月薪資總額</div>
+        <div class="value" id="kpiTotalSalary">— <span class="unit">NT$</span></div>
+        <div class="sub" id="kpiTotalSalarySub">—</div>
+      </div>
+      <div class="kpi green">
+        <div class="icon">👥</div>
+        <div class="label">在職人數</div>
+        <div class="value" id="kpiActiveCount">— <span class="unit">人</span></div>
+        <div class="sub" id="kpiActiveCountSub">—</div>
+      </div>
+      <div class="kpi teal">
+        <div class="icon">📊</div>
+        <div class="label">平均薪資</div>
+        <div class="value" id="kpiAvgSalary">— <span class="unit">NT$</span></div>
+        <div class="sub" id="kpiAvgSalarySub">—</div>
+      </div>
+      <div class="kpi orange">
+        <div class="icon">🎁</div>
+        <div class="label">本月獎金總額</div>
+        <div class="value" id="kpiBonus">— <span class="unit">NT$</span></div>
+        <div class="sub" id="kpiBonusSub">—</div>
+      </div>
+      <div class="kpi red">
+        <div class="icon">📉</div>
+        <div class="label">本月扣款總額</div>
+        <div class="value" id="kpiDeduct">— <span class="unit">NT$</span></div>
+        <div class="sub" id="kpiDeductSub">—</div>
+      </div>
+      <div class="kpi purple">
+        <div class="icon">⚠️</div>
+        <div class="label">異常提醒</div>
+        <div class="value" id="kpiAlerts">— <span class="unit">項</span></div>
+        <div class="sub" id="kpiAlertsSub">—</div>
+      </div>
+    </div>
+
+    <!-- Charts row 1: campus pie + position bar -->
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>🏫 各校區薪資佔比 <span class="badge">應發</span></h3>
+        <div class="chart-wrap"><canvas id="chartCampus"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>👔 各職位人數分布 <span class="badge">在職</span></h3>
+        <div class="chart-wrap"><canvas id="chartPosition"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Top earners -->
+    <div class="chart-row full">
+      <div class="chart-card">
+        <h3>🏆 Top 10 高薪員工 <span class="badge">實領薪資</span></h3>
+        <div class="chart-wrap tall"><canvas id="chartTopEarners"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Campus comparison + Alerts -->
+    <div class="dash-grid">
+      <div class="chart-card">
+        <h3>📋 校區比較 <span class="badge">本月</span></h3>
+        <table class="compare-table" id="campusCompare">
+          <thead>
+            <tr><th>項目</th><th>同安</th><th>莊敬</th><th>合計</th></tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
+      <div class="chart-card">
+        <h3>⚠️ 異常提醒 <span class="badge" id="alertCount">0</span></h3>
+        <div class="alerts-list" id="alertsList"></div>
+      </div>
     </div>
   </div>
 
@@ -1239,6 +1655,59 @@
       <div style="text-align:center;padding:60px 20px;color:#94a3b8;">請選擇員工與月份</div>
     </div>
   </div>
+
+  <!-- 🔐 帳號管理 (owner-only) -->
+  <div class="tab-pane" id="tab-accounts">
+    <div class="mgr-controls no-print">
+      <div class="ctrl">
+        <label>校區 Campus</label>
+        <select id="acctSchool">
+          <option value="1">同安校區 School 1</option>
+          <option value="2">莊敬校區 School 2</option>
+        </select>
+      </div>
+      <div class="ctrl grow">
+        <label>搜尋帳號 Search</label>
+        <input type="text" id="acctSearch" placeholder="輸入帳號或姓名…">
+      </div>
+      <div class="btns">
+        <button class="btn-mini secondary" onclick="addAccount()">➕ 新增帳號</button>
+        <button class="btn-mini primary" onclick="exportPasswordFile()">⬇ 匯出 Password.xlsx</button>
+        <button class="btn-mini danger" onclick="resetAccounts()" title="還原為預設帳號">↺ 還原</button>
+      </div>
+    </div>
+
+    <div class="mgr-meta">
+      <span>顯示 <b id="acctCount">0</b> 組帳號 · 老闆 <b id="acctOwner">0</b> · 主管 <b id="acctManager">0</b></span>
+      <span class="save-status ok" id="acctSaveStatus">✓ 已自動儲存</span>
+    </div>
+
+    <div class="mgr-table-wrap">
+      <table class="acct-table" id="acctTable">
+        <thead>
+          <tr>
+            <th>帳號 Username</th>
+            <th>密碼 Password</th>
+            <th>角色 Role</th>
+            <th>姓名 Full Name</th>
+            <th>Email</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="acctTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="mgr-log" style="margin-top:12px;">
+      <h4 style="color:#92400E;">⚠️ 安全提醒</h4>
+      <ul style="font-size:12px;color:#64748b;line-height:1.8;list-style:none;">
+        <li>• 修改帳號或密碼後，<b>請按「⬇ 匯出 Password.xlsx」</b>下載新檔案，覆蓋原本的 School N Password.xlsx</li>
+        <li>• 不能刪除目前登入中的帳號 (避免自我鎖定)</li>
+        <li>• 建議密碼 ≥ 8 碼，混合英數字</li>
+        <li>• 此頁面僅老闆權限可見</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
 <!-- Edit Employee Drawer (right slide-in) -->
@@ -1257,6 +1726,78 @@
   <div class="drawer-foot">
     <button class="btn-mini secondary" onclick="closeDrawer()">取消</button>
     <button class="btn-mini primary" onclick="saveEmployee()">💾 儲存變更</button>
+  </div>
+</div>
+
+<!-- Change My Password modal -->
+<div class="small-modal-overlay" id="myPwdOverlay" onclick="closeMyPwd(event)">
+  <div class="small-modal" onclick="event.stopPropagation()">
+    <div class="head">
+      <div class="icon-l">🔑</div>
+      <h2>修改我的密碼 Change Password</h2>
+      <button class="close" onclick="closeMyPwd()">✕</button>
+    </div>
+    <div class="body">
+      <div class="alert error" id="myPwdErr">⚠ <span id="myPwdErrMsg">—</span></div>
+      <div class="alert success" id="myPwdOk">✓ <span id="myPwdOkMsg">—</span></div>
+      <div class="field">
+        <label>目前密碼 Current Password</label>
+        <input type="password" id="myPwdCurrent" autocomplete="current-password">
+      </div>
+      <div class="field">
+        <label>新密碼 New Password (≥ 6 碼)</label>
+        <input type="password" id="myPwdNew" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label>確認新密碼 Confirm</label>
+        <input type="password" id="myPwdConfirm" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="closeMyPwd()">取消</button>
+      <button class="btn-mini primary" onclick="saveMyPassword()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit/Add Account modal (owner only) -->
+<div class="small-modal-overlay" id="acctOverlay" onclick="closeAcct(event)">
+  <div class="small-modal" onclick="event.stopPropagation()">
+    <div class="head">
+      <div class="icon-l">👤</div>
+      <h2 id="acctModalTitle">編輯帳號</h2>
+      <button class="close" onclick="closeAcct()">✕</button>
+    </div>
+    <div class="body">
+      <div class="alert error" id="acctErr">⚠ <span id="acctErrMsg">—</span></div>
+      <div class="field">
+        <label>帳號 Username (英數字, 不可重複)</label>
+        <input type="text" id="acctUsername" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>密碼 Password</label>
+        <input type="text" id="acctPassword" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>角色 Role</label>
+        <select id="acctRole">
+          <option value="manager">主管 Manager — 輸入工時/獎金/扣款</option>
+          <option value="owner">老闆 Owner — 修改底薪/員工/帳號</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>姓名 Full Name</label>
+        <input type="text" id="acctFullName">
+      </div>
+      <div class="field">
+        <label>Email (選填)</label>
+        <input type="email" id="acctEmail">
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="closeAcct()">取消</button>
+      <button class="btn-mini primary" onclick="saveAccount()">💾 儲存</button>
+    </div>
   </div>
 </div>
 
@@ -1334,37 +1875,48 @@
 
 <script>
   // ==========================================================================
-  // 內建帳號資料（與 School 1 Password.xlsx / School 2 Password.xlsx 同步）
-  // 修改密碼時請同時更新 xlsx 檔案，或於登入頁透過「載入密碼檔」上傳。
+  // 帳號資料 — 預設值嵌入於下；localStorage 覆蓋
   // ==========================================================================
-  const CREDENTIALS = {
+  const DEFAULT_CREDS = {
     "1": { // 同安校區
-      name: "同安校區",
-      code: "School 1",
-      icon: "🏫",
-      cls:  "school1",
+      name: "同安校區", code: "School 1", icon: "🏫", cls: "school1",
       users: [
-        { username: "boss",     password: "kidcastle2026", role: "owner",   fullName: "老闆 / Owner" },
-        { username: "admin1",   password: "admin1234",     role: "owner",   fullName: "行政主管 Admin" },
-        { username: "manager1", password: "mgr1234",       role: "manager", fullName: "王主任 Manager Wang" },
-        { username: "manager2", password: "mgr5678",       role: "manager", fullName: "林主任 Manager Lin" },
-        { username: "teacher1", password: "teach1234",     role: "manager", fullName: "陳老師 Teacher Chen" }
+        { username: "boss",     password: "kidcastle2026", role: "owner",   fullName: "老闆 / Owner",         email: "boss@kidcastle.com" },
+        { username: "admin1",   password: "admin1234",     role: "owner",   fullName: "行政主管 Admin",        email: "admin1@kidcastle.com" },
+        { username: "manager1", password: "mgr1234",       role: "manager", fullName: "王主任 Manager Wang",  email: "wang@kidcastle.com" },
+        { username: "manager2", password: "mgr5678",       role: "manager", fullName: "林主任 Manager Lin",   email: "lin@kidcastle.com" },
+        { username: "teacher1", password: "teach1234",     role: "manager", fullName: "陳老師 Teacher Chen",  email: "chen@kidcastle.com" }
       ]
     },
     "2": { // 莊敬校區
-      name: "莊敬校區",
-      code: "School 2",
-      icon: "🎓",
-      cls:  "school2",
+      name: "莊敬校區", code: "School 2", icon: "🎓", cls: "school2",
       users: [
-        { username: "boss",     password: "kidcastle2026", role: "owner",   fullName: "老闆 / Owner" },
-        { username: "admin2",   password: "admin5678",     role: "owner",   fullName: "行政主管 Admin" },
-        { username: "manager1", password: "mgr1234",       role: "manager", fullName: "張主任 Manager Zhang" },
-        { username: "manager2", password: "mgr5678",       role: "manager", fullName: "李主任 Manager Lee" },
-        { username: "teacher1", password: "teach1234",     role: "manager", fullName: "吳老師 Teacher Wu" }
+        { username: "boss",     password: "kidcastle2026", role: "owner",   fullName: "老闆 / Owner",         email: "boss@kidcastle.com" },
+        { username: "admin2",   password: "admin5678",     role: "owner",   fullName: "行政主管 Admin",        email: "admin2@kidcastle.com" },
+        { username: "manager1", password: "mgr1234",       role: "manager", fullName: "張主任 Manager Zhang", email: "zhang@kidcastle.com" },
+        { username: "manager2", password: "mgr5678",       role: "manager", fullName: "李主任 Manager Lee",   email: "lee@kidcastle.com" },
+        { username: "teacher1", password: "teach1234",     role: "manager", fullName: "吳老師 Teacher Wu",    email: "wu@kidcastle.com" }
       ]
     }
   };
+  const CREDS_KEY = 'kc_credentials_v1';
+
+  function loadCreds() {
+    try {
+      const s = localStorage.getItem(CREDS_KEY);
+      if (s) {
+        const parsed = JSON.parse(s);
+        if (parsed && parsed["1"] && parsed["2"]) return parsed;
+      }
+    } catch(e) { console.warn('loadCreds failed', e); }
+    return JSON.parse(JSON.stringify(DEFAULT_CREDS));
+  }
+  function persistCreds() {
+    try {
+      localStorage.setItem(CREDS_KEY, JSON.stringify(CREDENTIALS));
+    } catch(e) { console.error('persistCreds failed', e); }
+  }
+  let CREDENTIALS = loadCreds();
 
   const PERMS = {
     owner: [
@@ -1592,7 +2144,12 @@
     renderPayslip();
     populateManagerSelectors();
     renderManagerTable();
-    if (user.role === 'owner') renderOwnerTable();
+    if (user.role === 'owner') {
+      renderOwnerTable();
+      renderAccountsTable();
+    }
+    populateDashMonth();
+    renderDashboard();
     renderChangeLog();
 
     // reset login form
@@ -2133,6 +2690,10 @@
       if ($('psEmp') && $('psEmp').value === eid && $('psMonth') && $('psMonth').value === month) {
         renderPayslip();
       }
+      // Re-render dashboard if it's showing the same month
+      if ($('dashMonth') && $('dashMonth').value === month) {
+        renderDashboard();
+      }
     }, 350);
   }
 
@@ -2148,6 +2709,573 @@
   if ($('mgrCampus')) $('mgrCampus').addEventListener('change', renderManagerTable);
   if ($('mgrMonth'))  $('mgrMonth').addEventListener('change', renderManagerTable);
   if ($('mgrSearch')) $('mgrSearch').addEventListener('input', renderManagerTable);
+
+  // ==========================================================================
+  // Account Management — list / add / edit / delete accounts + change own password
+  // ==========================================================================
+  let _editingAcctIdx = null;   // -1 = adding new
+  let _editingAcctSchool = null;
+
+  function renderAccountsTable() {
+    if (!currentUser || currentUser.role !== 'owner') return;
+    const schoolId = $('acctSchool').value;
+    const search = ($('acctSearch').value || '').trim().toLowerCase();
+    const users = (CREDENTIALS[schoolId] || {}).users || [];
+    const filtered = users.filter(u =>
+      !search ||
+      String(u.username).toLowerCase().includes(search) ||
+      String(u.fullName || '').toLowerCase().includes(search)
+    );
+
+    $('acctCount').textContent   = filtered.length;
+    $('acctOwner').textContent   = users.filter(u => u.role === 'owner').length;
+    $('acctManager').textContent = users.filter(u => u.role === 'manager').length;
+
+    const tbody = $('acctTbody');
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="padding:60px;text-align:center;color:#94a3b8;">沒有符合條件的帳號</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filtered.map((u, _) => {
+      const realIdx = users.indexOf(u);
+      const isSelf = currentUser &&
+        String(currentUser.schoolId) === String(schoolId) &&
+        currentUser.username === u.username;
+      const pwdMasked = '•'.repeat(Math.min(u.password.length, 12));
+      const roleCls = u.role === 'owner' ? 'owner' : 'manager';
+      const roleLabel = u.role === 'owner' ? '老闆 Owner' : '主管 Manager';
+
+      return `<tr>
+        <td class="acct-name${isSelf ? ' acct-self' : ''}">
+          <b>${u.username}</b>
+        </td>
+        <td class="pwd-cell">
+          <span data-real="${u.password.replace(/"/g,'&quot;')}" data-masked="${pwdMasked}" id="pwd-${schoolId}-${realIdx}">${pwdMasked}</span>
+          <span class="reveal" onclick="togglePwd('${schoolId}',${realIdx})" title="顯示/隱藏密碼">👁</span>
+        </td>
+        <td><span class="role-chip ${roleCls}">${roleLabel}</span></td>
+        <td>${u.fullName || '—'}</td>
+        <td><small>${u.email || '—'}</small></td>
+        <td><div class="row-actions">
+          <button class="edit" onclick="editAccount('${schoolId}',${realIdx})">✏ 編輯</button>
+          <button class="resign" onclick="deleteAccount('${schoolId}',${realIdx})"${isSelf ? ' disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>🗑 刪除</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function togglePwd(schoolId, idx) {
+    const el = $(`pwd-${schoolId}-${idx}`);
+    if (!el) return;
+    if (el.textContent === el.dataset.real) {
+      el.textContent = el.dataset.masked;
+    } else {
+      el.textContent = el.dataset.real;
+    }
+  }
+
+  function editAccount(schoolId, idx) {
+    const u = CREDENTIALS[schoolId].users[idx];
+    if (!u) return;
+    _editingAcctSchool = schoolId;
+    _editingAcctIdx = idx;
+    $('acctModalTitle').textContent = `編輯帳號 — ${CREDENTIALS[schoolId].name}`;
+    $('acctUsername').value = u.username;
+    $('acctPassword').value = u.password;
+    $('acctRole').value     = u.role || 'manager';
+    $('acctFullName').value = u.fullName || '';
+    $('acctEmail').value    = u.email || '';
+    $('acctErr').classList.remove('show');
+    $('acctOverlay').classList.add('show');
+    setTimeout(() => $('acctUsername').focus(), 50);
+  }
+
+  function addAccount() {
+    if (!currentUser || currentUser.role !== 'owner') return;
+    const schoolId = $('acctSchool').value;
+    _editingAcctSchool = schoolId;
+    _editingAcctIdx = -1;
+    $('acctModalTitle').textContent = `新增帳號 — ${CREDENTIALS[schoolId].name}`;
+    $('acctUsername').value = '';
+    $('acctPassword').value = '';
+    $('acctRole').value     = 'manager';
+    $('acctFullName').value = '';
+    $('acctEmail').value    = '';
+    $('acctErr').classList.remove('show');
+    $('acctOverlay').classList.add('show');
+    setTimeout(() => $('acctUsername').focus(), 50);
+  }
+
+  function closeAcct(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('acctOverlay').classList.remove('show');
+    _editingAcctIdx = null;
+    _editingAcctSchool = null;
+  }
+
+  function showAcctErr(msg) {
+    $('acctErrMsg').textContent = msg;
+    $('acctErr').classList.add('show');
+  }
+
+  function saveAccount() {
+    const u = ($('acctUsername').value || '').trim();
+    const p = ($('acctPassword').value || '').trim();
+    const r = $('acctRole').value;
+    const n = ($('acctFullName').value || '').trim();
+    const m = ($('acctEmail').value || '').trim();
+    const schoolId = _editingAcctSchool;
+
+    if (!u) { showAcctErr('帳號為必填'); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(u)) { showAcctErr('帳號只能用英數字與底線'); return; }
+    if (!p) { showAcctErr('密碼為必填'); return; }
+    if (p.length < 4) { showAcctErr('密碼至少 4 碼'); return; }
+    if (!n) { showAcctErr('姓名為必填'); return; }
+    if (!['manager', 'owner'].includes(r)) { showAcctErr('角色無效'); return; }
+
+    const users = CREDENTIALS[schoolId].users;
+
+    // Check uniqueness (case-insensitive)
+    const dupIdx = users.findIndex((x, i) =>
+      i !== _editingAcctIdx && x.username.toLowerCase() === u.toLowerCase()
+    );
+    if (dupIdx >= 0) { showAcctErr(`帳號 "${u}" 已存在`); return; }
+
+    if (_editingAcctIdx === -1) {
+      // Add
+      users.push({ username: u, password: p, role: r, fullName: n, email: m });
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser.fullName,
+        text: `新增帳號 ${u} (${CREDENTIALS[schoolId].name} · ${r})`
+      });
+      toast(`已新增帳號 ${u}`, 'success');
+    } else {
+      // Edit
+      const old = users[_editingAcctIdx];
+      const changes = [];
+      if (old.username !== u) changes.push(`帳號 ${old.username}→${u}`);
+      if (old.password !== p) changes.push('密碼已更新');
+      if (old.role !== r) changes.push(`角色 ${old.role}→${r}`);
+      if (old.fullName !== n) changes.push(`姓名 ${old.fullName}→${n}`);
+      // If editing current logged-in user, update currentUser too
+      if (currentUser && String(currentUser.schoolId) === String(schoolId) &&
+          currentUser.username === old.username) {
+        currentUser.username = u;
+        currentUser.password = p;
+        currentUser.role = r;
+        currentUser.fullName = n;
+        // Refresh topbar
+        $('dbUserName').textContent = n;
+        $('dbRole').textContent = r === 'owner' ? '老闆 Owner' : '主管 Manager';
+        $('dbRole').className = 'u-role ' + r;
+      }
+      users[_editingAcctIdx] = { username: u, password: p, role: r, fullName: n, email: m };
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser.fullName,
+        text: `修改帳號 ${u} (${CREDENTIALS[schoolId].name})${changes.length ? ' · ' + changes.join('; ') : ''}`
+      });
+      toast(`已儲存 ${u} 的變更`, 'success');
+    }
+    persistCreds();
+    closeAcct();
+    renderAccountsTable();
+  }
+
+  function deleteAccount(schoolId, idx) {
+    const u = CREDENTIALS[schoolId].users[idx];
+    if (!u) return;
+    if (currentUser && String(currentUser.schoolId) === String(schoolId) &&
+        currentUser.username === u.username) {
+      toast('不能刪除目前登入中的帳號', 'error');
+      return;
+    }
+    if (!confirm(`確定要刪除帳號「${u.username}」(${u.fullName}) 嗎？\n此操作無法復原。`)) return;
+    CREDENTIALS[schoolId].users.splice(idx, 1);
+    persistCreds();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `刪除帳號 ${u.username} (${CREDENTIALS[schoolId].name})`
+    });
+    renderAccountsTable();
+    toast(`已刪除帳號 ${u.username}`, 'success');
+  }
+
+  function resetAccounts() {
+    if (!confirm('確定要將所有帳號還原為預設值？\n（不影響員工/薪資資料）')) return;
+    CREDENTIALS = JSON.parse(JSON.stringify(DEFAULT_CREDS));
+    persistCreds();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser ? currentUser.fullName : '系統',
+      text: '還原所有帳號為預設值'
+    });
+    renderAccountsTable();
+    toast('已還原為預設帳號', 'success');
+  }
+
+  function exportPasswordFile() {
+    if (typeof XLSX === 'undefined') { toast('SheetJS 未載入', 'error'); return; }
+    const schoolId = $('acctSchool').value;
+    const school = CREDENTIALS[schoolId];
+    const headers = ['Username (帳號)', 'Password (密碼)', 'Role (權限)', 'Full Name (姓名)', 'Email', 'Notes (備註)'];
+    const rows = [
+      [`${school.name} 薪資系統登入帳號 (Kidcastle Salary System - ${school.code})`],
+      headers
+    ];
+    school.users.forEach(u => {
+      rows.push([u.username, u.password, u.role, u.fullName || '', u.email || '', '']);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    // Merge title across columns
+    ws['!merges'] = [{ s: {r:0,c:0}, e: {r:0,c:5} }];
+    ws['!cols'] = [{wch:18},{wch:18},{wch:12},{wch:22},{wch:24},{wch:24}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '登入帳號');
+    const filename = `${school.code} Password (${nowTimestamp().split(' ')[0]}).xlsx`;
+    XLSX.writeFile(wb, filename);
+    toast(`已匯出 ${filename}`, 'success');
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `匯出 ${filename} (${school.users.length} 組帳號)`
+    });
+  }
+
+  // -------- Change My Password (any logged-in user) --------
+  function openChangeMyPassword() {
+    if (!currentUser) return;
+    $('myPwdCurrent').value = '';
+    $('myPwdNew').value = '';
+    $('myPwdConfirm').value = '';
+    $('myPwdErr').classList.remove('show');
+    $('myPwdOk').classList.remove('show');
+    $('myPwdOverlay').classList.add('show');
+    setTimeout(() => $('myPwdCurrent').focus(), 50);
+  }
+  function closeMyPwd(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('myPwdOverlay').classList.remove('show');
+  }
+  function showMyPwdErr(msg) {
+    $('myPwdErrMsg').textContent = msg;
+    $('myPwdErr').classList.add('show');
+    $('myPwdOk').classList.remove('show');
+  }
+  function saveMyPassword() {
+    const cur = $('myPwdCurrent').value;
+    const nw  = $('myPwdNew').value;
+    const cf  = $('myPwdConfirm').value;
+    if (!cur || !nw || !cf) { showMyPwdErr('請填寫所有欄位'); return; }
+    if (cur !== currentUser.password) { showMyPwdErr('目前密碼錯誤'); return; }
+    if (nw.length < 6) { showMyPwdErr('新密碼至少 6 碼'); return; }
+    if (nw === cur) { showMyPwdErr('新密碼不能與目前密碼相同'); return; }
+    if (nw !== cf) { showMyPwdErr('新密碼兩次輸入不一致'); return; }
+    // Update in CREDENTIALS
+    const list = CREDENTIALS[currentUser.schoolId].users;
+    const idx = list.findIndex(u => u.username === currentUser.username);
+    if (idx < 0) { showMyPwdErr('找不到帳號資料'); return; }
+    list[idx].password = nw;
+    currentUser.password = nw;
+    persistCreds();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `${currentUser.fullName} 修改了自己的密碼`
+    });
+    $('myPwdOkMsg').textContent = '密碼已更新，下次登入請使用新密碼';
+    $('myPwdOk').classList.add('show');
+    $('myPwdErr').classList.remove('show');
+    setTimeout(() => closeMyPwd(), 1500);
+    toast('密碼已更新', 'success');
+  }
+
+  // Wiring
+  if ($('acctSchool')) $('acctSchool').addEventListener('change', renderAccountsTable);
+  if ($('acctSearch')) $('acctSearch').addEventListener('input', renderAccountsTable);
+
+  // ESC closes account modals
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if ($('acctOverlay') && $('acctOverlay').classList.contains('show')) closeAcct();
+      if ($('myPwdOverlay') && $('myPwdOverlay').classList.contains('show')) closeMyPwd();
+    }
+  });
+
+  // ==========================================================================
+  // Dashboard / Overview — KPIs, charts, anomaly detection
+  // ==========================================================================
+  let _chartCampus, _chartPosition, _chartTopEarners;
+
+  function populateDashMonth() {
+    const sel = $('dashMonth'); if (!sel) return;
+    const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
+    sel.innerHTML = months.map(m =>
+      `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
+    ).join('');
+  }
+
+  function computeDashStats(month, campus) {
+    const active = DATA.employees.filter(e =>
+      e['在職狀態'] === '在職' && (campus === 'all' || e['校區'] === campus)
+    );
+    const resigned = DATA.employees.filter(e =>
+      e['在職狀態'] !== '在職' && (campus === 'all' || e['校區'] === campus)
+    );
+    let totalGross = 0, totalNet = 0, totalBonus = 0, totalDeduct = 0, totalAllow = 0, totalBase = 0;
+    let totalOT = 0, totalLeave = 0, totalLate = 0;
+    const perEmp = []; // for chart top earners
+    const byCampus = { 同安: { gross: 0, count: 0, net: 0 }, 莊敬: { gross: 0, count: 0, net: 0 } };
+    const byPosition = {};
+
+    active.forEach(emp => {
+      const sal = findSalary(emp['員工編號'], month) ||
+                  { 加班時數: 0, 請假時數: 0, 遲到次數: 0, 獎金: 0, 扣款: 0, 特殊調整: 0 };
+      const r = computeRow(emp, sal);
+      totalBase += Number(emp['底薪']) || 0;
+      totalAllow += r.allowSum;
+      totalGross += r.gross;
+      totalNet += r.net;
+      totalBonus += Number(sal['獎金']) || 0;
+      totalDeduct += r.totalDeduct + (Number(sal['扣款']) || 0);
+      totalOT += Number(sal['加班時數']) || 0;
+      totalLeave += Number(sal['請假時數']) || 0;
+      totalLate += Number(sal['遲到次數']) || 0;
+      perEmp.push({ emp, sal, ...r });
+      if (byCampus[emp['校區']]) {
+        byCampus[emp['校區']].gross += r.gross;
+        byCampus[emp['校區']].net += r.net;
+        byCampus[emp['校區']].count += 1;
+      }
+      const pos = emp['職位'] || '其他';
+      byPosition[pos] = (byPosition[pos] || 0) + 1;
+    });
+
+    perEmp.sort((a, b) => b.net - a.net);
+
+    return {
+      active, resigned,
+      totalGross, totalNet, totalBonus, totalDeduct, totalAllow, totalBase,
+      totalOT, totalLeave, totalLate,
+      perEmp, byCampus, byPosition,
+      avgGross: active.length ? Math.round(totalGross / active.length) : 0,
+      avgNet:   active.length ? Math.round(totalNet / active.length)   : 0
+    };
+  }
+
+  function detectAnomalies(stats, month) {
+    const alerts = [];
+    stats.perEmp.forEach(item => {
+      const e = item.emp;
+      const s = item.sal;
+      // Negative net salary
+      if (item.net < 0) {
+        alerts.push({
+          level: 'danger', icon: '❌',
+          title: `${e['員工姓名']} (${e['員工編號']}) 實領為負`,
+          detail: `NT$ ${fmtNT(item.net)} — 請檢查扣款 / 調整項目`
+        });
+      } else if (item.net < 20000) {
+        alerts.push({
+          level: 'warn', icon: '💸',
+          title: `${e['員工姓名']} 實領偏低`,
+          detail: `NT$ ${fmtNT(item.net)} — 是否漏發津貼？(${e['校區']} · ${e['職位']})`
+        });
+      }
+      // High leave hours
+      const leaveH = Number(s['請假時數']) || 0;
+      if (leaveH >= 16) {
+        alerts.push({
+          level: 'warn', icon: '🏖️',
+          title: `${e['員工姓名']} 請假 ${leaveH} 小時`,
+          detail: `失全勤 + 請假扣款 ${fmtNT(item.leaveD)}`
+        });
+      }
+      // High late count
+      const late = Number(s['遲到次數']) || 0;
+      if (late >= 3) {
+        alerts.push({
+          level: 'warn', icon: '⏰',
+          title: `${e['員工姓名']} 本月遲到 ${late} 次`,
+          detail: `失全勤 + 遲到扣款 ${fmtNT(item.lateD)}`
+        });
+      }
+      // Missing 銀行帳號
+      if (!e['銀行帳號']) {
+        alerts.push({
+          level: 'info', icon: '🏦',
+          title: `${e['員工姓名']} 未設定銀行帳號`,
+          detail: `${e['員工編號']} · ${e['校區']} — 請至「老闆輸入」補上匯款資料`
+        });
+      }
+    });
+    // Cap alerts
+    return alerts.slice(0, 50);
+  }
+
+  function renderDashboard() {
+    if (!currentUser) return;
+    const month = $('dashMonth') ? $('dashMonth').value : '';
+    const campus = $('dashCampus') ? $('dashCampus').value : 'all';
+    if (!month) return;
+
+    const stats = computeDashStats(month, campus);
+
+    // KPIs
+    $('kpiTotalSalary').innerHTML  = fmtNT(stats.totalGross) + ' <span class="unit">NT$</span>';
+    $('kpiTotalSalarySub').textContent = `實領合計 ${fmtNT(stats.totalNet)}`;
+    $('kpiActiveCount').innerHTML  = stats.active.length + ' <span class="unit">人</span>';
+    $('kpiActiveCountSub').textContent = `離職 ${stats.resigned.length} 人 · 總計 ${stats.active.length + stats.resigned.length}`;
+    $('kpiAvgSalary').innerHTML    = fmtNT(stats.avgGross) + ' <span class="unit">NT$</span>';
+    $('kpiAvgSalarySub').textContent = `實領平均 ${fmtNT(stats.avgNet)}`;
+    $('kpiBonus').innerHTML        = fmtNT(stats.totalBonus) + ' <span class="unit">NT$</span>';
+    $('kpiBonusSub').textContent   = `平均 ${fmtNT(Math.round(stats.totalBonus / Math.max(1, stats.active.length)))} / 人`;
+    $('kpiDeduct').innerHTML       = fmtNT(stats.totalDeduct) + ' <span class="unit">NT$</span>';
+    $('kpiDeductSub').textContent  = `含勞健保 + 請假 + 遲到 + 扣款`;
+
+    const alerts = detectAnomalies(stats, month);
+    $('kpiAlerts').innerHTML       = alerts.length + ' <span class="unit">項</span>';
+    $('kpiAlertsSub').textContent  = alerts.length === 0 ? '一切正常 ✓' : '請至下方查看詳情';
+
+    // Charts
+    if (typeof Chart === 'undefined') {
+      console.warn('[dash] Chart.js not loaded');
+      return;
+    }
+
+    // Campus pie (gross salary)
+    const campusLabels = ['同安校區', '莊敬校區'];
+    const campusValues = [stats.byCampus.同安.gross, stats.byCampus.莊敬.gross];
+    if (_chartCampus) _chartCampus.destroy();
+    _chartCampus = new Chart($('chartCampus'), {
+      type: 'doughnut',
+      data: {
+        labels: campusLabels,
+        datasets: [{
+          data: campusValues,
+          backgroundColor: ['#4472C4', '#F4A340'],
+          borderColor: '#fff', borderWidth: 3
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 }},
+          tooltip: { callbacks: {
+            label: c => `${c.label}: NT$ ${Number(c.raw).toLocaleString()} (${stats.byCampus[c.label.slice(0,2)].count} 人)`
+          }}
+        }
+      }
+    });
+
+    // Position bar (active count)
+    const posEntries = Object.entries(stats.byPosition).sort((a, b) => b[1] - a[1]);
+    if (_chartPosition) _chartPosition.destroy();
+    _chartPosition = new Chart($('chartPosition'), {
+      type: 'bar',
+      data: {
+        labels: posEntries.map(p => p[0]),
+        datasets: [{
+          label: '人數',
+          data: posEntries.map(p => p[1]),
+          backgroundColor: ['#10B981','#4472C4','#F4A340','#8B5CF6','#0EA5E9','#DC2626'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }},
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: '#f1f5f9' }},
+          x: { grid: { display: false }}
+        }
+      }
+    });
+
+    // Top earners (horizontal bar)
+    const top = stats.perEmp.slice(0, 10);
+    if (_chartTopEarners) _chartTopEarners.destroy();
+    _chartTopEarners = new Chart($('chartTopEarners'), {
+      type: 'bar',
+      data: {
+        labels: top.map(t => `${t.emp['員工姓名']} (${t.emp['校區']})`),
+        datasets: [{
+          label: '實領薪資',
+          data: top.map(t => t.net),
+          backgroundColor: top.map(t => t.emp['校區'] === '同安' ? '#4472C4' : '#F4A340'),
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: c => `NT$ ${Number(c.raw).toLocaleString()}`
+          }}
+        },
+        scales: {
+          x: { beginAtZero: true, grid: { color: '#f1f5f9' },
+               ticks: { callback: v => 'NT$ ' + Number(v).toLocaleString() }},
+          y: { grid: { display: false }}
+        }
+      }
+    });
+
+    // Campus comparison table
+    const cmpRows = [
+      ['在職人數',
+        stats.byCampus.同安.count,
+        stats.byCampus.莊敬.count,
+        stats.byCampus.同安.count + stats.byCampus.莊敬.count],
+      ['應發薪資合計',
+        stats.byCampus.同安.gross,
+        stats.byCampus.莊敬.gross,
+        stats.byCampus.同安.gross + stats.byCampus.莊敬.gross],
+      ['實領薪資合計',
+        stats.byCampus.同安.net,
+        stats.byCampus.莊敬.net,
+        stats.byCampus.同安.net + stats.byCampus.莊敬.net],
+      ['平均應發',
+        stats.byCampus.同安.count ? Math.round(stats.byCampus.同安.gross / stats.byCampus.同安.count) : 0,
+        stats.byCampus.莊敬.count ? Math.round(stats.byCampus.莊敬.gross / stats.byCampus.莊敬.count) : 0,
+        '—']
+    ];
+    const cmpTable = $('campusCompare');
+    cmpTable.querySelector('tbody').innerHTML = cmpRows.map(r => `<tr>
+      <td>${r[0]}</td>
+      <td class="num">${typeof r[1] === 'number' ? fmtNT(r[1]) : r[1]}</td>
+      <td class="num">${typeof r[2] === 'number' ? fmtNT(r[2]) : r[2]}</td>
+      <td class="num">${typeof r[3] === 'number' ? fmtNT(r[3]) : r[3]}</td>
+    </tr>`).join('');
+    cmpTable.querySelector('tfoot').innerHTML = `<tr>
+      <td>總薪資負擔</td>
+      <td>${fmtNT(stats.byCampus.同安.gross)}</td>
+      <td>${fmtNT(stats.byCampus.莊敬.gross)}</td>
+      <td>${fmtNT(stats.totalGross)}</td>
+    </tr>`;
+
+    // Anomaly alerts
+    $('alertCount').textContent = alerts.length;
+    const alertsList = $('alertsList');
+    if (!alerts.length) {
+      alertsList.innerHTML = `<div class="alerts-empty"><span class="big">✅</span>本月一切正常，沒有異常項目</div>`;
+    } else {
+      alertsList.innerHTML = alerts.map(a => `
+        <div class="alert-item ${a.level === 'danger' ? 'danger' : a.level === 'info' ? 'info' : ''}">
+          <span class="icon">${a.icon}</span>
+          <div class="body"><strong>${a.title}</strong><small>${a.detail}</small></div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // Filter wiring
+  if ($('dashMonth'))  $('dashMonth').addEventListener('change', renderDashboard);
+  if ($('dashCampus')) $('dashCampus').addEventListener('change', renderDashboard);
 
   // ==========================================================================
   // Owner Input page — employee table + edit drawer + add/resign
@@ -2456,6 +3584,7 @@
     renderManagerTable();
     populatePayslipSelectors();
     renderPayslip();
+    renderDashboard();
   }
 
   function toggleStatus(eid) {
@@ -2480,6 +3609,7 @@
     renderManagerTable();
     populatePayslipSelectors();
     renderPayslip();
+    renderDashboard();
     toast(`已將 ${emp['員工姓名']} 設為 ${next}`, 'success');
   }
 
