@@ -546,7 +546,53 @@
     background: #fff; border-radius: 14px;
     box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     padding: 28px 32px; max-width: 820px; margin: 0 auto;
+    transition: max-width .25s ease;
   }
+  /* Paper-size widths (CSS-pixel approximation; @page handles real print size) */
+  .payslip.size-a4     { max-width: 820px; }
+  .payslip.size-a5     { max-width: 560px; padding: 22px 26px; font-size: 13px; }
+  .payslip.size-letter { max-width: 840px; }
+  .payslip.size-b5     { max-width: 680px; padding: 24px 28px; }
+
+  /* Preview mode: dark background, paper-like card with realistic shadow */
+  #tab-payslip.preview {
+    background: linear-gradient(to bottom, #475569 0%, #334155 100%);
+    border-radius: 14px;
+    padding: 30px 12px;
+    margin-top: -6px;
+  }
+  #tab-payslip.preview .payslip {
+    background: #fff;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 8px 20px rgba(0,0,0,0.3);
+    border-radius: 4px;
+    position: relative;
+  }
+  #tab-payslip.preview .payslip::before {
+    content: '預覽模式 / Preview · ' attr(data-paper-label);
+    position: absolute;
+    top: -28px; left: 0;
+    color: #fff; font-size: 11px;
+    background: rgba(0,0,0,0.4);
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.5px;
+  }
+  /* When in preview, fixed size based on paper class */
+  #tab-payslip.preview .payslip.size-a4     { width: 794px; min-height: 1123px; }   /* A4 at 96dpi */
+  #tab-payslip.preview .payslip.size-a5     { width: 560px; min-height: 794px; }    /* A5 */
+  #tab-payslip.preview .payslip.size-letter { width: 816px; min-height: 1056px; }   /* Letter */
+  #tab-payslip.preview .payslip.size-b5     { width: 665px; min-height: 945px; }    /* B5 */
+  /* Mobile preview falls back to width auto so it fits screen */
+  @media (max-width: 880px) {
+    #tab-payslip.preview .payslip { width: auto !important; min-height: 0 !important; }
+  }
+
+  /* Copy success ripple animation */
+  @keyframes copyFlash {
+    0%   { background: #DCFCE7; }
+    100% { background: transparent; }
+  }
+  .payslip.copy-flash { animation: copyFlash 0.5s ease-out; }
   .ps-header {
     text-align: center;
     border-bottom: 3px solid #2E5984;
@@ -629,19 +675,23 @@
     padding: 12px 14px 28px; font-size: 11px; color: #64748b;
   }
 
-  /* Print styles */
+  /* Print styles — default A4; specific sizes overridden via JS-injected @page */
   @media print {
     body::before { display: none; }
     body { background: #fff !important; }
     #home, #welcome, .topbar, .tabs, .payslip-controls, .no-print { display: none !important; }
     .tab-pane { display: none !important; }
     .tab-pane#tab-payslip { display: block !important; }
+    .tab-pane#tab-payslip.preview { background: #fff !important; padding: 0 !important; }
+    .tab-pane#tab-payslip.preview .payslip::before { display: none !important; }
     #dashboard { display: block !important; padding: 0 !important; background: #fff !important; }
-    .payslip { box-shadow: none !important; max-width: 100% !important; padding: 10mm !important; }
+    .payslip { box-shadow: none !important; max-width: 100% !important; width: auto !important;
+               min-height: 0 !important; padding: 10mm !important; border-radius: 0 !important; }
     .ps-row.zero { color: #94a3b8 !important; }
     .ps-net { box-shadow: none !important; }
     @page { size: A4 portrait; margin: 8mm; }
   }
+  /* Dynamic @page rules injected via JS into <style id="pagePaperSize"> */
 
   @media (max-width: 720px) {
     .ps-rows, .ps-section-h, .ps-subtotal { grid-template-columns: 1fr; }
@@ -1648,7 +1698,23 @@
         <label>月份 Month</label>
         <select id="psMonth"></select>
       </div>
-      <button class="btn-action" onclick="window.print()">🖨 列印 / 存 PDF</button>
+      <div class="ctrl">
+        <label>紙張大小 Paper Size</label>
+        <select id="psSize">
+          <option value="a4">A4 (210 × 297 mm)</option>
+          <option value="a5">A5 (148 × 210 mm)</option>
+          <option value="letter">Letter (8.5 × 11")</option>
+          <option value="b5">B5 (176 × 250 mm)</option>
+        </select>
+      </div>
+      <div class="ctrl" style="margin-left:auto;align-self:end;">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-mini secondary" onclick="togglePsPreview()" id="psPreviewBtn">👁 預覽模式</button>
+          <button class="btn-mini secondary" onclick="copyPayslip()">📋 複製</button>
+          <button class="btn-action" onclick="window.print()">🖨 列印 / 存 PDF</button>
+        </div>
+      </div>
     </div>
 
     <div class="payslip" id="payslip">
@@ -2504,6 +2570,195 @@
       }
     });
   });
+
+  // ==========================================================================
+  // Payslip — paper size, preview mode, copy to clipboard
+  // ==========================================================================
+  const PAPER_INFO = {
+    a4:     { label: 'A4 210×297mm',     cssSize: 'A4 portrait' },
+    a5:     { label: 'A5 148×210mm',     cssSize: 'A5 portrait' },
+    letter: { label: 'Letter 8.5×11"',   cssSize: 'letter portrait' },
+    b5:     { label: 'B5 176×250mm',     cssSize: 'B5 portrait' }
+  };
+
+  function applyPaperSize(size) {
+    const ps = $('payslip');
+    if (!ps) return;
+    // Remove all size-* classes
+    Object.keys(PAPER_INFO).forEach(s => ps.classList.remove('size-' + s));
+    ps.classList.add('size-' + size);
+    ps.setAttribute('data-paper-label', PAPER_INFO[size].label);
+    // Inject @page rule for print
+    let styleEl = $('pagePaperSize');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'pagePaperSize';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@media print { @page { size: ${PAPER_INFO[size].cssSize}; margin: 8mm; } }`;
+    try { localStorage.setItem('kc_paper_size', size); } catch(e) {}
+  }
+  function loadPaperSize() {
+    try {
+      const s = localStorage.getItem('kc_paper_size');
+      if (s && PAPER_INFO[s]) return s;
+    } catch(e) {}
+    return 'a4';
+  }
+  if ($('psSize')) {
+    const initSize = loadPaperSize();
+    $('psSize').value = initSize;
+    applyPaperSize(initSize);
+    $('psSize').addEventListener('change', () => applyPaperSize($('psSize').value));
+  }
+
+  function togglePsPreview() {
+    const pane = $('tab-payslip');
+    const btn = $('psPreviewBtn');
+    if (!pane || !btn) return;
+    if (pane.classList.contains('preview')) {
+      pane.classList.remove('preview');
+      btn.innerHTML = '👁 預覽模式';
+      btn.classList.remove('primary');
+      btn.classList.add('secondary');
+    } else {
+      pane.classList.add('preview');
+      btn.innerHTML = '✕ 關閉預覽';
+      btn.classList.remove('secondary');
+      btn.classList.add('primary');
+    }
+  }
+
+  function payslipToText() {
+    const eid = $('psEmp').value;
+    const month = $('psMonth').value;
+    if (!eid || !month) return null;
+    const emp = findEmployee(eid);
+    const sal = findSalary(eid, month) || {};
+    if (!emp) return null;
+    const noLeaveLate = (Number(sal['請假時數']) || 0) === 0 && (Number(sal['遲到次數']) || 0) === 0;
+    const attBonus = noLeaveLate ? (Number(emp['全勤獎金']) || 0) : 0;
+
+    const fixed = [
+      ['底薪',          emp['底薪']],
+      ['全勤獎金',      attBonus],
+      ['年資津貼',      emp['年資津貼']],
+      ['主管津貼',      emp['主管津貼']],
+      ['教務津貼',      emp['教務津貼']],
+      ['導師津貼',      emp['導師津貼']],
+      ['行政津貼',      emp['行政津貼']],
+      ['交通津貼',      emp['交通津貼']],
+      ['安親津貼',      emp['安親津貼']],
+      ['美語津貼',      emp['美語津貼']],
+      ['英文輔導津貼',  emp['英文輔導津貼']],
+      ['數學班津貼',    emp['數學班津貼']],
+      ['混班/混校津貼', emp['混班/混校津貼']],
+      ['帶班人數津貼',  emp['帶班人數津貼']],
+      ['其他津貼',      emp['其他津貼']]
+    ];
+    const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const variable = [
+      ['加班費',     sal['加班費']],
+      ['獎金',       sal['獎金']],
+      ['特殊調整',   sal['特殊調整']]
+    ];
+    const subB = variable.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const deductions = [
+      ['勞保自付',   emp['勞保自付']],
+      ['健保自付',   emp['健保自付']],
+      ['請假扣款',   sal['請假扣款']],
+      ['遲到扣款',   sal['遲到扣款']],
+      ['扣款',       sal['扣款']]
+    ];
+    const subC = deductions.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const net = subA + subB - subC;
+
+    const pad = (s, n) => (s + '                ').slice(0, n);
+    const fmtNum = n => String(fmtNT(Number(n) || 0)).padStart(8, ' ');
+    const line = '─'.repeat(54);
+    const dline = '═'.repeat(54);
+
+    let out = '';
+    out += dline + '\n';
+    out += `  Kidcastle ${emp['校區']}校區  薪資條 ${month} (民國${month.slice(0,3)}年${month.slice(3,5)}月)\n`;
+    out += dline + '\n';
+    out += `  員工編號:  ${emp['員工編號']}\n`;
+    out += `  姓名:      ${emp['員工姓名']}${emp['英文姓名'] ? ' (' + emp['英文姓名'] + ')' : ''}\n`;
+    out += `  職位:      ${emp['職位']}\n`;
+    out += `  到職日:    ${emp['到職日'] || '—'}\n`;
+    out += line + '\n';
+    out += '  ① 約定薪資結構 Fixed Salary\n';
+    out += line + '\n';
+    fixed.forEach(([k, v]) => {
+      const n = Number(v) || 0;
+      if (n !== 0) out += `    ${pad(k, 18)} ${fmtNum(v)}\n`;
+    });
+    out += `    ${pad('小計 (A)', 18)} ${fmtNum(subA)}\n`;
+    out += line + '\n';
+    out += '  ② 非固定支付 Variable\n';
+    out += line + '\n';
+    variable.forEach(([k, v]) => {
+      const n = Number(v) || 0;
+      if (n !== 0) out += `    ${pad(k, 18)} ${fmtNum(v)}\n`;
+    });
+    out += `    ${pad('小計 (B)', 18)} ${fmtNum(subB)}\n`;
+    out += line + '\n';
+    out += '  ③ 應代扣項目 Deductions\n';
+    out += line + '\n';
+    deductions.forEach(([k, v]) => {
+      const n = Number(v) || 0;
+      if (n !== 0) out += `    ${pad(k, 18)} ${fmtNum(v)}\n`;
+    });
+    out += `    ${pad('小計 (C)', 18)} ${fmtNum(subC)}\n`;
+    out += dline + '\n';
+    out += `  實領金額 = (A) + (B) − (C) = NT$ ${fmtNT(net)}\n`;
+    out += dline + '\n';
+    out += '  備註：本薪資條依勞動基準法第23條第1項規定提供。\n';
+    out += '       公司另提撥退休金 (勞退新制 6%)，不從薪資扣除。\n';
+    return out;
+  }
+
+  function payslipToHTML() {
+    const el = $('payslip');
+    if (!el) return null;
+    return el.outerHTML;
+  }
+
+  async function copyPayslip() {
+    const text = payslipToText();
+    if (!text) { toast('請先選擇員工與月份', 'error'); return; }
+    const html = payslipToHTML();
+    try {
+      if (navigator.clipboard && window.ClipboardItem && html) {
+        // Modern clipboard API: write both plain text + HTML
+        const item = new ClipboardItem({
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+          'text/html':  new Blob([html], { type: 'text/html' })
+        });
+        await navigator.clipboard.write([item]);
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        // Fallback: text only
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Legacy fallback
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      // Visual feedback
+      const ps = $('payslip');
+      if (ps) {
+        ps.classList.remove('copy-flash');
+        void ps.offsetWidth;  // restart animation
+        ps.classList.add('copy-flash');
+      }
+      toast('薪資條已複製到剪貼簿（純文字 + HTML）', 'success');
+    } catch (err) {
+      console.error('copy failed', err);
+      toast('複製失敗：' + (err.message || err), 'error');
+    }
+  }
 
   // ---------- Admin: load credentials from xlsx ----------
   function toggleUpload() { $('uploadBox').classList.toggle('show'); }
