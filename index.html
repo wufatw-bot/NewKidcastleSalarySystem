@@ -2654,7 +2654,7 @@
   }
 
   function populatePayslipSelectors() {
-    const userCampus = currentUser ? CREDENTIALS[currentUser.schoolId].name : null;
+    const userCampus = currentUser ? CREDENTIALS[currentUser.schoolId].name.replace(/校區$/, '') : null;
     const isOwner = currentUser && currentUser.role === 'owner';
     const campusSel = $('psCampus');
     const empSel = $('psEmp');
@@ -3017,7 +3017,7 @@
 
   function populateManagerSelectors() {
     if (!currentUser) return;
-    const userCampus = CREDENTIALS[currentUser.schoolId].name;
+    const userCampus = CREDENTIALS[currentUser.schoolId].name.replace(/校區$/, '');
     const isOwner = currentUser.role === 'owner';
     const campusSel = $('mgrCampus');
     const monthSel = $('mgrMonth');
@@ -3042,7 +3042,7 @@
     const month = getMgrMonth() || '11504';
     const campus = getMgrCampus();
     const search = getMgrSearch();
-    const userCampus = CREDENTIALS[currentUser.schoolId].name;
+    const userCampus = CREDENTIALS[currentUser.schoolId].name.replace(/校區$/, '');
     const isOwner = currentUser.role === 'owner';
     const effectiveCampus = isOwner ? campus : userCampus;
 
