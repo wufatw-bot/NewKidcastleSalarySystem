@@ -644,6 +644,17 @@
   }
   .ps-subtotal .deduct { background: #FEE2E2; color: #991B1B; }
   .ps-subtotal .val { font-family: Arial; }
+  .ps-cash-row {
+    margin-top: 8px;
+    padding: 9px 13px;
+    background: #FEF3C7;
+    color: #92400E;
+    border-radius: 6px;
+    border-left: 4px solid #F59E0B;
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 14px;
+  }
+  .ps-cash-row .val { font-family: Arial; font-size: 15px; }
 
   .ps-net {
     margin-top: 12px;
@@ -1817,6 +1828,7 @@
         <input type="text" id="mgrSearch" placeholder="輸入姓名或員工編號…">
       </div>
       <div class="btns">
+        <button class="btn-mini secondary" onclick="copyPrevMonthForManager()" title="把上個月的工時/獎金等複製到本月">📋 複製上個月的資料</button>
         <button class="btn-mini secondary" onclick="newMonth()" title="複製本月為新月份模板">➕ 新增月份</button>
         <button class="btn-mini primary" onclick="exportSalary()">⬇ 匯出 Salary Data.xlsx</button>
         <button class="btn-mini danger" onclick="resetData()" title="清除所有本機編輯，恢復原始資料">↺ 還原</button>
@@ -1879,6 +1891,7 @@
         <input type="text" id="ownSearch" placeholder="輸入姓名、員工編號、英文名…">
       </div>
       <div class="btns">
+        <button class="btn-mini secondary" onclick="copyPrevMonthForOwner()" title="把上個月的工時/獎金等複製到最新月份">📋 複製上個月的資料</button>
         <button class="btn-mini secondary" onclick="addEmployee()">➕ 新增員工</button>
         <button class="btn-mini primary" onclick="exportEmployees()">⬇ 匯出 Employee Data.xlsx</button>
         <button class="btn-mini danger" onclick="resetData()" title="清除所有本機編輯">↺ 還原</button>
@@ -1903,6 +1916,7 @@
             <th>津貼合計</th>
             <th>勞保</th>
             <th>健保</th>
+            <th>現金給付</th>
             <th>狀態</th>
             <th>操作</th>
           </tr>
@@ -2643,14 +2657,15 @@
     const labor = Number(emp['勞保自付']) || 0;
     const health = Number(emp['健保自付']) || 0;
     const totalDeduct = labor + health;
-    const net = gross - totalDeduct;
+    const cashPay = Number(emp['現金給付']) || 0;   // D — 已現金給付，從實領再扣
+    const net = gross - totalDeduct - cashPay;
 
     // Cache computed fields back into the record so Excel & UI stay in sync
     sal['加班費'] = otPay;
     sal['請假扣款'] = leaveD;
     sal['遲到扣款'] = lateD;
 
-    return { hourly, otPay, leaveD, lateD, attBonus, allowSum, gross, totalDeduct, net };
+    return { hourly, otPay, leaveD, lateD, attBonus, allowSum, gross, totalDeduct, cashPay, net };
   }
 
   // Helper: convert "同安校區" → "同安" so we can compare with employee 校區 field
@@ -2743,7 +2758,10 @@
     ];
     const subC = deductions.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
-    const net = subA + subB - subC;
+    // D — 現金給付 (Cash already paid; subtracted from final net)
+    const subD = Number(emp['現金給付']) || 0;
+
+    const net = subA + subB - subC - subD;
     const today = new Date().toISOString().substr(0, 10);
 
     const renderRows = (items) => items.map(([k, v]) => {
@@ -2783,8 +2801,13 @@
         <div class="deduct"><span>小計 (C)</span><span class="val">${fmtNT(subC)}</span></div>
       </div>
 
+      <div class="ps-cash-row">
+        <div class="lbl">小計 (D) · 現金給付 Cash Payment（已現金支付，從實領再扣）</div>
+        <div class="val">NT$ ${fmtNT(subD)}</div>
+      </div>
+
       <div class="ps-net">
-        <div class="lbl">實領金額 Net Salary  =  (A) + (B) − (C)</div>
+        <div class="lbl">實領金額 Net Salary  =  (A) + (B) − (C) − (D)</div>
         <div class="val">NT$ ${fmtNT(net)}</div>
       </div>
 
@@ -2907,7 +2930,8 @@
       ['扣款',       sal['扣款']]
     ];
     const subC = deductions.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
-    const net = subA + subB - subC;
+    const subD = Number(emp['現金給付']) || 0;
+    const net = subA + subB - subC - subD;
 
     const pad = (s, n) => (s + '                ').slice(0, n);
     const fmtNum = n => String(fmtNT(Number(n) || 0)).padStart(8, ' ');
@@ -2946,8 +2970,12 @@
       if (n !== 0) out += `    ${pad(k, 18)} ${fmtNum(v)}\n`;
     });
     out += `    ${pad('小計 (C)', 18)} ${fmtNum(subC)}\n`;
+    out += line + '\n';
+    out += '  ④ 現金給付 Cash Payment (已現金支付)\n';
+    out += line + '\n';
+    out += `    ${pad('小計 (D)', 18)} ${fmtNum(subD)}\n`;
     out += dline + '\n';
-    out += `  實領金額 = (A) + (B) − (C) = NT$ ${fmtNT(net)}\n`;
+    out += `  實領金額 = (A) + (B) − (C) − (D) = NT$ ${fmtNT(net)}\n`;
     out += dline + '\n';
     return out;
   }
@@ -3886,7 +3914,7 @@
                         '底薪','全勤獎金','年資津貼','主管津貼','教務津貼','導師津貼','行政津貼',
                         '交通津貼','安親津貼','美語津貼','英文輔導津貼','數學班津貼',
                         '混班/混校津貼','帶班人數津貼','其他津貼','勞保自付','健保自付',
-                        '退休金提撥','銀行名稱','銀行帳號'];
+                        '退休金提撥','現金給付','銀行名稱','銀行帳號'];
     const empRows = [empHeaders];
     filteredEmps
       .slice()
@@ -3899,7 +3927,7 @@
     // Sheet 3: 薪資資料 (含計算結果)
     const salHeaders = ['月份','員工編號','員工姓名','校區','職位','上班時數','加班時數','時薪','加班費',
                         '請假時數','請假扣款','遲到次數','遲到扣款','底薪','全勤獎金','津貼合計',
-                        '獎金','扣款','特殊調整','應發薪資','勞保自付','健保自付','應扣總額','實發薪資','備註'];
+                        '獎金','扣款','特殊調整','應發薪資','勞保自付','健保自付','應扣總額','現金給付','實發薪資','備註'];
     const allowKeys = ['年資津貼','主管津貼','教務津貼','導師津貼','行政津貼','交通津貼',
                        '安親津貼','美語津貼','英文輔導津貼','數學班津貼',
                        '混班/混校津貼','帶班人數津貼','其他津貼'];
@@ -3927,7 +3955,7 @@
           Number(s['遲到次數']) || 0, r.lateD,
           Number(emp['底薪']) || 0, r.attBonus, allowSumLocal,
           Number(s['獎金']) || 0, Number(s['扣款']) || 0, Number(s['特殊調整']) || 0,
-          r.gross, labor, health, labor + health, r.net,
+          r.gross, labor, health, labor + health, (Number(emp['現金給付']) || 0), r.net,
           s['備註'] || ''
         ]);
       });
@@ -4037,7 +4065,8 @@
       fields: [
         { key: '勞保自付',   type: 'money' },
         { key: '健保自付',   type: 'money' },
-        { key: '退休金提撥', type: 'money' }
+        { key: '退休金提撥', type: 'money' },
+        { key: '現金給付',   type: 'money' }
       ]
     },
     {
@@ -4084,7 +4113,7 @@
 
     const tbody = $('ownTbody');
     if (!emps.length) {
-      tbody.innerHTML = '<tr><td colspan="11" class="empty" style="padding:60px;text-align:center;color:#94a3b8;">沒有符合條件的員工</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="12" class="empty" style="padding:60px;text-align:center;color:#94a3b8;">沒有符合條件的員工</td></tr>';
       return;
     }
     tbody.innerHTML = emps.map(e => {
@@ -4105,6 +4134,7 @@
         <td class="num-cell">${fmtNT(allowSum(e))}</td>
         <td class="num-cell">${fmtNT(e['勞保自付'])}</td>
         <td class="num-cell">${fmtNT(e['健保自付'])}</td>
+        <td class="num-cell">${fmtNT(e['現金給付'])}</td>
         <td><span class="status-chip ${statCls}">${stat}</span></td>
         <td><div class="row-actions">
           <button class="edit" onclick="openEditEmployee('${e['員工編號']}')">✏ 編輯</button>
@@ -4136,7 +4166,7 @@
       '導師津貼': 0, '行政津貼': 0, '交通津貼': 0, '安親津貼': 0, '美語津貼': 0,
       '英文輔導津貼': 0, '數學班津貼': 0, '混班/混校津貼': 0, '帶班人數津貼': 0,
       '其他津貼': 0, '勞保自付': 1196, '健保自付': 0, '退休金提撥': 1772,
-      '銀行名稱': '', '銀行帳號': ''
+      '現金給付': 0, '銀行名稱': '', '銀行帳號': ''
     };
     _editingEid = null;
     $('drawerTitle').textContent = '新增員工 New Employee';
@@ -4344,7 +4374,7 @@
                      '底薪','全勤獎金','年資津貼','主管津貼','教務津貼','導師津貼','行政津貼',
                      '交通津貼','安親津貼','美語津貼','英文輔導津貼','數學班津貼',
                      '混班/混校津貼','帶班人數津貼','其他津貼','勞保自付','健保自付',
-                     '退休金提撥','銀行名稱','銀行帳號'];
+                     '退休金提撥','現金給付','銀行名稱','銀行帳號'];
     const rows = [headers];
     DATA.employees.slice()
       .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])))
@@ -4410,6 +4440,91 @@
     if (mo > 12) { return String(yr + 1) + '01'; }
     return String(yr) + String(mo).padStart(2, '0');
   }
+  function decrMonth(m) {
+    // 11505 → 11504 ; 11501 → 11412
+    const yr = parseInt(m.slice(0, 3));
+    let mo = parseInt(m.slice(3, 5));
+    mo--;
+    if (mo < 1) { return String(yr - 1) + '12'; }
+    return String(yr) + String(mo).padStart(2, '0');
+  }
+
+  // -------- Copy previous month's data into current month --------
+  // Source: prev month's salary record for each active employee
+  // Target: current month (overwrites existing values for hours/leave/bonus/etc.)
+  function copyPrevMonth(targetMonth) {
+    if (!currentUser) { toast('請先登入', 'error'); return; }
+    // If no target, use latest month
+    if (!targetMonth) {
+      const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
+      targetMonth = months[months.length - 1] || '11504';
+    }
+    const prevMonth = decrMonth(targetMonth);
+
+    // Find all employees in scope
+    const userCampus = campusShort(currentUser.schoolId);
+    const isOwner = currentUser.role === 'owner';
+    let emps = DATA.employees.filter(e => e['在職狀態'] === '在職');
+    if (!isOwner) emps = emps.filter(e => e['校區'] === userCampus);
+
+    // Check if prev month data exists
+    const prevExists = DATA.salary.some(s => String(s['月份']) === prevMonth);
+    if (!prevExists) {
+      toast(`找不到 ${prevMonth} 月份的資料`, 'error');
+      return;
+    }
+
+    if (!confirm(
+      `將「${prevMonth} 月」的薪資資料複製到「${targetMonth} 月」？\n\n` +
+      `範圍：${emps.length} 名在職員工（${isOwner ? '兩校' : userCampus + '校'}）\n` +
+      `會覆蓋：上班時數、加班時數、請假、遲到、獎金、扣款、特殊調整、備註\n` +
+      `不影響：員工資料 / 底薪 / 津貼設定 / 勞健保`
+    )) return;
+
+    const fields = ['上班時數','加班時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
+    let copied = 0;
+    emps.forEach(emp => {
+      const src = DATA.salary.find(s =>
+        s['員工編號'] === emp['員工編號'] && String(s['月份']) === prevMonth
+      );
+      if (!src) return;
+      const dst = ensureSalaryRecord(emp['員工編號'], targetMonth);
+      fields.forEach(f => { dst[f] = src[f]; });
+      copied++;
+    });
+
+    if (!copied) {
+      toast(`上月 (${prevMonth}) 沒有可複製的員工資料`, 'error');
+      return;
+    }
+
+    persistData();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `複製上月資料 ${prevMonth} → ${targetMonth} (${copied} 名員工)`
+    });
+
+    // Re-render visible pages
+    renderManagerTable();
+    if (currentUser.role === 'owner') renderOwnerTable();
+    renderPayslip();
+    renderDashboard();
+
+    toast(`✓ 已複製 ${copied} 筆資料 (${prevMonth} → ${targetMonth})`, 'success');
+  }
+
+  // Aliases for HTML onclick
+  function copyPrevMonthForManager() {
+    const cur = $('mgrMonth') && $('mgrMonth').value;
+    copyPrevMonth(cur);
+  }
+  function copyPrevMonthForOwner() {
+    // Owner has no month selector — use latest month
+    const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
+    const latest = months[months.length - 1] || '11504';
+    copyPrevMonth(latest);
+  }
 
   // -------- Export to Salary Data.xlsx --------
   function exportSalary() {
@@ -4420,7 +4535,7 @@
     // Build rows matching Salary Data.xlsx schema
     const headers = ['月份','員工編號','員工姓名','校區','職位','上班時數','加班時數','時薪','加班費',
                      '請假時數','請假扣款','遲到次數','遲到扣款','底薪','全勤獎金','津貼合計',
-                     '獎金','扣款','特殊調整','應發薪資','勞保自付','健保自付','應扣總額','實發薪資','備註'];
+                     '獎金','扣款','特殊調整','應發薪資','勞保自付','健保自付','應扣總額','現金給付','實發薪資','備註'];
     const allowKeys = ['年資津貼','主管津貼','教務津貼','導師津貼','行政津貼','交通津貼',
                        '安親津貼','美語津貼','英文輔導津貼','數學班津貼',
                        '混班/混校津貼','帶班人數津貼','其他津貼'];
@@ -4450,7 +4565,7 @@
         Number(emp['底薪']) || 0, r.attBonus, allowSum,
         Number(sal['獎金']) || 0, Number(sal['扣款']) || 0, Number(sal['特殊調整']) || 0,
         r.gross,
-        labor, health, labor + health, r.net,
+        labor, health, labor + health, (Number(emp['現金給付']) || 0), r.net,
         sal['備註'] || ''
       ]);
     });
