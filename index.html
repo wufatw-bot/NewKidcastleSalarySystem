@@ -2653,8 +2653,14 @@
     return { hourly, otPay, leaveD, lateD, attBonus, allowSum, gross, totalDeduct, net };
   }
 
+  // Helper: convert "同安校區" → "同安" so we can compare with employee 校區 field
+  function campusShort(schoolId) {
+    if (!schoolId || !CREDENTIALS[schoolId]) return '';
+    return String(CREDENTIALS[schoolId].name || '').replace(/校區$/, '');
+  }
+
   function populatePayslipSelectors() {
-    const userCampus = currentUser ? CREDENTIALS[currentUser.schoolId].name.replace(/校區$/, '') : null;
+    const userCampus = currentUser ? campusShort(currentUser.schoolId) : null;
     const isOwner = currentUser && currentUser.role === 'owner';
     const campusSel = $('psCampus');
     const empSel = $('psEmp');
@@ -2780,10 +2786,6 @@
       <div class="ps-net">
         <div class="lbl">實領金額 Net Salary  =  (A) + (B) − (C)</div>
         <div class="val">NT$ ${fmtNT(net)}</div>
-      </div>
-
-      <div class="ps-foot">
-        備註：本薪資條依勞動基準法第23條第1項規定提供。應扣項目之勞保費含就保費。公司另提撥退休金 (勞退新制 6%) 至員工帳戶，不從薪資扣除。加班費依勞基法第24條計算 (前 2 小時 1.34 倍)。
       </div>
 
       <div class="ps-sign">
@@ -2947,8 +2949,6 @@
     out += dline + '\n';
     out += `  實領金額 = (A) + (B) − (C) = NT$ ${fmtNT(net)}\n`;
     out += dline + '\n';
-    out += '  備註：本薪資條依勞動基準法第23條第1項規定提供。\n';
-    out += '       公司另提撥退休金 (勞退新制 6%)，不從薪資扣除。\n';
     return out;
   }
 
@@ -3017,7 +3017,7 @@
 
   function populateManagerSelectors() {
     if (!currentUser) return;
-    const userCampus = CREDENTIALS[currentUser.schoolId].name.replace(/校區$/, '');
+    const userCampus = campusShort(currentUser.schoolId);
     const isOwner = currentUser.role === 'owner';
     const campusSel = $('mgrCampus');
     const monthSel = $('mgrMonth');
@@ -3042,7 +3042,7 @@
     const month = getMgrMonth() || '11504';
     const campus = getMgrCampus();
     const search = getMgrSearch();
-    const userCampus = CREDENTIALS[currentUser.schoolId].name.replace(/校區$/, '');
+    const userCampus = campusShort(currentUser.schoolId);
     const isOwner = currentUser.role === 'owner';
     const effectiveCampus = isOwner ? campus : userCampus;
 
