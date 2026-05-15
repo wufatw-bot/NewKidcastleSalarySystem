@@ -2648,6 +2648,9 @@
               delete e['教務津貼'];
               if (b > 0) migrated++;
             }
+            // Ensure 登入帳號 / 登入密碼 for each employee
+            if (!e['登入帳號']) e['登入帳號'] = String(e['員工編號'] || '').toLowerCase();
+            if (!e['登入密碼']) e['登入密碼'] = String(e['員工編號'] || '').toLowerCase();
           });
           if (migrated > 0) {
             console.log('[migration] 教務津貼 → 主管津貼 (MAX) for ' + migrated + ' employees');
