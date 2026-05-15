@@ -1045,6 +1045,27 @@
   .field-cell .err-msg {
     font-size: 10px; color: #DC2626; margin-top: 3px;
   }
+  .quick-fill {
+    display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+  }
+  .qf-btn {
+    padding: 4px 10px;
+    border: 1.5px solid #F4A340;
+    background: #FFF7ED;
+    color: #92400E;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s, transform .12s;
+  }
+  .qf-btn:hover { background: #FED7AA; transform: translateY(-1px); }
+  .qf-btn:active { transform: translateY(0); }
+  .qf-btn.qf-clear {
+    border-color: #cbd5e1; background: #f8fafc; color: #475569;
+  }
+  .qf-btn.qf-clear:hover { background: #e2e8f0; }
 
   .net-preview {
     margin-top: 14px;
@@ -1960,6 +1981,7 @@
           <button class="btn-mini secondary" onclick="togglePsPreview()" id="psPreviewBtn">👁 預覽模式</button>
           <button class="btn-mini secondary" onclick="copyPayslip()">📋 複製</button>
           <button class="btn-action" onclick="window.print()">🖨 列印 / 存 PDF</button>
+          <button class="btn-mini primary" onclick="openPayslipSummary()" style="background:linear-gradient(135deg,#10B981,#047857);">📊 薪資條匯總</button>
         </div>
       </div>
     </div>
@@ -2110,6 +2132,41 @@
     <div class="foot">
       <button class="btn-mini secondary" onclick="closeAcct()">取消</button>
       <button class="btn-mini primary" onclick="saveAccount()">💾 儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payslip Summary modal -->
+<div class="small-modal-overlay" id="psSumOverlay" onclick="closePayslipSummary(event)">
+  <div class="small-modal" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#10B981,#047857);">
+      <div class="icon-l">📊</div>
+      <h2>薪資條匯總 Payslip Summary</h2>
+      <button class="close" onclick="closePayslipSummary()">✕</button>
+    </div>
+    <div class="body">
+      <div style="font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.7;">
+        匯出指定校區的薪資匯總表，包含 <b>姓名、校區、現金給付、匯款金額、總薪資</b>。<br>
+        匯款金額 = 總薪資 − 現金給付（已現金支付的部分）<br>
+        月份：<b id="psSumMonth">—</b>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn-mini primary" onclick="exportPayslipSummary('同安')"
+          style="padding:14px;text-align:left;background:linear-gradient(135deg,#4F8BCC,#2E5984);">
+          🏫 <b>同安校</b> · 僅同安校區員工
+        </button>
+        <button class="btn-mini primary" onclick="exportPayslipSummary('莊敬')"
+          style="padding:14px;text-align:left;background:linear-gradient(135deg,#F4A340,#E07B00);">
+          🎓 <b>莊敬校</b> · 僅莊敬校區員工
+        </button>
+        <button class="btn-mini primary" onclick="exportPayslipSummary('both')"
+          style="padding:14px;text-align:left;background:linear-gradient(135deg,#8B5CF6,#6D28D9);">
+          🏫🎓 <b>同安+莊敬校</b> · 兩校全部員工合併
+        </button>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="closePayslipSummary()">取消</button>
     </div>
   </div>
 </div>
@@ -2985,6 +3042,105 @@
     if (!el) return null;
     return el.outerHTML;
   }
+
+  // ==========================================================================
+  // 薪資條匯總 Payslip Summary
+  // ==========================================================================
+  function openPayslipSummary() {
+    if (!currentUser) { toast('請先登入', 'error'); return; }
+    const month = $('psMonth') && $('psMonth').value;
+    if (!month) { toast('請先選擇月份', 'error'); return; }
+    $('psSumMonth').textContent = `${month} (民國${month.slice(0,3)}年${month.slice(3,5)}月)`;
+    $('psSumOverlay').classList.add('show');
+  }
+  function closePayslipSummary(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('psSumOverlay').classList.remove('show');
+  }
+
+  function exportPayslipSummary(scope) {
+    if (typeof XLSX === 'undefined') { toast('SheetJS 未載入', 'error'); return; }
+    const month = $('psMonth') && $('psMonth').value;
+    if (!month) { toast('請先選擇月份', 'error'); return; }
+
+    // Filter employees by scope + active
+    let emps = DATA.employees.filter(e => e['在職狀態'] === '在職');
+    if (scope !== 'both') emps = emps.filter(e => e['校區'] === scope);
+    // Sort by 員工編號
+    emps.sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])));
+
+    if (!emps.length) {
+      toast(`${scope === 'both' ? '兩校' : scope + '校'} 沒有在職員工`, 'error');
+      return;
+    }
+
+    // Compute summary rows
+    const headers = ['員工編號', '姓名', '校區', '現金給付', '匯款金額', '總薪資'];
+    const rows = [headers];
+    let totalCash = 0, totalTransfer = 0, totalSalary = 0;
+    emps.forEach(emp => {
+      const sal = findSalary(emp['員工編號'], month) ||
+                  { 加班時數: 0, 請假時數: 0, 遲到次數: 0, 獎金: 0, 扣款: 0, 特殊調整: 0 };
+      const r = computeRow(emp, sal);
+      const cashPay = Number(emp['現金給付']) || 0;
+      // 總薪資 = A+B-C = net + cashPay (becuase net = A+B-C-D)
+      const total = r.net + cashPay;
+      const transfer = r.net;  // 匯款金額 = 總薪資 - 現金給付 = net
+      rows.push([
+        emp['員工編號'],
+        emp['員工姓名'] + (emp['英文姓名'] ? ' (' + emp['英文姓名'] + ')' : ''),
+        emp['校區'],
+        cashPay,
+        transfer,
+        total
+      ]);
+      totalCash += cashPay;
+      totalTransfer += transfer;
+      totalSalary += total;
+    });
+
+    // Total row
+    rows.push([]);
+    rows.push(['', '合計 TOTAL', `${emps.length} 人`, totalCash, totalTransfer, totalSalary]);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 12 }, { wch: 24 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+
+    // Style header row (bold + filled - openpyxl style won't fully apply in SheetJS Community,
+    // but we can at least set cell formatting via XLSX cell objects)
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const addr = XLSX.utils.encode_cell({ r: 0, c: C });
+      if (!ws[addr]) continue;
+      ws[addr].s = { font: { bold: true } };
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '薪資條匯總 Summary');
+
+    // File name
+    const scopeLabel = scope === 'both' ? '同安+莊敬合併'
+                    : scope === '同安' ? '同安校'
+                    : '莊敬校';
+    const dateStr = new Date().toISOString().substr(0, 10);
+    const filename = `Kidcastle_薪資條匯總_${scopeLabel}_${month}_${dateStr}.xlsx`;
+    XLSX.writeFile(wb, filename);
+
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `匯出薪資條匯總 ${scopeLabel} (${month} · ${emps.length} 名員工) · ${filename}`
+    });
+    closePayslipSummary();
+    toast(`✓ 已匯出 ${filename}`, 'success');
+  }
+
+  // ESC closes summary modal
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('psSumOverlay') && $('psSumOverlay').classList.contains('show')) {
+      closePayslipSummary();
+    }
+  });
 
   async function copyPayslip() {
     const text = payslipToText();
@@ -4218,9 +4374,20 @@
           const safe = String(v == null ? '' : v).replace(/"/g, '&quot;');
           inputHtml = `<input type="text" class="${cls}" data-key="${f.key}" value="${safe}"${f.readonly ? ' readonly' : ''}>`;
         }
+        // Quick-fill buttons for 現金給付
+        let quickFillHtml = '';
+        if (f.key === '現金給付') {
+          quickFillHtml = `
+            <div class="quick-fill">
+              <button type="button" class="qf-btn" data-target="現金給付" data-val="20000">$ 20,000</button>
+              <button type="button" class="qf-btn" data-target="現金給付" data-val="30000">$ 30,000</button>
+              <button type="button" class="qf-btn qf-clear" data-target="現金給付" data-val="0">清除</button>
+            </div>`;
+        }
         return `<div class="field-cell${wide}">
           <label>${f.key}</label>
           ${inputHtml}
+          ${quickFillHtml}
         </div>`;
       }).join('');
       return `<div class="form-section ${sec.cls}">
@@ -4262,6 +4429,21 @@
   });
   document.addEventListener('change', e => {
     if (e.target && e.target.closest && e.target.closest('#drawerBody')) updateNetPreview();
+  });
+  // Quick-fill button click handler (現金給付 → 20000 / 30000 / 0)
+  document.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('.qf-btn');
+    if (!btn) return;
+    e.preventDefault();
+    const targetKey = btn.dataset.target;
+    const val = btn.dataset.val;
+    const drawerBody = $('drawerBody');
+    if (!drawerBody) return;
+    const inp = drawerBody.querySelector(`[data-key="${targetKey}"]`);
+    if (!inp) return;
+    inp.value = val;
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+    inp.focus();
   });
 
   function saveEmployee() {
