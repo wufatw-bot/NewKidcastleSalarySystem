@@ -468,8 +468,9 @@
     display: inline-block; font-size: 11px;
     padding: 2px 10px; border-radius: 999px; margin-top: 2px;
   }
-  .u-role.owner   { background: #FEF3C7; color: #92400E; }
-  .u-role.manager { background: #DBEAFE; color: #1E40AF; }
+  .u-role.owner    { background: #FEF3C7; color: #92400E; }
+  .u-role.manager  { background: #DBEAFE; color: #1E40AF; }
+  .u-role.employee { background: #DCFCE7; color: #166534; }
   .btn-logout {
     padding: 8px 14px; border-radius: 10px; border: none;
     background: #f1f5f9; color: #475569;
@@ -1000,6 +1001,8 @@
   .form-section.salary { border-left-color: #10B981; }
   .form-section.deduct { border-left-color: #DC2626; }
   .form-section.bank   { border-left-color: #8B5CF6; }
+  .form-section.login  { border-left-color: #0EA5E9; }
+  .form-section.login h3 .badge { background: #0EA5E9; }
   .form-section h3 {
     font-size: 13px; font-weight: 700; color: #1a202c;
     margin-bottom: 12px;
@@ -2373,6 +2376,11 @@
       "輸入獎金、扣款、備註",
       "查看部門員工薪資資料",
       "產生本部門薪資條"
+    ],
+    employee: [
+      "查看自己的薪資條",
+      "查看歷史薪資紀錄",
+      "修改自己的密碼（無法修改其他資料）"
     ]
   };
 
@@ -2462,11 +2470,32 @@
 
     setTimeout(() => {
       try {
+        // 1) Check manager/owner accounts (CREDENTIALS)
         const list = CREDENTIALS[currentSchool].users;
-        const hit = list.find(x =>
+        let hit = list.find(x =>
           String(x.username).toLowerCase() === u.toLowerCase() &&
           String(x.password) === p
         );
+        // 2) Fall back to employee accounts (DATA.employees scoped to this school)
+        if (!hit) {
+          const schoolCampus = campusShort(currentSchool);
+          const empHit = DATA.employees.find(e =>
+            e['在職狀態'] === '在職' &&
+            e['校區'] === schoolCampus &&
+            String(e['登入帳號'] || '').toLowerCase() === u.toLowerCase() &&
+            String(e['登入密碼'] || '') === p
+          );
+          if (empHit) {
+            hit = {
+              username: empHit['登入帳號'],
+              password: empHit['登入密碼'],
+              role:     'employee',
+              fullName: empHit['員工姓名'],
+              email:    '',
+              empId:    empHit['員工編號']    // link back to employee record
+            };
+          }
+        }
         if (!hit) {
           // Helpful diagnostic: tell user which school they're trying to log into
           const schoolName = CREDENTIALS[currentSchool].name;
@@ -2572,15 +2601,26 @@
     $('dashboard').style.display = 'block';
     $('dbSchool').textContent = s.name + ' · ' + s.code;
     $('dbUserName').textContent = user.fullName;
-    $('dbRole').textContent = user.role === 'owner' ? '老闆 Owner' : '主管 Manager';
+    $('dbRole').textContent = user.role === 'owner' ? '老闆 Owner'
+                            : user.role === 'employee' ? '員工 Employee'
+                            : '主管 Manager';
     $('dbRole').className = 'u-role ' + user.role;
 
-    // Hide owner-only tabs for managers
-    document.querySelectorAll('.tab.owner-only').forEach(t => {
-      t.classList.toggle('hidden', user.role !== 'owner');
-    });
+    // Tab visibility by role
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('hidden'));
+    if (user.role === 'employee') {
+      // Employee: only payslip tab visible
+      document.querySelectorAll('.tab').forEach(t => {
+        if (t.dataset.tab !== 'payslip') t.classList.add('hidden');
+      });
+    } else {
+      // Owner sees everything; manager hides owner-only
+      document.querySelectorAll('.tab.owner-only').forEach(t => {
+        t.classList.toggle('hidden', user.role !== 'owner');
+      });
+    }
 
-    // Manager default tab = manager input; owner default = payslip
+    // Default tab by role
     activateTab(user.role === 'manager' ? 'manager' : 'payslip');
 
     populatePayslipSelectors();
@@ -2632,34 +2672,35 @@
   const STORAGE_KEY = 'kc_salary_data_v1';
   const LOG_KEY     = 'kc_change_log_v1';
 
+  function migrateEmployeeRecords(d) {
+    if (!d || !Array.isArray(d.employees)) return d;
+    let migAcademic = 0;
+    d.employees.forEach(e => {
+      // Old field: merge 教務津貼 into 主管津貼 (MAX)
+      if (e['教務津貼'] != null) {
+        const a = Number(e['主管津貼']) || 0;
+        const b = Number(e['教務津貼']) || 0;
+        e['主管津貼'] = Math.max(a, b);
+        delete e['教務津貼'];
+        if (b > 0) migAcademic++;
+      }
+      // New fields: login account for employee role
+      if (!e['登入帳號']) e['登入帳號'] = String(e['員工編號'] || '').toLowerCase();
+      if (!e['登入密碼']) e['登入密碼'] = String(e['員工編號'] || '').toLowerCase();
+    });
+    if (migAcademic > 0) console.log('[migration] 教務津貼 → 主管津貼 (MAX) for ' + migAcademic + ' employees');
+    return d;
+  }
+
   function loadData() {
     try {
       const s = localStorage.getItem(STORAGE_KEY);
       if (s) {
         const parsed = JSON.parse(s);
-        if (parsed && parsed.employees && parsed.salary) {
-          // -------- Migration: merge 教務津貼 into 主管津貼 (MAX) and remove field --------
-          let migrated = 0;
-          parsed.employees.forEach(e => {
-            if (e['教務津貼'] != null) {
-              const a = Number(e['主管津貼']) || 0;
-              const b = Number(e['教務津貼']) || 0;
-              e['主管津貼'] = Math.max(a, b);
-              delete e['教務津貼'];
-              if (b > 0) migrated++;
-            }
-            // Ensure 登入帳號 / 登入密碼 for each employee
-            if (!e['登入帳號']) e['登入帳號'] = String(e['員工編號'] || '').toLowerCase();
-            if (!e['登入密碼']) e['登入密碼'] = String(e['員工編號'] || '').toLowerCase();
-          });
-          if (migrated > 0) {
-            console.log('[migration] 教務津貼 → 主管津貼 (MAX) for ' + migrated + ' employees');
-          }
-          return parsed;
-        }
+        if (parsed && parsed.employees && parsed.salary) return migrateEmployeeRecords(parsed);
       }
     } catch(e) { console.warn('loadData failed', e); }
-    return JSON.parse(JSON.stringify(DEFAULT_DATA));
+    return migrateEmployeeRecords(JSON.parse(JSON.stringify(DEFAULT_DATA)));
   }
   function persistData() {
     try {
@@ -2826,9 +2867,36 @@
   function populatePayslipSelectors() {
     const userCampus = currentUser ? campusShort(currentUser.schoolId) : null;
     const isOwner = currentUser && currentUser.role === 'owner';
+    const isEmployee = currentUser && currentUser.role === 'employee';
     const campusSel = $('psCampus');
     const empSel = $('psEmp');
     const monthSel = $('psMonth');
+
+    // Employee: lock both campus + employee dropdowns to their own record
+    if (isEmployee && currentUser.empId) {
+      const meEmp = DATA.employees.find(e => e['員工編號'] === currentUser.empId);
+      if (meEmp) {
+        campusSel.value = meEmp['校區'];
+        campusSel.disabled = true;
+        empSel.innerHTML = `<option value="${meEmp['員工編號']}">${meEmp['員工編號']} · ${meEmp['員工姓名']} (${meEmp['校區']} · ${meEmp['職位']})</option>`;
+        empSel.disabled = true;
+        // Month selector stays enabled (employee can view history)
+        const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
+        monthSel.innerHTML = months.map(m =>
+          `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
+        ).join('');
+        // Hide 薪資條匯總 button (employee can't see other people's data)
+        document.querySelectorAll('.payslip-controls button').forEach(b => {
+          if (b.textContent.includes('薪資條匯總')) b.style.display = 'none';
+        });
+        return;
+      }
+    }
+
+    // Show 薪資條匯總 button again (for non-employee)
+    document.querySelectorAll('.payslip-controls button').forEach(b => {
+      if (b.textContent.includes('薪資條匯總')) b.style.display = '';
+    });
 
     // Owner can pick any campus; manager is locked to own campus
     if (!isOwner && userCampus) {
@@ -2837,6 +2905,7 @@
     } else {
       campusSel.disabled = false;
     }
+    empSel.disabled = false;
 
     const filter = campusSel.value;
     const emps = DEFAULT_DATA.employees.filter(e =>
@@ -3736,13 +3805,23 @@
     if (nw.length < 6) { showMyPwdErr('新密碼至少 6 碼'); return; }
     if (nw === cur) { showMyPwdErr('新密碼不能與目前密碼相同'); return; }
     if (nw !== cf) { showMyPwdErr('新密碼兩次輸入不一致'); return; }
-    // Update in CREDENTIALS
-    const list = CREDENTIALS[currentUser.schoolId].users;
-    const idx = list.findIndex(u => u.username === currentUser.username);
-    if (idx < 0) { showMyPwdErr('找不到帳號資料'); return; }
-    list[idx].password = nw;
-    currentUser.password = nw;
-    persistCreds();
+
+    if (currentUser.role === 'employee') {
+      // Employee: update their 登入密碼 in DATA.employees
+      const emp = findEmployee(currentUser.empId);
+      if (!emp) { showMyPwdErr('找不到員工資料'); return; }
+      emp['登入密碼'] = nw;
+      currentUser.password = nw;
+      persistData();
+    } else {
+      // Owner/Manager: update CREDENTIALS
+      const list = CREDENTIALS[currentUser.schoolId].users;
+      const idx = list.findIndex(u => u.username === currentUser.username);
+      if (idx < 0) { showMyPwdErr('找不到帳號資料'); return; }
+      list[idx].password = nw;
+      currentUser.password = nw;
+      persistCreds();
+    }
     appendLog({
       time: nowTimestamp(),
       user: currentUser.fullName,
@@ -4322,6 +4401,15 @@
         { key: '銀行名稱', type: 'text' },
         { key: '銀行帳號', type: 'text', wide: true }
       ]
+    },
+    {
+      title: '員工登入帳號 Employee Login',
+      cls: 'login',
+      badge: '⑤',
+      fields: [
+        { key: '登入帳號', type: 'text' },
+        { key: '登入密碼', type: 'text' }
+      ]
     }
   ];
 
@@ -4416,7 +4504,8 @@
       '導師津貼': 0, '行政津貼': 0, '交通津貼': 0, '安親津貼': 0, '美語津貼': 0,
       '英文輔導津貼': 0, '數學班津貼': 0, '混班/混校津貼': 0, '帶班人數津貼': 0,
       '其他津貼': 0, '勞保自付': 1196, '健保自付': 0, '退休金提撥': 1772,
-      '現金給付': 0, '銀行名稱': '', '銀行帳號': ''
+      '現金給付': 0, '銀行名稱': '', '銀行帳號': '',
+      '登入帳號': next.toLowerCase(), '登入密碼': next.toLowerCase()
     };
     _editingEid = null;
     _otherItems = [];
