@@ -1895,6 +1895,7 @@
         <input type="text" id="mgrSearch" placeholder="輸入姓名或員工編號…">
       </div>
       <div class="btns">
+        <button class="btn-mini secondary" onclick="reloadFromStorage()" title="從本機儲存同步最新資料（如有其他人/視窗修改）">🔄 重新整理</button>
         <button class="btn-mini secondary" onclick="copyPrevMonthForManager()" title="把上個月的工時/獎金等複製到本月">📋 複製上個月的資料</button>
         <button class="btn-mini secondary" onclick="newMonth()" title="複製本月為新月份模板">➕ 新增月份</button>
         <button class="btn-mini primary" onclick="exportSalary()">⬇ 匯出 Salary Data.xlsx</button>
@@ -1958,6 +1959,7 @@
         <input type="text" id="ownSearch" placeholder="輸入姓名、員工編號、英文名…">
       </div>
       <div class="btns">
+        <button class="btn-mini secondary" onclick="reloadFromStorage()" title="從本機儲存同步最新資料（如有其他人/視窗修改）">🔄 重新整理</button>
         <button class="btn-mini secondary" onclick="copyPrevMonthForOwner()" title="把上個月的工時/獎金等複製到最新月份">📋 複製上個月的資料</button>
         <button class="btn-mini secondary" onclick="addEmployee()">➕ 新增員工</button>
         <button class="btn-mini primary" onclick="exportEmployees()">⬇ 匯出 Employee Data.xlsx</button>
@@ -2558,6 +2560,12 @@
 
   function goDashboard(schoolId, user) {
     currentUser = Object.assign({ schoolId }, user);
+    // Reload DATA + CHANGE_LOG from localStorage so any edits made by a previous
+    // user (or another browser tab) are picked up before rendering.
+    try {
+      DATA = loadData();
+      CHANGE_LOG = loadLog();
+    } catch(e) { console.warn('reload on login failed', e); }
     const s = CREDENTIALS[schoolId];
     $('home').style.display = 'none';
     $('overlay').classList.remove('show');
@@ -2615,6 +2623,12 @@
   }
 
   function logout() {
+    // Flush any pending edit debounce so localStorage is up-to-date before next login
+    if (typeof _editTimer !== 'undefined' && _editTimer) {
+      clearTimeout(_editTimer);
+      _editTimer = null;
+      try { persistData(); } catch(e) { console.warn('flush persist failed', e); }
+    }
     $('dashboard').style.display = 'none';
     $('home').style.display = 'flex';
     hideAlerts();
@@ -2720,6 +2734,31 @@
     toast('已還原為原始資料', 'success');
   }
 
+  // Manual sync: re-read DATA from localStorage and re-render everything.
+  // Used after another tab/role makes changes and current view is stale.
+  function reloadFromStorage() {
+    // Flush any pending debounce first so we don't lose unsaved edits
+    if (typeof _editTimer !== 'undefined' && _editTimer) {
+      clearTimeout(_editTimer);
+      _editTimer = null;
+      try { persistData(); } catch(e) {}
+    }
+    try {
+      DATA = loadData();
+      CHANGE_LOG = loadLog();
+    } catch(e) {
+      toast('重新整理失敗：' + e.message, 'error');
+      return;
+    }
+    try { if (typeof populateManagerSelectors === 'function') populateManagerSelectors(); } catch(_) {}
+    try { if (typeof renderManagerTable === 'function') renderManagerTable(); } catch(_) {}
+    try { if (currentUser && currentUser.role === 'owner' && typeof renderOwnerTable === 'function') renderOwnerTable(); } catch(_) {}
+    try { if (typeof renderPayslip === 'function') renderPayslip(); } catch(_) {}
+    try { if (typeof renderDashboard === 'function') renderDashboard(); } catch(_) {}
+    try { if (typeof renderChangeLog === 'function') renderChangeLog(); } catch(_) {}
+    toast('✓ 已從本機儲存同步最新資料', 'success');
+  }
+
   function loadLog() {
     try {
       const s = localStorage.getItem(LOG_KEY);
@@ -2748,6 +2787,24 @@
 
   let DATA = loadData();
   let CHANGE_LOG = loadLog();
+
+  // Cross-tab sync: if another tab/window writes to STORAGE_KEY (e.g. manager
+  // editing in one tab while owner views in another), refresh in-memory DATA
+  // and re-render the active views so changes are visible immediately.
+  window.addEventListener('storage', e => {
+    if (!e || !e.key) return;
+    if (e.key === STORAGE_KEY) {
+      try { DATA = loadData(); } catch(err) { return; }
+      try { if (typeof renderManagerTable === 'function') renderManagerTable(); } catch(_) {}
+      try { if (currentUser && currentUser.role === 'owner' && typeof renderOwnerTable === 'function') renderOwnerTable(); } catch(_) {}
+      try { if (typeof renderPayslip === 'function') renderPayslip(); } catch(_) {}
+      try { if (typeof renderDashboard === 'function') renderDashboard(); } catch(_) {}
+      flashSave('↻ 已同步其他視窗的修改', 'ok');
+    } else if (e.key === LOG_KEY) {
+      try { CHANGE_LOG = loadLog(); } catch(_) {}
+      try { if (typeof renderChangeLog === 'function') renderChangeLog(); } catch(_) {}
+    }
+  });
 
   // -------- Save status + toast --------
   let _saveTimer;
