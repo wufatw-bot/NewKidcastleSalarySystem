@@ -2212,6 +2212,36 @@
   </div>
 </div>
 
+<!-- First-Login Email Setup modal (employee only) -->
+<div class="small-modal-overlay" id="firstEmailOverlay">
+  <div class="small-modal" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#10B981,#047857);">
+      <div class="icon-l">✉️</div>
+      <h2>歡迎首次登入 — 請設定 Email</h2>
+    </div>
+    <div class="body">
+      <div style="background:#ECFDF5;border-left:3px solid #10B981;padding:11px 14px;border-radius:8px;font-size:12px;color:#065F46;line-height:1.7;margin-bottom:14px;">
+        為了協助您日後忘記密碼時還原帳號，請設定您的常用 Email。<br>
+        系統未來會將「重設密碼」連結寄送至此信箱。<br>
+        您的 Email 僅供帳號還原使用，不會公開。
+      </div>
+      <div class="alert error" id="firstEmailErr">⚠ <span id="firstEmailErrMsg">—</span></div>
+      <div class="field">
+        <label>Email 信箱</label>
+        <input type="email" id="firstEmailInput" placeholder="例如：name@example.com" autocomplete="email">
+      </div>
+      <div style="font-size:11px;color:#64748b;line-height:1.6;">
+        💡 您之後仍可在「🔑 修改我的密碼」中查看 / 更新 Email。<br>
+        如果現在不方便填寫，可按「稍後再說」跳過。
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="skipFirstEmail()">稍後再說</button>
+      <button class="btn-mini primary" onclick="saveFirstEmail()" style="background:linear-gradient(135deg,#10B981,#047857);">💾 儲存 Email</button>
+    </div>
+  </div>
+</div>
+
 <!-- Payslip Summary modal -->
 <div class="small-modal-overlay" id="psSumOverlay" onclick="closePayslipSummary(event)">
   <div class="small-modal" onclick="event.stopPropagation()">
@@ -2640,6 +2670,15 @@
     $('btnLogin').disabled = false;
     $('btnLogin').textContent = '登入 Sign In';
     $('password').value = '';
+
+    // First-login Email setup for employee (only if Email is empty)
+    if (user.role === 'employee' && user.empId) {
+      const emp = findEmployee(user.empId);
+      if (emp && !emp['Email']) {
+        // Delay slightly so dashboard fully renders first
+        setTimeout(openFirstEmail, 600);
+      }
+    }
   }
 
   function logout() {
@@ -2687,6 +2726,8 @@
       // New fields: login account for employee role
       if (!e['登入帳號']) e['登入帳號'] = String(e['員工編號'] || '').toLowerCase();
       if (!e['登入密碼']) e['登入密碼'] = String(e['員工編號'] || '').toLowerCase();
+      // Email field for password reset (empty until user provides on first login)
+      if (e['Email'] == null) e['Email'] = '';
     });
     if (migAcademic > 0) console.log('[migration] 教務津貼 → 主管津貼 (MAX) for ' + migAcademic + ' employees');
     return d;
@@ -3776,6 +3817,52 @@
     });
   }
 
+  // -------- First-login Email setup (employee only) --------
+  function openFirstEmail() {
+    const emp = findEmployee(currentUser && currentUser.empId);
+    if (!emp) return;
+    $('firstEmailInput').value = '';
+    $('firstEmailErr').classList.remove('show');
+    $('firstEmailOverlay').classList.add('show');
+    setTimeout(() => $('firstEmailInput').focus(), 100);
+  }
+  function showFirstEmailErr(msg) {
+    $('firstEmailErrMsg').textContent = msg;
+    $('firstEmailErr').classList.add('show');
+  }
+  function closeFirstEmail() {
+    $('firstEmailOverlay').classList.remove('show');
+  }
+  function skipFirstEmail() {
+    closeFirstEmail();
+    toast('已跳過 Email 設定，您可隨時在「修改我的密碼」補上', 'success');
+  }
+  function saveFirstEmail() {
+    const v = ($('firstEmailInput').value || '').trim();
+    if (!v) { showFirstEmailErr('Email 不可空白'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { showFirstEmailErr('Email 格式錯誤'); return; }
+    if (!currentUser || !currentUser.empId) { showFirstEmailErr('找不到員工資料'); return; }
+    const emp = findEmployee(currentUser.empId);
+    if (!emp) { showFirstEmailErr('找不到員工資料'); return; }
+    emp['Email'] = v;
+    persistData();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `${currentUser.fullName} 設定了 Email：${v}`
+    });
+    closeFirstEmail();
+    toast(`✓ Email 已設定：${v}`, 'success');
+  }
+  // Allow Enter in input to save
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && $('firstEmailOverlay') && $('firstEmailOverlay').classList.contains('show')
+        && document.activeElement && document.activeElement.id === 'firstEmailInput') {
+      e.preventDefault();
+      saveFirstEmail();
+    }
+  });
+
   // -------- Change My Password (any logged-in user) --------
   function openChangeMyPassword() {
     if (!currentUser) return;
@@ -4408,7 +4495,8 @@
       badge: '⑤',
       fields: [
         { key: '登入帳號', type: 'text' },
-        { key: '登入密碼', type: 'text' }
+        { key: '登入密碼', type: 'text' },
+        { key: 'Email',   type: 'text', wide: true }
       ]
     }
   ];
