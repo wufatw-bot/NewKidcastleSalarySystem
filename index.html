@@ -2758,14 +2758,17 @@
   // =========================================================================
   // Cloud sync — Google Apps Script Web App backend
   // =========================================================================
-  const CLOUD_URL_KEY = 'kc_cloud_url_v1';   // only the user's URL is stored locally
+  // Default Apps Script Web App URL — shared across all users by default.
+  // Users can override via the「☁ 雲端設定」dialog (writes to localStorage).
+  const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbyQpJuII2RkmYQ-3P33XMt_Vv8Fd9eAV8KmwnHiTOQiXZuL3E9yvIBBiMRNgxEBKpU/exec';
+  const CLOUD_URL_KEY = 'kc_cloud_url_v1';   // optional per-user override
   function getCloudUrl() {
-    try { return localStorage.getItem(CLOUD_URL_KEY) || ''; } catch(e) { return ''; }
+    try { return localStorage.getItem(CLOUD_URL_KEY) || DEFAULT_CLOUD_URL; } catch(e) { return DEFAULT_CLOUD_URL; }
   }
   function setCloudUrl(u) {
     try {
-      if (u) localStorage.setItem(CLOUD_URL_KEY, u);
-      else   localStorage.removeItem(CLOUD_URL_KEY);
+      if (u && u !== DEFAULT_CLOUD_URL) localStorage.setItem(CLOUD_URL_KEY, u);
+      else                              localStorage.removeItem(CLOUD_URL_KEY);
     } catch(e) {}
   }
 
@@ -3034,13 +3037,8 @@
   let _pollTimer = null;    // periodic polling
   let _lastCloudTs = '';    // server-returned timestamp from last write
 
-  // If cloud URL not yet configured, force setup modal open at page load
-  // (gives the user a clear path on first visit)
-  window.addEventListener('DOMContentLoaded', () => {
-    if (!getCloudUrl()) {
-      setTimeout(openCloudSetup, 200);
-    }
-  });
+  // Cloud URL is pre-configured to DEFAULT_CLOUD_URL.
+  // Users may override via the「☁ 雲端設定」link in the dashboard header.
 
   // -------- Save status + toast --------
   let _saveTimer;
