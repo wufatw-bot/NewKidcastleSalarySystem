@@ -877,7 +877,14 @@
     border-color: #DC2626; background: #FEF2F2;
   }
   .mgr-table input.changed {
+    background: #FEF2F2;
+    color: #DC2626;
+    font-weight: 900;
+    border-color: #FCA5A5;
+  }
+  .mgr-table input.changed:focus {
     background: #FEF9C3;
+    color: #1e293b;
   }
 
   .mgr-table .net {
@@ -1087,7 +1094,15 @@
   }
   .field-cell input.changed,
   .field-cell select.changed {
+    background: #FEF2F2;
+    color: #DC2626;
+    font-weight: 900;
+    border-color: #FCA5A5 !important;
+  }
+  .field-cell input.changed:focus,
+  .field-cell select.changed:focus {
     background: #FEF9C3;
+    color: #1e293b;
   }
   .field-cell.error input,
   .field-cell.error select { border-color: #DC2626; }
