@@ -1659,6 +1659,7 @@
         <div class="u-name" id="dbUserName">—</div>
         <div class="u-role" id="dbRole">—</div>
         <a class="change-pwd-link" onclick="openChangeMyPassword()">🔑 修改我的密碼</a>
+        <a class="change-pwd-link" onclick="openCloudSetup()" style="margin-left:8px;">☁ 雲端設定</a>
       </div>
       <button class="btn-logout" onclick="logout()">登出</button>
     </div>
@@ -2214,6 +2215,45 @@
   </div>
 </div>
 
+<!-- Cloud Sync Setup modal -->
+<div class="small-modal-overlay" id="cloudSetupOverlay" style="z-index:999;">
+  <div class="small-modal" style="max-width:560px;" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);">
+      <div class="icon-l">☁</div>
+      <h2>Google Drive 雲端同步設定</h2>
+    </div>
+    <div class="body">
+      <p style="margin:0 0 12px;color:#475569;font-size:14px;">
+        本系統現已使用 Google Drive 儲存共用資料。<br>
+        請貼上您的 <b>Apps Script Web App 網址</b>（以 <code>/exec</code> 結尾）。
+      </p>
+      <div class="alert error" id="cloudSetupErr">⚠ <span id="cloudSetupErrMsg">—</span></div>
+      <div class="alert success" id="cloudSetupOk" style="background:#f0fdf4;color:#065f46;border:1px solid #bbf7d0;padding:8px 12px;border-radius:8px;display:none;">
+        ✓ <span id="cloudSetupOkMsg">—</span>
+      </div>
+      <div class="row">
+        <label>Web App 網址</label>
+        <input type="url" id="cloudUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec" autocomplete="off" style="width:100%;font-family:monospace;font-size:12px;">
+      </div>
+      <div style="margin-top:10px;padding:10px 12px;background:#fef9c3;border-left:3px solid #facc15;border-radius:6px;font-size:13px;color:#854d0e;">
+        💡 <b>第一次使用？</b> 請開啟同資料夾中的
+        <code>Cloud_Sync_Setup_Guide.html</code> 取得逐步部署指引。
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="closeCloudSetup()" id="cloudSetupCloseBtn">取消</button>
+      <button class="btn-mini primary" onclick="testAndSaveCloud()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);">🔌 測試並儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Overlay (full-screen blocking spinner) -->
+<div id="loadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:9998;align-items:center;justify-content:center;flex-direction:column;color:#fff;font-size:16px;">
+  <div style="width:60px;height:60px;border:5px solid #93c5fd;border-top-color:#3B82F6;border-radius:50%;animation:loadSpin 1s linear infinite;margin-bottom:14px;"></div>
+  <div id="loadingOverlayMsg">載入中…</div>
+</div>
+<style>@keyframes loadSpin{to{transform:rotate(360deg)}}</style>
+
 <!-- Payslip Summary modal -->
 <div class="small-modal-overlay" id="psSumOverlay" onclick="closePayslipSummary(event)">
   <div class="small-modal" onclick="event.stopPropagation()">
@@ -2558,14 +2598,22 @@
   // ==========================================================================
   let currentUser = null;
 
-  function goDashboard(schoolId, user) {
+  async function goDashboard(schoolId, user) {
     currentUser = Object.assign({ schoolId }, user);
-    // Reload DATA + CHANGE_LOG from localStorage so any edits made by a previous
-    // user (or another browser tab) are picked up before rendering.
+    // Pull latest DATA + CHANGE_LOG from cloud so this session sees other users' edits.
+    showLoadingOverlay('正在從雲端載入最新資料…');
     try {
-      DATA = loadData();
-      CHANGE_LOG = loadLog();
-    } catch(e) { console.warn('reload on login failed', e); }
+      DATA = await loadData();
+      CHANGE_LOG = await loadLog();
+      _dataReady = true;
+    } catch(e) {
+      hideLoadingOverlay();
+      toast('雲端載入失敗：' + e.message + '\n請檢查網路或重新設定雲端網址', 'error');
+      // Fall back: keep currentUser null so user can retry
+      currentUser = null;
+      return;
+    }
+    hideLoadingOverlay();
     const s = CREDENTIALS[schoolId];
     $('home').style.display = 'none';
     $('overlay').classList.remove('show');
@@ -2607,6 +2655,9 @@
     populateBackupSelectors();
     renderChangeLog();
 
+    // Begin polling for cloud changes every 30s
+    startPolling();
+
     // reset login form
     $('btnLogin').disabled = false;
     $('btnLogin').textContent = '登入 Sign In';
@@ -2622,13 +2673,14 @@
     }
   }
 
-  function logout() {
-    // Flush any pending edit debounce so localStorage is up-to-date before next login
+  async function logout() {
+    // Flush pending edit debounce so cloud is up-to-date before next login
     if (typeof _editTimer !== 'undefined' && _editTimer) {
       clearTimeout(_editTimer);
       _editTimer = null;
-      try { persistData(); } catch(e) { console.warn('flush persist failed', e); }
     }
+    try { await flushPersist(); } catch(e) { console.warn('flush persist failed', e); }
+    stopPolling();
     $('dashboard').style.display = 'none';
     $('home').style.display = 'flex';
     hideAlerts();
@@ -2703,49 +2755,142 @@
     return d;
   }
 
-  function loadData() {
-    try {
-      const s = localStorage.getItem(STORAGE_KEY);
-      if (s) {
-        const parsed = JSON.parse(s);
-        if (parsed && parsed.employees && parsed.salary) return migrateEmployeeRecords(parsed);
-      }
-    } catch(e) { console.warn('loadData failed', e); }
-    return migrateEmployeeRecords(JSON.parse(JSON.stringify(DEFAULT_DATA)));
+  // =========================================================================
+  // Cloud sync — Google Apps Script Web App backend
+  // =========================================================================
+  const CLOUD_URL_KEY = 'kc_cloud_url_v1';   // only the user's URL is stored locally
+  function getCloudUrl() {
+    try { return localStorage.getItem(CLOUD_URL_KEY) || ''; } catch(e) { return ''; }
   }
-  function persistData() {
+  function setCloudUrl(u) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
-      flashSave('✓ 已自動儲存', 'ok');
+      if (u) localStorage.setItem(CLOUD_URL_KEY, u);
+      else   localStorage.removeItem(CLOUD_URL_KEY);
+    } catch(e) {}
+  }
+
+  // Low-level HTTP helpers
+  async function cloudGet(action) {
+    const url = getCloudUrl();
+    if (!url) throw new Error('未設定雲端網址');
+    const sep = url.indexOf('?') >= 0 ? '&' : '?';
+    const res = await fetch(url + sep + 'action=' + encodeURIComponent(action) + '&_=' + Date.now(), {
+      method: 'GET', cache: 'no-store', redirect: 'follow'
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const txt = await res.text();
+    let json;
+    try { json = JSON.parse(txt); } catch(e) { throw new Error('回傳格式錯誤：' + txt.slice(0, 80)); }
+    if (!json.ok) throw new Error(json.error || '雲端錯誤');
+    return json;
+  }
+  async function cloudPost(action, payload) {
+    const url = getCloudUrl();
+    if (!url) throw new Error('未設定雲端網址');
+    // text/plain avoids the CORS preflight; Apps Script reads e.postData.contents
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action }, payload || {})),
+      redirect: 'follow'
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const txt = await res.text();
+    let json;
+    try { json = JSON.parse(txt); } catch(e) { throw new Error('回傳格式錯誤：' + txt.slice(0, 80)); }
+    if (!json.ok) throw new Error(json.error || '雲端錯誤');
+    return json;
+  }
+
+  async function cloudPing() {
+    const j = await cloudGet('ping');
+    return j.time || true;
+  }
+
+  // High-level load/save (replaces localStorage versions)
+  async function loadData() {
+    try {
+      const j = await cloudGet('read');
+      const d = j.data || {};
+      if (!d.employees || !d.salary) {
+        // First-ever load: cloud is empty, push defaults
+        const init = migrateEmployeeRecords(JSON.parse(JSON.stringify(DEFAULT_DATA)));
+        DATA = init;
+        try { await cloudPost('write', { data: DATA }); } catch(_) {}
+        return init;
+      }
+      return migrateEmployeeRecords(d);
     } catch(e) {
-      console.error('persistData failed', e);
-      flashSave('⚠ 儲存失敗', 'error');
+      console.error('loadData failed', e);
+      throw e;
     }
   }
-  function resetData() {
-    if (!confirm('確定要清除所有本機編輯、恢復原始資料嗎？\n（不影響 Excel 檔案）')) return;
+
+  // Debounced persist — coalesces rapid edits, then POSTs latest DATA to cloud.
+  let _persistTimer = null;
+  let _persistInFlight = false;
+  let _persistAgainAfter = false;
+
+  function persistData() {
+    // Debounce 500ms; if a save is already in flight, mark to run again afterwards
+    if (_persistInFlight) { _persistAgainAfter = true; return; }
+    clearTimeout(_persistTimer);
+    _persistTimer = setTimeout(doPersistNow, 500);
+  }
+  async function doPersistNow() {
+    if (_persistInFlight) { _persistAgainAfter = true; return; }
+    _persistInFlight = true;
+    flashSave('☁ 同步中…', 'ok');
+    try {
+      const j = await cloudPost('write', { data: DATA });
+      _lastCloudTs = j.ts || '';
+      flashSave('☁ 已同步到雲端', 'ok');
+    } catch(e) {
+      console.error('persistData failed', e);
+      flashSave('⚠ 雲端同步失敗：' + e.message, 'error');
+    } finally {
+      _persistInFlight = false;
+      if (_persistAgainAfter) {
+        _persistAgainAfter = false;
+        setTimeout(doPersistNow, 100);
+      }
+    }
+  }
+  async function flushPersist() {
+    clearTimeout(_persistTimer);
+    if (_persistInFlight) {
+      // Wait briefly for current write to finish
+      for (let i = 0; i < 30 && _persistInFlight; i++) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+    } else {
+      await doPersistNow();
+    }
+  }
+
+  async function resetData() {
+    if (!confirm('確定要清除雲端資料、恢復原始資料嗎？\n（會將 Google Drive 中的薪資 JSON 改回預設值）')) return;
     DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
     CHANGE_LOG = [];
-    persistData();
-    try { localStorage.removeItem(LOG_KEY); } catch(e) {}
+    try {
+      await cloudPost('write',     { data: DATA });
+      await cloudPost('write_log', { log:  [] });
+    } catch(e) {
+      toast('雲端還原失敗：' + e.message, 'error');
+      return;
+    }
     renderManagerTable();
     renderPayslip();
     renderChangeLog();
-    toast('已還原為原始資料', 'success');
+    toast('已還原為原始資料（雲端 + 記憶體）', 'success');
   }
 
-  // Manual sync: re-read DATA from localStorage and re-render everything.
-  // Used after another tab/role makes changes and current view is stale.
-  function reloadFromStorage() {
-    // Flush any pending debounce first so we don't lose unsaved edits
-    if (typeof _editTimer !== 'undefined' && _editTimer) {
-      clearTimeout(_editTimer);
-      _editTimer = null;
-      try { persistData(); } catch(e) {}
-    }
+  // Manual sync from cloud — flush + reload + re-render
+  async function reloadFromStorage() {
+    await flushPersist();
     try {
-      DATA = loadData();
-      CHANGE_LOG = loadLog();
+      DATA = await loadData();
+      CHANGE_LOG = await loadLog();
     } catch(e) {
       toast('重新整理失敗：' + e.message, 'error');
       return;
@@ -2756,21 +2901,118 @@
     try { if (typeof renderPayslip === 'function') renderPayslip(); } catch(_) {}
     try { if (typeof renderDashboard === 'function') renderDashboard(); } catch(_) {}
     try { if (typeof renderChangeLog === 'function') renderChangeLog(); } catch(_) {}
-    toast('✓ 已從本機儲存同步最新資料', 'success');
+    toast('✓ 已從雲端同步最新資料', 'success');
   }
 
-  function loadLog() {
+  async function loadLog() {
     try {
-      const s = localStorage.getItem(LOG_KEY);
-      if (s) return JSON.parse(s);
-    } catch(e) {}
-    return [];
+      const j = await cloudGet('log');
+      return Array.isArray(j.log) ? j.log : [];
+    } catch(e) { console.warn('loadLog failed', e); return []; }
   }
+
   function appendLog(entry) {
     CHANGE_LOG.unshift(entry);
-    if (CHANGE_LOG.length > 100) CHANGE_LOG = CHANGE_LOG.slice(0, 100);
-    try { localStorage.setItem(LOG_KEY, JSON.stringify(CHANGE_LOG)); } catch(e) {}
+    if (CHANGE_LOG.length > 500) CHANGE_LOG = CHANGE_LOG.slice(0, 500);
     renderChangeLog();
+    // Fire and forget; the server-side appendLog stores last 500 too
+    cloudPost('append_log', { entry }).catch(e => console.warn('append_log failed', e));
+  }
+
+  // Polling: every 30s when dashboard is shown, pull latest from cloud
+  function startPolling() {
+    stopPolling();
+    _pollTimer = setInterval(async () => {
+      if (!currentUser) return;
+      if (_persistInFlight) return;
+      try {
+        const j = await cloudGet('read');
+        const fresh = j.data || {};
+        // Only update if signature differs (cheap detect)
+        const a = JSON.stringify(DATA);
+        const b = JSON.stringify(migrateEmployeeRecords(fresh));
+        if (a !== b) {
+          DATA = migrateEmployeeRecords(fresh);
+          try { renderManagerTable(); } catch(_) {}
+          try { if (currentUser.role === 'owner') renderOwnerTable(); } catch(_) {}
+          try { renderPayslip(); } catch(_) {}
+          try { renderDashboard(); } catch(_) {}
+          flashSave('☁ 已從雲端同步最新變更', 'ok');
+        }
+      } catch(e) { /* silent — poll only */ }
+    }, 30000);
+  }
+  function stopPolling() {
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  }
+
+  // ----- Loading overlay -----
+  function showLoadingOverlay(msg) {
+    const el = $('loadingOverlay');
+    if (!el) return;
+    $('loadingOverlayMsg').textContent = msg || '載入中…';
+    el.style.display = 'flex';
+  }
+  function hideLoadingOverlay() {
+    const el = $('loadingOverlay');
+    if (el) el.style.display = 'none';
+  }
+
+  // ----- Cloud Setup modal -----
+  function openCloudSetup() {
+    const el = $('cloudSetupOverlay');
+    if (!el) return;
+    $('cloudUrlInput').value = getCloudUrl();
+    $('cloudSetupErr').classList.remove('show');
+    const okEl = $('cloudSetupOk');
+    if (okEl) okEl.style.display = 'none';
+    el.classList.add('show');
+    // Allow close button only if URL already set
+    $('cloudSetupCloseBtn').style.display = getCloudUrl() ? '' : 'none';
+    setTimeout(() => $('cloudUrlInput').focus(), 100);
+  }
+  function closeCloudSetup() {
+    $('cloudSetupOverlay').classList.remove('show');
+  }
+  function showCloudSetupErr(m) {
+    $('cloudSetupErrMsg').textContent = m;
+    $('cloudSetupErr').classList.add('show');
+    const okEl = $('cloudSetupOk');
+    if (okEl) okEl.style.display = 'none';
+  }
+  function showCloudSetupOk(m) {
+    $('cloudSetupOkMsg').textContent = m;
+    $('cloudSetupOk').style.display = '';
+    $('cloudSetupErr').classList.remove('show');
+  }
+  async function testAndSaveCloud() {
+    const v = ($('cloudUrlInput').value || '').trim();
+    if (!v) { showCloudSetupErr('網址不可空白'); return; }
+    if (!/^https?:\/\/script\.google\.com\//.test(v)) {
+      showCloudSetupErr('網址格式錯誤，應以 https://script.google.com/ 開頭');
+      return;
+    }
+    if (!/\/exec(\?|$)/.test(v)) {
+      showCloudSetupErr('網址應以 /exec 結尾（不要用 /dev 預覽網址）');
+      return;
+    }
+    // Temporarily set + test
+    const prev = getCloudUrl();
+    setCloudUrl(v);
+    showCloudSetupOk('正在測試連線…');
+    try {
+      const t = await cloudPing();
+      showCloudSetupOk('✓ 連線成功 (' + t + ')，已儲存設定');
+      setTimeout(() => {
+        closeCloudSetup();
+        // Reload the page so DATA is freshly fetched from cloud
+        location.reload();
+      }, 800);
+    } catch (e) {
+      // Restore previous URL on failure
+      setCloudUrl(prev);
+      showCloudSetupErr('連線失敗：' + e.message);
+    }
   }
   function renderChangeLog() {
     const ul = $('mgrLogList');
@@ -2785,24 +3027,18 @@
     ).join('');
   }
 
-  let DATA = loadData();
-  let CHANGE_LOG = loadLog();
+  // DATA starts as default; will be overwritten by cloudLoadData() on first login
+  let DATA = migrateEmployeeRecords(JSON.parse(JSON.stringify(DEFAULT_DATA)));
+  let CHANGE_LOG = [];
+  let _dataReady = false;   // true after first successful cloud read
+  let _pollTimer = null;    // periodic polling
+  let _lastCloudTs = '';    // server-returned timestamp from last write
 
-  // Cross-tab sync: if another tab/window writes to STORAGE_KEY (e.g. manager
-  // editing in one tab while owner views in another), refresh in-memory DATA
-  // and re-render the active views so changes are visible immediately.
-  window.addEventListener('storage', e => {
-    if (!e || !e.key) return;
-    if (e.key === STORAGE_KEY) {
-      try { DATA = loadData(); } catch(err) { return; }
-      try { if (typeof renderManagerTable === 'function') renderManagerTable(); } catch(_) {}
-      try { if (currentUser && currentUser.role === 'owner' && typeof renderOwnerTable === 'function') renderOwnerTable(); } catch(_) {}
-      try { if (typeof renderPayslip === 'function') renderPayslip(); } catch(_) {}
-      try { if (typeof renderDashboard === 'function') renderDashboard(); } catch(_) {}
-      flashSave('↻ 已同步其他視窗的修改', 'ok');
-    } else if (e.key === LOG_KEY) {
-      try { CHANGE_LOG = loadLog(); } catch(_) {}
-      try { if (typeof renderChangeLog === 'function') renderChangeLog(); } catch(_) {}
+  // If cloud URL not yet configured, force setup modal open at page load
+  // (gives the user a clear path on first visit)
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!getCloudUrl()) {
+      setTimeout(openCloudSetup, 200);
     }
   });
 
