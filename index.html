@@ -2681,6 +2681,8 @@
     }
     try { await flushPersist(); } catch(e) { console.warn('flush persist failed', e); }
     stopPolling();
+    // Reset per-session UI flags so next login gets its own defaults
+    if ($('acctSchool')) delete $('acctSchool').dataset.defaulted;
     $('dashboard').style.display = 'none';
     $('home').style.display = 'flex';
     hideAlerts();
@@ -3832,6 +3834,12 @@
 
   function renderAccountsTable() {
     if (!currentUser || currentUser.role !== 'owner') return;
+    // Default the campus dropdown to the logged-in user's school
+    // (only on first render of this session, so the owner can still switch freely)
+    if (!$('acctSchool').dataset.defaulted) {
+      $('acctSchool').value = String(currentUser.schoolId);
+      $('acctSchool').dataset.defaulted = '1';
+    }
     const schoolId = $('acctSchool').value;
     const search = ($('acctSearch').value || '').trim().toLowerCase();
     const users = (CREDENTIALS[schoolId] || {}).users || [];
