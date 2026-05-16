@@ -722,6 +722,82 @@
     padding: 0 4px 8px; font-size: 13px; color: #64748b;
   }
   .mgr-meta b { color: #1a202c; }
+  /* Resizable column handles */
+  table.resizable {
+    table-layout: auto;
+  }
+  table.resizable thead th {
+    position: relative;
+    user-select: none;
+  }
+  table.resizable thead th .col-resizer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    background: transparent;
+    z-index: 5;
+  }
+  table.resizable thead th .col-resizer::after {
+    content: '';
+    position: absolute;
+    right: 3px;
+    top: 25%;
+    bottom: 25%;
+    width: 2px;
+    background: rgba(255,255,255,.4);
+    border-radius: 1px;
+    transition: background .15s;
+  }
+  table.resizable thead th .col-resizer:hover::after,
+  table.resizable thead th .col-resizer.active::after {
+    background: #FBBF24;
+    width: 3px;
+    right: 2px;
+  }
+  body.col-resizing { cursor: col-resize !important; user-select: none !important; }
+  body.col-resizing * { cursor: col-resize !important; }
+
+  /* Full-screen centered sync indicator */
+  #syncOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .45);
+    z-index: 9997;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+  }
+  #syncOverlay.show { display: flex; }
+  #syncOverlay .sync-text {
+    font-size: 80px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 6px 30px rgba(0,0,0,.6), 0 0 60px rgba(59,130,246,.6);
+    letter-spacing: 4px;
+    animation: syncPulse 1.4s ease-in-out infinite;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  #syncOverlay .sync-spinner {
+    width: 80px;
+    height: 80px;
+    border: 8px solid rgba(255,255,255,.25);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: syncSpin 1s linear infinite;
+  }
+  @keyframes syncPulse {
+    0%,100% { opacity: .85; transform: scale(1); }
+    50%     { opacity: 1;   transform: scale(1.04); }
+  }
+  @keyframes syncSpin { to { transform: rotate(360deg); } }
+
   .save-status {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 4px 10px; border-radius: 999px;
@@ -1910,7 +1986,7 @@
     </div>
 
     <div class="mgr-table-wrap">
-      <table class="mgr-table" id="mgrTable">
+      <table class="mgr-table resizable" id="mgrTable">
         <thead>
           <tr>
             <th style="text-align:left;padding-left:12px;">員工</th>
@@ -1974,7 +2050,7 @@
     </div>
 
     <div class="mgr-table-wrap">
-      <table class="own-table" id="ownTable">
+      <table class="own-table resizable" id="ownTable">
         <thead>
           <tr>
             <th>員工編號</th>
@@ -2253,6 +2329,14 @@
   <div id="loadingOverlayMsg">載入中…</div>
 </div>
 <style>@keyframes loadSpin{to{transform:rotate(360deg)}}</style>
+
+<!-- Big centered "同步中" overlay during cloud writes -->
+<div id="syncOverlay" aria-hidden="true">
+  <div class="sync-text">
+    <div class="sync-spinner"></div>
+    <span>☁ 同步中…</span>
+  </div>
+</div>
 
 <!-- Payslip Summary modal -->
 <div class="small-modal-overlay" id="psSumOverlay" onclick="closePayslipSummary(event)">
@@ -3052,7 +3136,75 @@
     if (type === 'ok') {
       _saveTimer = setTimeout(() => { el.textContent = '✓ 已自動儲存'; }, 1200);
     }
+    // Full-screen "同步中" overlay during cloud writes
+    const ov = $('syncOverlay');
+    if (ov) {
+      const isSyncing = /同步中/.test(msg);
+      ov.classList.toggle('show', isSyncing);
+    }
   }
+
+  // -------- Resizable table columns --------
+  // Attach drag handles to every <th> in a table marked with .resizable.
+  // Idempotent — safe to call after each render.
+  function makeColumnsResizable(table) {
+    if (!table) return;
+    const ths = table.querySelectorAll('thead th');
+    ths.forEach(th => {
+      // Skip if already has a resizer or is the last column
+      if (th.querySelector('.col-resizer')) return;
+      const handle = document.createElement('div');
+      handle.className = 'col-resizer';
+      handle.addEventListener('mousedown', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.pageX;
+        const startW = th.offsetWidth;
+        handle.classList.add('active');
+        document.body.classList.add('col-resizing');
+        function onMove(ev) {
+          const w = Math.max(50, startW + (ev.pageX - startX));
+          th.style.width    = w + 'px';
+          th.style.minWidth = w + 'px';
+          th.style.maxWidth = w + 'px';
+        }
+        function onUp() {
+          handle.classList.remove('active');
+          document.body.classList.remove('col-resizing');
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          // Persist column widths so they survive re-render & reload
+          try {
+            const tbl = th.closest('table');
+            if (tbl && tbl.id) {
+              const widths = Array.from(tbl.querySelectorAll('thead th')).map(t => t.style.width || '');
+              localStorage.setItem('kc_colw_' + tbl.id, JSON.stringify(widths));
+            }
+          } catch (_) {}
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+      th.appendChild(handle);
+    });
+    // Restore persisted widths
+    try {
+      if (table.id) {
+        const raw = localStorage.getItem('kc_colw_' + table.id);
+        if (raw) {
+          const widths = JSON.parse(raw);
+          Array.from(table.querySelectorAll('thead th')).forEach((t, i) => {
+            const w = widths[i];
+            if (w) { t.style.width = w; t.style.minWidth = w; t.style.maxWidth = w; }
+          });
+        }
+      }
+    } catch (_) {}
+  }
+  // Auto-attach resizers when DOM is ready (and after future re-renders)
+  window.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('table.resizable').forEach(makeColumnsResizable);
+  });
   let _toastTimer;
   function toast(msg, type) {
     const t = $('toast'); if (!t) return;
