@@ -3284,7 +3284,8 @@
     const otHours = Number(sal['加班時數']) || 0;
     const otPay = Math.round(otHours * hourly * 1.34);
     const leaveH = Number(sal['請假時數']) || 0;
-    const leaveD = Math.round(leaveH * hourly);
+    const LEAVE_RATE = 180;   // 請假扣款 = 請假時數 × 180元/小時 (固定費率)
+    const leaveD = Math.round(leaveH * LEAVE_RATE);
     const lateCnt = Number(sal['遲到次數']) || 0;
     const lateD = lateCnt * 100;
 
@@ -3423,11 +3424,15 @@
     const deductions = [
       ['勞保自付 Labor Ins', emp['勞保自付']],
       ['健保自付 Health Ins', emp['健保自付']],
-      ['請假扣款 Leave', sal['請假扣款']],
+      ['請假時數 Leave Hours', sal['請假時數']],
+      ['請假扣款 Leave Deduct (×180/hr)', sal['請假扣款']],
       ['遲到扣款 Late', sal['遲到扣款']],
       ['扣款 Deduction', sal['扣款']]
     ];
-    const subC = deductions.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    // Exclude 請假時數 from sum (it's hours, not money) — only the 請假扣款 (money) counts
+    const subC = deductions
+      .filter(([k]) => !k.startsWith('請假時數'))
+      .reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
     // D — 現金給付 (Cash already paid; subtracted from final net)
     const subD = Number(emp['現金給付']) || 0;
@@ -3592,11 +3597,14 @@
     const deductions = [
       ['勞保自付',   emp['勞保自付']],
       ['健保自付',   emp['健保自付']],
-      ['請假扣款',   sal['請假扣款']],
+      ['請假時數',   sal['請假時數']],
+      ['請假扣款 (×180/時)', sal['請假扣款']],
       ['遲到扣款',   sal['遲到扣款']],
       ['扣款',       sal['扣款']]
     ];
-    const subC = deductions.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const subC = deductions
+      .filter(([k]) => !k.startsWith('請假時數'))
+      .reduce((s, [_, v]) => s + (Number(v) || 0), 0);
     const subD = Number(emp['現金給付']) || 0;
     const net = subA + subB - subC - subD;
 
