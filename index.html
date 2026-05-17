@@ -812,11 +812,17 @@
     background: #fff; border-radius: 14px;
     box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     overflow: auto;
-    max-height: 60vh;
+    max-height: 68vh;
+    position: relative;
   }
   .mgr-table {
     width: 100%; border-collapse: separate; border-spacing: 0;
     font-size: 13px;
+  }
+  .mgr-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 50;
   }
   .mgr-table thead th {
     position: sticky; top: 0;
@@ -824,7 +830,8 @@
     color: #fff; font-weight: 700;
     padding: 10px 8px; text-align: center;
     white-space: nowrap;
-    z-index: 2;
+    z-index: 50;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   }
   .mgr-table thead th:first-child {
     border-top-left-radius: 14px;
@@ -842,8 +849,30 @@
   .mgr-table tbody tr:hover td { background: #EEF4FF; }
 
   .mgr-table .name-cell { text-align: left; padding-left: 12px; }
-  .mgr-table .name-cell .name { font-weight: 600; color: #1a202c; }
+  .mgr-table .name-cell .name {
+    font-weight: 600; color: #1a202c;
+    display: flex; align-items: center; gap: 6px;
+  }
   .mgr-table .name-cell .id { font-size: 11px; color: #94a3b8; }
+  .mgr-edit-btn {
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .15s;
+    box-shadow: 0 1px 3px rgba(109,40,217,.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .mgr-edit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(109,40,217,.45);
+  }
+  .mgr-edit-btn:active { transform: translateY(0); }
   .mgr-table .campus-chip {
     display: inline-block; padding: 2px 8px;
     border-radius: 999px; font-size: 11px; font-weight: 600;
@@ -2014,7 +2043,7 @@
             <th>扣款</th>
             <th>特殊調整</th>
             <th>備註</th>
-            <th>實領薪資</th>
+            <th>加扣薪小計</th>
           </tr>
         </thead>
         <tbody id="mgrTbody"></tbody>
@@ -3899,16 +3928,22 @@
         }
       }).join('');
 
-      const netClass = r.net < 0 ? 'net warn' : 'net';
+      // Show 加扣薪小計 (gross) — sub-total of base + allowances + variable - deductions,
+      // BEFORE labor/health insurance and cash payment.
+      const subTotal = r.gross;
+      const stClass = subTotal < 0 ? 'net warn' : 'net';
 
       return `<tr>
         <td class="name-cell">
-          <div class="name">${emp['員工姓名']}${emp['英文姓名'] ? ' <small style="color:#94a3b8">('+emp['英文姓名']+')</small>' : ''}</div>
+          <div class="name">
+            <button class="mgr-edit-btn" onclick="openEditEmployee('${emp['員工編號']}')" title="檢視 / 編輯員工基本資料">✏ 編輯</button>
+            ${emp['員工姓名']}${emp['英文姓名'] ? ' <small style="color:#94a3b8">('+emp['英文姓名']+')</small>' : ''}
+          </div>
           <div class="id">${emp['員工編號']} · ${emp['職位']}</div>
         </td>
         <td><span class="campus-chip ${campusClass}">${emp['校區']}</span></td>
         ${inputs}
-        <td><span class="${netClass}">${fmtNT(r.net)}</span></td>
+        <td><span class="${stClass}">${fmtNT(subTotal)}</span></td>
       </tr>`;
     }).join('');
     updateEditCount();
@@ -4996,13 +5031,36 @@
     _otherItems = Array.isArray(emp['其他津貼明細'])
       ? emp['其他津貼明細'].map(x => ({ name: x.name || '', amount: Number(x.amount) || 0 }))
       : [];
-    $('drawerTitle').textContent = '編輯員工資料';
+    const readOnly = !currentUser || currentUser.role !== 'owner';
+    $('drawerTitle').textContent = readOnly ? '檢視員工資料 (僅老闆可修改)' : '編輯員工資料';
     $('drawerSub').textContent = `${emp['員工編號']} · ${emp['員工姓名']} (${emp['校區']})`;
     renderDrawerForm(emp, false);
     wireOtherItemizer();
+    // Disable all inputs + hide Save button for non-owners
+    applyDrawerReadOnly(readOnly);
     $('drawerOverlay').classList.add('show');
     $('drawer').classList.add('show');
     setTimeout(updateNetPreview, 50);
+  }
+  function applyDrawerReadOnly(readOnly) {
+    const body = $('drawerBody');
+    if (!body) return;
+    body.querySelectorAll('input, select, textarea, button').forEach(el => {
+      // Allow only the "其他津貼明細" preview chips? Actually no — readonly means no edits at all.
+      if (readOnly) {
+        el.setAttribute('disabled', 'disabled');
+      } else {
+        el.removeAttribute('disabled');
+      }
+    });
+    // Hide Save button in drawer foot for read-only viewers
+    const foot = document.querySelector('#drawer .drawer-foot');
+    if (foot) {
+      const saveBtn = foot.querySelector('.btn-mini.primary');
+      if (saveBtn) saveBtn.style.display = readOnly ? 'none' : '';
+      const cancelBtn = foot.querySelector('.btn-mini.secondary');
+      if (cancelBtn) cancelBtn.textContent = readOnly ? '關閉' : '取消';
+    }
   }
   function openAddEmployee() {
     const next = nextEmpId(DATA.employees);
