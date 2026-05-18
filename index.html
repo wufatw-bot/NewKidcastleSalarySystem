@@ -1991,7 +1991,10 @@
       </div>
 
       <div class="backup-note">
-        <b>使用說明：</b>「備份到本地」直接下載到電腦下載資料夾；「備份到新/舊 Google Drive」會先下載檔案，然後自動開啟對應的 Google Drive 帳號視窗，把下載資料夾的檔案拖入即可。新 GDrive 為 <code style="background:#FEF3C7;padding:1px 5px;border-radius:3px;">u/0</code>（預設帳號），舊 GDrive 為 <code style="background:#FEF3C7;padding:1px 5px;border-radius:3px;">u/1</code>（第二個帳號）。
+        <b>使用說明：</b><br>
+        ☁ <b>「備份到新 Google Drive」</b>：直接透過 Apps Script 上傳至 <code>Kidcastle_Backups</code> 資料夾（自動，不需登入）<br>
+        ☁ <b>「備份到舊 Google Drive」</b>：透過 Apps Script 上傳至 <code>Kidcastle_Backups_Old</code> 資料夾<br>
+        💾 <b>「備份到本地」</b>：下載到電腦下載資料夾
       </div>
     </div>
   </div>
@@ -4731,7 +4734,7 @@
   if ($('bkMonth'))      $('bkMonth').addEventListener('change', updateBackupFilenameHint);
 
   // -------- doBackup: generate xlsx file + (optional) open GDrive --------
-  function doBackup(campusScope, destination) {
+  async function doBackup(campusScope, destination) {
     if (typeof XLSX === 'undefined') { toast('SheetJS 未載入，無法備份', 'error'); return; }
     if (!currentUser) { toast('請先登入', 'error'); return; }
 
@@ -4856,36 +4859,77 @@
       XLSX.utils.book_append_sheet(wb, wsAcct, '帳號 Accounts');
     }
 
-    // Write file (triggers browser download)
+    // For local backup: trigger browser download
+    if (destination === 'local') {
+      try { XLSX.writeFile(wb, filename); }
+      catch(e) {
+        console.error('backup write failed', e);
+        toast('產生備份檔失敗：' + e.message, 'error');
+        return;
+      }
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser.fullName,
+        text: `備份 → 本地 · ${filename}`
+      });
+      toast(`💾 已備份到本地下載資料夾`, 'success');
+      return;
+    }
+
+    // For Drive backups: upload xlsx bytes to Apps Script → it writes to a Drive folder
+    let xlsxArray;
     try {
-      XLSX.writeFile(wb, filename);
+      xlsxArray = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
     } catch(e) {
-      console.error('backup write failed', e);
       toast('產生備份檔失敗：' + e.message, 'error');
       return;
     }
 
-    // Log
-    appendLog({
-      time: nowTimestamp(),
-      user: currentUser.fullName,
-      text: `備份 → ${destination === 'local' ? '本地' : destination === 'gdrive-new' ? '新 GDrive' : '舊 GDrive'} · ${filename}`
-    });
+    const folderName = destination === 'gdrive-new'
+      ? 'Kidcastle_Backups'
+      : 'Kidcastle_Backups_Old';
+    const destLabel = destination === 'gdrive-new' ? '新 GDrive' : '舊 GDrive';
 
-    // Destination: open Google Drive if needed
-    if (destination === 'gdrive-new') {
-      setTimeout(() => {
-        window.open('https://drive.google.com/drive/u/0/my-drive', '_blank');
-        toast(`📂 檔案已下載！請拖入新 Google Drive 視窗`, 'success');
-      }, 500);
-    } else if (destination === 'gdrive-old') {
-      setTimeout(() => {
-        window.open('https://drive.google.com/drive/u/1/my-drive', '_blank');
-        toast(`📁 檔案已下載！請拖入舊 Google Drive 視窗`, 'success');
-      }, 500);
-    } else {
-      toast(`💾 已備份到本地下載資料夾`, 'success');
+    showLoadingOverlay(`☁ 正在上傳到 Google Drive (${destLabel}) …`);
+    try {
+      const b64 = arrayBufferToBase64(xlsxArray);
+      const j = await cloudPost('backup', {
+        folder: folderName,
+        filename: filename,
+        mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        contentBase64: b64
+      });
+      hideLoadingOverlay();
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser.fullName,
+        text: `備份 → ${destLabel} · ${filename}（已上傳）`
+      });
+      toast(`✅ 已備份到 Google Drive：${folderName}/${filename}`, 'success');
+      // Offer to open the file
+      if (j && j.url) {
+        setTimeout(() => {
+          if (confirm(`備份完成！\n資料夾：${folderName}\n檔案：${filename}\n\n要在新分頁開啟此檔案嗎？`)) {
+            window.open(j.url, '_blank');
+          }
+        }, 200);
+      }
+    } catch (e) {
+      hideLoadingOverlay();
+      console.error('Drive backup failed', e);
+      toast('Drive 備份失敗：' + e.message, 'error');
     }
+  }
+
+  // Convert ArrayBuffer/Uint8Array to base64 (chunked to avoid stack overflow)
+  function arrayBufferToBase64(buf) {
+    const bytes = new Uint8Array(buf);
+    let s = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      s += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(s);
   }
 
   // ==========================================================================
