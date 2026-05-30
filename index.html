@@ -1062,6 +1062,24 @@
     transition: background .15s;
   }
   .drawer-head .close:hover { background: rgba(255,255,255,0.35); }
+  .drawer-nav-btn {
+    background: rgba(255,255,255,0.22);
+    border: none;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .drawer-nav-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.4);
+    transform: translateY(-1px);
+  }
+  .drawer-nav-btn:active:not(:disabled) { transform: translateY(0); }
   .drawer-body {
     flex: 1; overflow-y: auto;
     padding: 18px 22px;
@@ -2221,9 +2239,20 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
   <div class="drawer-head">
-    <div>
+    <div style="flex:1;min-width:0;">
       <h2 id="drawerTitle">編輯員工資料</h2>
       <div class="sub" id="drawerSub">— · —</div>
+    </div>
+    <div class="drawer-nav" style="display:flex;flex-direction:column;gap:4px;margin-right:8px;">
+      <div style="display:flex;gap:4px;">
+        <button class="drawer-nav-btn" onclick="navDrawerEmp(-1)" title="前一個員工">◀ 員工</button>
+        <button class="drawer-nav-btn" onclick="navDrawerEmp(1)" title="後一個員工">員工 ▶</button>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <button class="drawer-nav-btn" onclick="navDrawerMonth(-1)" title="前一個月（影響預估月薪）">◀ 月份</button>
+        <button class="drawer-nav-btn" id="drawerMonthLabel" disabled style="opacity:0.85;cursor:default;background:rgba(255,255,255,0.35);min-width:60px;">—</button>
+        <button class="drawer-nav-btn" onclick="navDrawerMonth(1)" title="後一個月">月份 ▶</button>
+      </div>
     </div>
     <button class="close" onclick="closeDrawer()" aria-label="關閉">✕</button>
   </div>
@@ -5070,6 +5099,7 @@
   // -------- Edit drawer --------
   let _editingEid = null;
   let _otherItems = [];   // staged 其他津貼明細 for the current drawer session
+  let _drawerMonth = null;  // currently-viewed month inside the drawer (for 預估月薪)
   function openEditEmployee(eid) {
     const emp = findEmployee(eid);
     if (!emp) { toast('找不到員工', 'error'); return; }
@@ -5080,6 +5110,13 @@
     const readOnly = !currentUser || currentUser.role !== 'owner';
     $('drawerTitle').textContent = readOnly ? '檢視員工資料 (僅老闆可修改)' : '編輯員工資料';
     $('drawerSub').textContent = `${emp['員工編號']} · ${emp['員工姓名']} (${emp['校區']})`;
+    // Initialize month context — default to current mgr month, or latest available
+    if (!_drawerMonth) {
+      _drawerMonth = (typeof getMgrMonth === 'function' && getMgrMonth()) ||
+                     [...new Set(DATA.salary.map(s => String(s['月份'])))].sort().slice(-1)[0] ||
+                     '11504';
+    }
+    updateDrawerMonthLabel();
     renderDrawerForm(emp, false);
     wireOtherItemizer();
     // Disable all inputs + hide Save button for non-owners
@@ -5087,6 +5124,47 @@
     $('drawerOverlay').classList.add('show');
     $('drawer').classList.add('show');
     setTimeout(updateNetPreview, 50);
+  }
+  function updateDrawerMonthLabel() {
+    const el = $('drawerMonthLabel');
+    if (el) el.textContent = _drawerMonth || '—';
+  }
+  // Sorted employee list for navigation (filtered by owner's campus filter when applicable)
+  function getDrawerEmpList() {
+    let emps = DATA.employees.filter(e => e['在職狀態'] === '在職');
+    // Respect owner's current campus filter if narrower
+    const campus = $('ownCampus') && $('ownCampus').value;
+    if (campus && campus !== 'all') emps = emps.filter(e => e['校區'] === campus);
+    return emps.slice().sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])));
+  }
+  function navDrawerEmp(dir) {
+    if (!_editingEid) return;
+    const list = getDrawerEmpList();
+    if (!list.length) return;
+    const idx = list.findIndex(e => e['員工編號'] === _editingEid);
+    if (idx < 0) return;
+    let nextIdx = idx + dir;
+    if (nextIdx < 0) nextIdx = list.length - 1;
+    if (nextIdx >= list.length) nextIdx = 0;
+    const target = list[nextIdx];
+    if (!target) return;
+    // Re-open drawer for the new employee (keeps month context)
+    openEditEmployee(target['員工編號']);
+  }
+  function navDrawerMonth(dir) {
+    const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
+    if (!months.length) return;
+    if (!_drawerMonth) _drawerMonth = months[0];
+    let idx = months.indexOf(_drawerMonth);
+    if (idx < 0) idx = 0;
+    let next = idx + dir;
+    // Allow wrap around so user can keep clicking
+    if (next < 0) next = months.length - 1;
+    if (next >= months.length) next = 0;
+    _drawerMonth = months[next];
+    updateDrawerMonthLabel();
+    updateNetPreview();
+    toast('月份切換為 ' + _drawerMonth, 'success');
   }
   function applyDrawerReadOnly(readOnly) {
     const body = $('drawerBody');
@@ -5149,6 +5227,7 @@
     $('drawerOverlay').classList.remove('show');
     $('drawer').classList.remove('show');
     _editingEid = null;
+    _drawerMonth = null;
   }
 
   function renderDrawerForm(emp, isNew) {
@@ -5297,11 +5376,24 @@
 
   function updateNetPreview() {
     const formEmp = readDrawerForm();
-    // Use empty sal (no OT, no leave) for a clean baseline estimate
-    const sal = { '加班時數': 0, '請假時數': 0, '遲到次數': 0, '獎金': 0, '扣款': 0, '特殊調整': 0 };
+    // Use selected month's actual salary data if available, else a clean baseline
+    let sal = { '加班時數': 0, '請假時數': 0, '遲到次數': 0, '獎金': 0, '扣款': 0, '特殊調整': 0 };
+    if (_drawerMonth && _editingEid) {
+      const found = DATA.salary.find(s => s['員工編號'] === _editingEid && String(s['月份']) === String(_drawerMonth));
+      if (found) sal = Object.assign({}, sal, found);
+    }
     const r = computeRow(formEmp, sal);
     const el = $('drawerNet');
-    if (el) el.textContent = 'NT$ ' + fmtNT(r.net);
+    if (el) {
+      const label = _drawerMonth ? `${_drawerMonth} 預估實領` : '預估月薪';
+      el.textContent = 'NT$ ' + fmtNT(r.net);
+      // Update the "預估月薪" label too if present
+      const previewBox = el.closest('.net-preview');
+      if (previewBox) {
+        const lbl = previewBox.querySelector('.lbl');
+        if (lbl) lbl.textContent = label;
+      }
+    }
   }
 
   // Live update preview while editing
