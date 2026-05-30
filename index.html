@@ -2253,6 +2253,7 @@
         <button class="drawer-nav-btn" id="drawerMonthLabel" disabled style="opacity:0.85;cursor:default;background:rgba(255,255,255,0.35);min-width:60px;">—</button>
         <button class="drawer-nav-btn" onclick="navDrawerMonth(1)" title="後一個月">月份 ▶</button>
       </div>
+      <button class="drawer-nav-btn" onclick="copyPrevMonthInDrawer()" style="background:rgba(255,255,255,0.35);font-weight:700;" title="把上個月的工時/獎金/扣款等資料複製到目前選定的月份">📋 複製上個月資料</button>
     </div>
     <button class="close" onclick="closeDrawer()" aria-label="關閉">✕</button>
   </div>
@@ -5165,6 +5166,42 @@
     updateDrawerMonthLabel();
     updateNetPreview();
     toast('月份切換為 ' + _drawerMonth, 'success');
+  }
+  // Copy previous month's salary record for the current employee
+  // into the currently-selected drawer month. Owner-only.
+  function copyPrevMonthInDrawer() {
+    if (!currentUser || currentUser.role !== 'owner') {
+      toast('僅老闆可執行此操作', 'error'); return;
+    }
+    if (!_editingEid) { toast('尚未選定員工', 'error'); return; }
+    if (!_drawerMonth) { toast('尚未選定月份', 'error'); return; }
+    const prevMonth = (typeof decrMonth === 'function')
+      ? decrMonth(_drawerMonth)
+      : null;
+    if (!prevMonth) { toast('無法計算上個月', 'error'); return; }
+    const src = DATA.salary.find(s => s['員工編號'] === _editingEid && String(s['月份']) === String(prevMonth));
+    if (!src) {
+      toast(`找不到 ${prevMonth} 的薪資資料`, 'error');
+      return;
+    }
+    const emp = findEmployee(_editingEid);
+    const empName = emp ? emp['員工姓名'] : _editingEid;
+    if (!confirm(`將 ${empName} 的 ${prevMonth} 月資料複製到 ${_drawerMonth} 月？\n（會覆蓋目前 ${_drawerMonth} 的工時/獎金/扣款等）`)) return;
+    const dst = ensureSalaryRecord(_editingEid, _drawerMonth);
+    const fields = ['上班時數','加班時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
+    fields.forEach(f => { dst[f] = src[f]; });
+    persistData();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `[抽屜] 複製 ${empName} (${_editingEid}) ${prevMonth} → ${_drawerMonth}`
+    });
+    updateNetPreview();
+    // Also refresh manager table if it's showing this month
+    if (typeof renderManagerTable === 'function' && $('mgrMonth') && $('mgrMonth').value === _drawerMonth) {
+      renderManagerTable();
+    }
+    toast(`✓ 已複製 ${prevMonth} → ${_drawerMonth}`, 'success');
   }
   function applyDrawerReadOnly(readOnly) {
     const body = $('drawerBody');
