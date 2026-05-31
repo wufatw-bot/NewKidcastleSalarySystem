@@ -2355,6 +2355,7 @@
         <button class="drawer-nav-btn" onclick="navDrawerMonth(1)" title="後一個月">月份 ▶</button>
       </div>
       <button class="drawer-nav-btn" onclick="copyPrevMonthInDrawer()" style="background:rgba(255,255,255,0.35);font-weight:700;" title="把上個月的工時/獎金/扣款等資料複製到目前選定的月份">📋 複製上個月資料</button>
+      <button class="drawer-nav-btn" id="drawerEditToggle" onclick="toggleDrawerEdit()" style="background:linear-gradient(135deg,#FBBF24,#D97706);color:#fff;font-weight:700;border:1px solid rgba(255,255,255,.5);" title="切換編輯模式">✏ 編輯內容</button>
     </div>
     <button class="close" onclick="closeDrawer()" aria-label="關閉">✕</button>
   </div>
@@ -5444,6 +5445,7 @@
   let _editingEid = null;
   let _otherItems = [];   // staged 其他津貼明細 for the current drawer session
   let _drawerMonth = null;  // currently-viewed month inside the drawer (for 預估月薪)
+  let _drawerEditMode = false;  // false = view, true = edit (toggle via ✏ 編輯內容 button)
   function openEditEmployee(eid) {
     const emp = findEmployee(eid);
     if (!emp) { toast('找不到員工', 'error'); return; }
@@ -5451,11 +5453,11 @@
     _otherItems = Array.isArray(emp['其他津貼明細'])
       ? emp['其他津貼明細'].map(x => ({ name: x.name || '', amount: Number(x.amount) || 0 }))
       : [];
-    // Owner + Manager can edit; only employee role is read-only
-    const readOnly = !currentUser || currentUser.role === 'employee';
-    $('drawerTitle').textContent = readOnly
-      ? '檢視員工資料 (唯讀)'
-      : (currentUser.role === 'owner' ? '編輯員工資料' : '編輯員工資料 (主管)');
+    // Drawer always opens in read-only "view" mode for safety.
+    // Owner / Manager can click ✏ 編輯內容 button to enter edit mode.
+    // Employees can never edit.
+    _drawerEditMode = false;
+    $('drawerTitle').textContent = '檢視員工資料';
     $('drawerSub').textContent = `${emp['員工編號']} · ${emp['員工姓名']} (${emp['校區']})`;
     // Initialize month context — default to current mgr month, or latest available
     if (!_drawerMonth) {
@@ -5466,8 +5468,8 @@
     updateDrawerMonthLabel();
     renderDrawerForm(emp, false);
     wireOtherItemizer();
-    // Disable all inputs + hide Save button for non-owners
-    applyDrawerReadOnly(readOnly);
+    // Open in view mode; user must click ✏ 編輯內容 to enter edit mode
+    applyDrawerEditMode();
     $('drawerOverlay').classList.add('show');
     $('drawer').classList.add('show');
     setTimeout(updateNetPreview, 50);
@@ -5549,20 +5551,40 @@
     }
     toast(`✓ 已複製 ${prevMonth} → ${_drawerMonth}`, 'success');
   }
-  // Fields that managers (主管) cannot modify — these stay locked even when drawer is editable
+  // Fields that managers (主管) cannot modify — these stay locked even in edit mode
   const MANAGER_LOCKED_FIELDS = ['員工編號', '底薪', '勞保自付', '健保自付', '退休金提撥', '登入帳號', '登入密碼'];
-  function applyDrawerReadOnly(readOnly) {
+  // Toggle: switch drawer between view mode (default) and edit mode
+  function toggleDrawerEdit() {
+    if (!currentUser || currentUser.role === 'employee') {
+      toast('員工只能檢視，無編輯權限', 'error');
+      return;
+    }
+    _drawerEditMode = !_drawerEditMode;
+    applyDrawerEditMode();
+  }
+  // Apply current edit-mode state to the drawer UI
+  function applyDrawerEditMode() {
     const body = $('drawerBody');
     if (!body) return;
-    const isManager = !readOnly && currentUser && currentUser.role === 'manager';
-    body.querySelectorAll('input, select, textarea, button').forEach(el => {
-      if (readOnly) {
-        el.setAttribute('disabled', 'disabled');
-      } else {
-        el.removeAttribute('disabled');
-      }
+    const isEmployee = currentUser && currentUser.role === 'employee';
+    const editing = _drawerEditMode && !isEmployee;   // employees never enter edit mode
+    const isManager = editing && currentUser && currentUser.role === 'manager';
+
+    // Enable / disable inputs based on mode
+    body.querySelectorAll('input, select, textarea').forEach(el => {
+      if (editing) el.removeAttribute('disabled');
+      else el.setAttribute('disabled', 'disabled');
+      // Clear any leftover styles
+      el.style.background = '';
+      el.style.cursor = '';
+      el.title = '';
     });
-    // For managers: lock specific structural fields (cannot modify 底薪/勞健保/系統核心)
+    body.querySelectorAll('button').forEach(b => {
+      if (editing) b.removeAttribute('disabled');
+      else b.setAttribute('disabled', 'disabled');
+    });
+
+    // Managers: re-lock structural fields
     if (isManager) {
       MANAGER_LOCKED_FIELDS.forEach(k => {
         const fld = body.querySelector(`[data-key="${k}"]`);
@@ -5574,13 +5596,39 @@
         }
       });
     }
-    // Hide Save button in drawer foot for read-only viewers
+
+    // Title + foot button updates
+    if (isEmployee) {
+      $('drawerTitle').textContent = '檢視員工資料 (唯讀)';
+    } else if (editing) {
+      $('drawerTitle').textContent = currentUser.role === 'owner'
+        ? '✏ 編輯員工資料 (老闆)'
+        : '✏ 編輯員工資料 (主管 — 部分欄位鎖定)';
+    } else {
+      $('drawerTitle').textContent = '檢視員工資料';
+    }
     const foot = document.querySelector('#drawer .drawer-foot');
     if (foot) {
       const saveBtn = foot.querySelector('.btn-mini.primary');
-      if (saveBtn) saveBtn.style.display = readOnly ? 'none' : '';
+      if (saveBtn) saveBtn.style.display = editing ? '' : 'none';
       const cancelBtn = foot.querySelector('.btn-mini.secondary');
-      if (cancelBtn) cancelBtn.textContent = readOnly ? '關閉' : '取消';
+      if (cancelBtn) cancelBtn.textContent = editing ? '取消' : '關閉';
+    }
+    // Edit-toggle button itself: text + style switch
+    const tog = $('drawerEditToggle');
+    if (tog) {
+      if (isEmployee) {
+        tog.style.display = 'none';
+      } else {
+        tog.style.display = '';
+        if (editing) {
+          tog.textContent = '🔒 完成編輯';
+          tog.style.background = 'linear-gradient(135deg,#10B981,#047857)';
+        } else {
+          tog.textContent = '✏ 編輯內容';
+          tog.style.background = 'linear-gradient(135deg,#FBBF24,#D97706)';
+        }
+      }
     }
   }
   function openAddEmployee() {
