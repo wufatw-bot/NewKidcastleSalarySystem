@@ -1786,7 +1786,6 @@
         <p>請使用主管或老闆帳號登入。</p>
       </div>
       <div class="emp-lookup">
-        查看薪資明細，請輸入員工編號 →
         <a href="Employee_Number.html" onclick="event.stopPropagation();">查詢員工編號，點此進入</a>
       </div>
       <div class="enter">進入校區一 <span>→</span></div>
@@ -1806,7 +1805,6 @@
         <p>請使用主管或老闆帳號登入。</p>
       </div>
       <div class="emp-lookup">
-        查看薪資明細，請輸入員工編號 →
         <a href="Employee_Number.html" onclick="event.stopPropagation();">查詢員工編號，點此進入</a>
       </div>
       <div class="enter">進入校區二 <span>→</span></div>
@@ -1982,16 +1980,6 @@
           <h4>🏫🎓 同安+莊敬合併</h4>
           <div class="meta">兩校全部資料於同一份檔案</div>
           <div class="btn-stack">
-            <button class="backup-btn gdrive-new" onclick="doBackup('both','gdrive-new')">
-              <span class="ico">📂</span>
-              <span class="lbl">備份到新 Google Drive</span>
-              <span class="arrow">→</span>
-            </button>
-            <button class="backup-btn gdrive-old" onclick="doBackup('both','gdrive-old')">
-              <span class="ico">📁</span>
-              <span class="lbl">備份到舊 Google Drive</span>
-              <span class="arrow">→</span>
-            </button>
             <button class="backup-btn local" onclick="doBackup('both','local')">
               <span class="ico">💾</span>
               <span class="lbl">備份到本地</span>
@@ -2005,16 +1993,6 @@
           <h4>🏫 同安校</h4>
           <div class="meta" id="bkTaCount">— 名員工</div>
           <div class="btn-stack">
-            <button class="backup-btn gdrive-new" onclick="doBackup('同安','gdrive-new')">
-              <span class="ico">📂</span>
-              <span class="lbl">備份到新 Google Drive</span>
-              <span class="arrow">→</span>
-            </button>
-            <button class="backup-btn gdrive-old" onclick="doBackup('同安','gdrive-old')">
-              <span class="ico">📁</span>
-              <span class="lbl">備份到舊 Google Drive</span>
-              <span class="arrow">→</span>
-            </button>
             <button class="backup-btn local" onclick="doBackup('同安','local')">
               <span class="ico">💾</span>
               <span class="lbl">備份到本地</span>
@@ -2028,16 +2006,6 @@
           <h4>🎓 莊敬校</h4>
           <div class="meta" id="bkZjCount">— 名員工</div>
           <div class="btn-stack">
-            <button class="backup-btn gdrive-new" onclick="doBackup('莊敬','gdrive-new')">
-              <span class="ico">📂</span>
-              <span class="lbl">備份到新 Google Drive</span>
-              <span class="arrow">→</span>
-            </button>
-            <button class="backup-btn gdrive-old" onclick="doBackup('莊敬','gdrive-old')">
-              <span class="ico">📁</span>
-              <span class="lbl">備份到舊 Google Drive</span>
-              <span class="arrow">→</span>
-            </button>
             <button class="backup-btn local" onclick="doBackup('莊敬','local')">
               <span class="ico">💾</span>
               <span class="lbl">備份到本地</span>
@@ -2049,9 +2017,7 @@
 
       <div class="backup-note">
         <b>使用說明：</b><br>
-        ☁ <b>「備份到新 Google Drive」</b>：直接透過 Apps Script 上傳至 <code>Kidcastle_Backups</code> 資料夾（自動，不需登入）<br>
-        ☁ <b>「備份到舊 Google Drive」</b>：透過 Apps Script 上傳至 <code>Kidcastle_Backups_Old</code> 資料夾<br>
-        💾 <b>「備份到本地」</b>：下載到電腦下載資料夾
+        💾 <b>「備份到本地」</b>：直接下載到您電腦的下載資料夾（建議搭配 Google Drive 桌面同步或手動拖入雲端硬碟）
       </div>
     </div>
 
