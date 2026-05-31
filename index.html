@@ -2028,6 +2028,18 @@
         💾 <b>「備份到本地」</b>：下載到電腦下載資料夾
       </div>
     </div>
+
+    <!-- 🔧 管理工具：從 Excel 同步薪資 (owner-only) -->
+    <div class="backup-card owner-only no-print" style="margin-top:14px;border-left:5px solid #DC2626;">
+      <h3>🔧 管理工具：從 Excel 同步薪資資料</h3>
+      <div class="desc">
+        將「同安薪資11407起.xlsx / 莊敬薪資11407起.xlsx」解析後的薪資結構同步到雲端。
+        <b style="color:#DC2626;">⚠ 高風險操作，需 boss 密碼</b>。
+      </div>
+      <button class="btn-mini primary" style="background:linear-gradient(135deg,#DC2626,#991B1B);" onclick="openMigratePwd()">
+        🔒 開啟 Excel 同步工具（需 boss 密碼）
+      </button>
+    </div>
   </div>
 
   <!-- 主管輸入 -->
@@ -2409,6 +2421,58 @@
     <div class="foot">
       <button class="btn-mini secondary" onclick="closeCloudSetup()" id="cloudSetupCloseBtn">取消</button>
       <button class="btn-mini primary" onclick="testAndSaveCloud()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);">🔌 測試並儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Migration Password Gate modal -->
+<div class="small-modal-overlay" id="migratePwdOverlay" onclick="closeMigratePwd(event)">
+  <div class="small-modal" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#DC2626,#991B1B);">
+      <div class="icon-l">🔒</div>
+      <h2>請輸入 Boss 密碼</h2>
+      <button class="close" onclick="closeMigratePwd()">✕</button>
+    </div>
+    <div class="body">
+      <p style="margin:0 0 12px;color:#475569;font-size:13px;">
+        Excel 同步工具會 <b style="color:#DC2626;">覆寫整份雲端薪資資料</b>，請輸入老闆 (boss) 帳號的密碼以驗證身份。
+      </p>
+      <div class="alert error" id="migratePwdErr">⚠ <span id="migratePwdErrMsg">—</span></div>
+      <div class="field">
+        <label>Boss 密碼</label>
+        <input type="password" id="migratePwdInput" autocomplete="current-password" placeholder="輸入 boss 密碼">
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="closeMigratePwd()">取消</button>
+      <button class="btn-mini primary" onclick="validateMigratePwd()" style="background:linear-gradient(135deg,#DC2626,#991B1B);">🔓 解鎖</button>
+    </div>
+  </div>
+</div>
+
+<!-- Migration Tool modal -->
+<div class="small-modal-overlay" id="migrateOverlay" onclick="closeMigrate(event)">
+  <div class="small-modal" style="max-width:760px;" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#DC2626,#991B1B);">
+      <div class="icon-l">📥</div>
+      <h2>Excel 薪資同步工具 (11504 / 11505)</h2>
+      <button class="close" onclick="closeMigrate()">✕</button>
+    </div>
+    <div class="body">
+      <p style="margin:0 0 12px;color:#475569;font-size:13px;">
+        將「同安薪資11407起.xlsx / 莊敬薪資11407起.xlsx」解析後的薪資結構同步到雲端。
+        步驟：① 從雲端讀取 → ② 預覽變更 → ③ 寫入雲端。
+      </p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <button class="btn-mini primary" onclick="migrateLoad()" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8);">① 從雲端讀取</button>
+        <button class="btn-mini primary" onclick="migratePreview()" id="migratePreviewBtn" disabled style="background:linear-gradient(135deg,#F59E0B,#B45309);">② 預覽變更</button>
+        <button class="btn-mini primary" onclick="migrateApply()" id="migrateApplyBtn" disabled style="background:linear-gradient(135deg,#DC2626,#991B1B);">③ 寫入雲端</button>
+        <span id="migrateStatus" style="align-self:center;font-size:13px;color:#475569;"></span>
+      </div>
+      <div id="migrateResult" style="max-height:380px;overflow:auto;font-size:12px;"></div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="closeMigrate()">關閉</button>
     </div>
   </div>
 </div>
@@ -3199,6 +3263,186 @@
       showCloudSetupErr('連線失敗：' + e.message);
     }
   }
+
+  // =========================================================================
+  // 📥 Excel Salary Migration (boss-password gated)
+  // =========================================================================
+  const MIG_TA = {
+    '陳明霞': {struct:{'底薪':31500,'全勤獎金':500,'年資津貼':4000,'分校人數超額獎金':5500,'混班/混校津貼':500,'勞保自付':2620,'退休金提撥':1998}, bonus:1200, leave:0},
+    '廖月櫻': {struct:{'底薪':31500,'全勤獎金':500,'主管津貼':6000,'分校人數超額獎金':7500,'美語津貼':12600,'混班/混校津貼':4000,'勞保自付':1349}, bonus:0, leave:594},
+    '鄭錦雪': {struct:{'底薪':31500,'全勤獎金':500,'年資津貼':4000,'分校人數超額獎金':6500,'勞保自付':2620,'退休金提撥':1998}, bonus:1800, leave:0},
+    '翁麗美': {struct:{'底薪':31500,'全勤獎金':500,'年資津貼':4000,'分校人數超額獎金':2000,'混班/混校津貼':5500,'勞保自付':1698}, bonus:1000, leave:0},
+    '郭子綺': {struct:{'底薪':31500,'全勤獎金':500,'年資津貼':4000,'分校人數超額獎金':0,'勞保自付':458}, bonus:0, leave:0},
+    '林錦雲': {struct:{'底薪':29500,'全勤獎金':500,'年資津貼':2000}, bonus:30280, leave:0},
+    '陳渝潔': {struct:{'底薪':31500,'全勤獎金':500,'年資津貼':3000,'分校人數超額獎金':1500,'勞保自付':1196}, bonus:1100, leave:0},
+    '吳鈺蘋': {struct:{'底薪':30500,'全勤獎金':0,'年資津貼':2000,'英文輔導津貼':6000,'勞保自付':1196}, bonus:3500, leave:1920},
+    '陳允謙': {struct:{'底薪':31500,'全勤獎金':500,'年資津貼':2000,'英文輔導津貼':6000,'勞保自付':1196}, bonus:5200, leave:1920},
+    '陳敬翔': {struct:{'底薪':31500,'全勤獎金':500,'年資津貼':2000,'分校人數超額獎金':1500,'混班/混校津貼':500,'勞保自付':1196}, bonus:2300, leave:0},
+    '陳正芬': {struct:{'底薪':31500,'全勤獎金':500,'主管津貼':4000,'分校人數超額獎金':11500,'帶班人數津貼':10500,'混班/混校津貼':500,'數學班津貼':400,'勞保自付':1349,'退休金提撥':1998}, bonus:800, leave:0},
+    '宋家喬': {struct:{'底薪':31500,'全勤獎金':500,'年資津貼':3000,'分校人數超額獎金':2000,'數學班津貼':100,'勞保自付':2384,'退休金提撥':1818}, bonus:1300, leave:1440},
+  };
+  const MIG_ZJ = {
+    '李如蘋': {struct:{'底薪':29500,'全勤獎金':500,'年資津貼':4000,'分校人數超額獎金':1600,'美語津貼':1300,'勞保自付':2620,'退休金提撥':1998}, bonus:1000, leave:0},
+    '蕭羽儂': {struct:{'底薪':31500,'全勤獎金':500,'主管津貼':10000,'分校人數超額獎金':5000,'其他津貼':3000,'勞保自付':2782}, bonus:0, leave:0},
+    '黃玉華': {struct:{'底薪':30500,'全勤獎金':500,'年資津貼':4000,'主管津貼':7000,'分校人數超額獎金':10240,'帶班人數津貼':11500,'混班/混校津貼':500,'其他津貼':3500,'勞保自付':1349}, bonus:600, leave:0},
+    '洪子彤': {struct:{'底薪':30500,'全勤獎金':500,'年資津貼':4000,'分校人數超額獎金':500,'英文輔導津貼':3000,'其他津貼':3000,'勞保自付':1196}, bonus:1000, leave:0},
+    '吳湘晴': {struct:{'底薪':30500,'全勤獎金':500,'年資津貼':4000,'分校人數超額獎金':1500,'勞保自付':1654}, bonus:1200, leave:0},
+    '胡瑄曼': {struct:{'底薪':29500,'全勤獎金':1500,'年資津貼':2000,'分校人數超額獎金':0,'勞保自付':2570}, bonus:0, leave:0},
+    '蕭文華': {struct:{'底薪':29500,'全勤獎金':0,'其他津貼':29140}, bonus:1000, leave:0},
+    '游晏慈': {struct:{'底薪':29500,'全勤獎金':1500,'年資津貼':1000,'分校人數超額獎金':0,'英文輔導津貼':3000,'其他津貼':4000,'勞保自付':1196}, bonus:200, leave:0},
+    '何宥蓉': {struct:{'底薪':29500,'全勤獎金':1500,'年資津貼':1000,'勞保自付':1196}, bonus:0, leave:0},
+    '何革融': {struct:{'底薪':29500,'全勤獎金':1500,'年資津貼':1000,'分校人數超額獎金':0,'勞保自付':1196}, bonus:400, leave:0},
+  };
+  let _migCloudData = null;
+
+  function openMigratePwd() {
+    if (!currentUser || currentUser.role !== 'owner') {
+      toast('僅老闆可使用此功能', 'error'); return;
+    }
+    $('migratePwdInput').value = '';
+    $('migratePwdErr').classList.remove('show');
+    $('migratePwdOverlay').classList.add('show');
+    setTimeout(() => $('migratePwdInput').focus(), 80);
+  }
+  function closeMigratePwd(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('migratePwdOverlay').classList.remove('show');
+  }
+  function validateMigratePwd() {
+    const pwd = ($('migratePwdInput').value || '').trim();
+    if (!pwd) { $('migratePwdErrMsg').textContent='請輸入密碼'; $('migratePwdErr').classList.add('show'); return; }
+    // Boss = user named "boss" in current school's credentials
+    const sid = currentUser && currentUser.schoolId;
+    const boss = sid && CREDENTIALS[sid] && CREDENTIALS[sid].users.find(u => u.username === 'boss');
+    if (!boss) { $('migratePwdErrMsg').textContent='本校區無 boss 帳號'; $('migratePwdErr').classList.add('show'); return; }
+    if (pwd !== boss.password) { $('migratePwdErrMsg').textContent='密碼錯誤'; $('migratePwdErr').classList.add('show'); return; }
+    closeMigratePwd();
+    openMigrate();
+  }
+  function openMigrate() {
+    _migCloudData = null;
+    $('migratePreviewBtn').disabled = true;
+    $('migrateApplyBtn').disabled = true;
+    $('migrateStatus').textContent = '';
+    $('migrateResult').innerHTML = '<div style="padding:20px;color:#94a3b8;text-align:center;">請按「① 從雲端讀取」開始</div>';
+    $('migrateOverlay').classList.add('show');
+  }
+  function closeMigrate(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('migrateOverlay').classList.remove('show');
+  }
+  function migSetStatus(msg, cls) {
+    const el = $('migrateStatus');
+    el.textContent = msg;
+    el.style.color = cls === 'err' ? '#DC2626' : cls === 'ok' ? '#166534' : '#475569';
+  }
+  async function migrateLoad() {
+    migSetStatus('讀取中…');
+    try {
+      const j = await cloudGet('read');
+      _migCloudData = j.data || {employees:[], salary:[]};
+      migSetStatus('✓ 已讀取 ' + (_migCloudData.employees||[]).length + ' 名員工', 'ok');
+      $('migratePreviewBtn').disabled = false;
+      $('migrateResult').innerHTML = `<div style="padding:14px;background:#f0fdf4;border-radius:8px;color:#065f46;">雲端目前有 <b>${_migCloudData.employees.length}</b> 位員工、<b>${_migCloudData.salary.length}</b> 筆月薪資紀錄。請按「② 預覽變更」。</div>`;
+    } catch (e) {
+      migSetStatus('✗ ' + e.message, 'err');
+    }
+  }
+  function migComputeUpdates() {
+    if (!_migCloudData) return null;
+    const all = Object.assign({}, MIG_TA, MIG_ZJ);
+    const out = [];
+    for (const [nm, info] of Object.entries(all)) {
+      const campus = MIG_TA[nm] ? '同安' : '莊敬';
+      const month  = MIG_TA[nm] ? '11504' : '11505';
+      const emp = _migCloudData.employees.find(e => e['員工姓名'] === nm);
+      if (!emp) {
+        out.push({name:nm, action:'NEW', struct:info.struct, bonus:info.bonus, leave:info.leave, campus, month});
+      } else {
+        const diffs = [];
+        for (const k of Object.keys(info.struct)) {
+          const old = Number(emp[k]) || 0, nw = Number(info.struct[k]) || 0;
+          if (old !== nw) diffs.push(`${k}: ${old}→${nw}`);
+        }
+        out.push({name:nm, action: diffs.length ? 'UPDATE' : 'SAME', struct:info.struct, bonus:info.bonus, leave:info.leave, diffs, campus, month, eid:emp['員工編號']});
+      }
+    }
+    return out;
+  }
+  function migratePreview() {
+    const ups = migComputeUpdates();
+    if (!ups) { migSetStatus('請先讀取', 'err'); return; }
+    const cnt = {NEW:0, UPDATE:0, SAME:0};
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#dbeafe;color:#1e40af;"><th style="padding:6px;text-align:left;">姓名</th><th>校區</th><th>狀態</th><th style="text-align:left;">變動/結構</th><th>獎金</th><th>請假扣</th></tr></thead><tbody>';
+    for (const u of ups) {
+      cnt[u.action]++;
+      let st = '';
+      let color = '';
+      if (u.action === 'UPDATE') { color = '#fef3c7'; st = '🟡 UPD '+(u.diffs.length>3 ? u.diffs.slice(0,3).join('; ')+` (+${u.diffs.length-3}項)` : u.diffs.join('; ')); }
+      else if (u.action === 'NEW') { color = '#dcfce7'; st = '🟢 NEW '+Object.entries(u.struct).map(([k,v])=>k+'='+v).slice(0,3).join('; '); }
+      else { color = '#f8fafc'; st = '⚪ 同'; }
+      html += `<tr style="background:${color};"><td style="padding:6px;"><b>${u.name}</b></td><td style="text-align:center;">${u.campus}</td><td style="text-align:center;">${u.action}</td><td style="font-size:11px;color:#475569;">${st}</td><td style="text-align:right;font-family:Arial;">${u.bonus||'-'}</td><td style="text-align:right;font-family:Arial;color:#DC2626;">${u.leave||'-'}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    html += `<div style="margin-top:10px;padding:10px;background:#fef9c3;border-radius:6px;font-size:12px;">統計：<b style="color:#92400e;">${cnt.NEW} 新增</b> · <b style="color:#92400e;">${cnt.UPDATE} 更新</b> · <b>${cnt.SAME} 無變動</b></div>`;
+    $('migrateResult').innerHTML = html;
+    $('migrateApplyBtn').disabled = false;
+    migSetStatus('預覽完成，請審閱後寫入', 'ok');
+  }
+  async function migrateApply() {
+    if (!confirm('確定寫入雲端嗎？\n會更新員工結構薪資 + 11504/05 月度獎金/請假扣。')) return;
+    const ups = migComputeUpdates();
+    if (!ups) return;
+    let nextId = 18;
+    for (const u of ups) {
+      if (u.action === 'NEW') {
+        const prefix = u.campus === '同安' ? 'TA' : 'ZJ';
+        const newId = prefix + String(nextId++).padStart(3,'0');
+        _migCloudData.employees.push({
+          '員工編號':newId,'員工姓名':u.name,'英文姓名':null,'校區':u.campus,'職位':'老師',
+          '到職日':new Date().toISOString().substr(0,10),'離職日':'','在職狀態':'在職',
+          '底薪':u.struct['底薪']||29500,'全勤獎金':u.struct['全勤獎金']||500,
+          '年資津貼':u.struct['年資津貼']||0,'主管津貼':u.struct['主管津貼']||0,
+          '分校人數超額獎金':u.struct['分校人數超額獎金']||0,'美語津貼':u.struct['美語津貼']||0,
+          '英文輔導津貼':u.struct['英文輔導津貼']||0,'數學班津貼':u.struct['數學班津貼']||0,
+          '混班/混校津貼':u.struct['混班/混校津貼']||0,'帶班人數津貼':u.struct['帶班人數津貼']||0,
+          '其他津貼':u.struct['其他津貼']||0,'勞保自付':u.struct['勞保自付']||0,
+          '健保自付':u.struct['健保自付']||0,'退休金提撥':u.struct['退休金提撥']||0,
+          '現金給付':0,'銀行名稱':'','銀行帳號':'',
+          '登入帳號':newId.toLowerCase(),'登入密碼':newId.toLowerCase(),'Email':''
+        });
+        _migCloudData.salary.push({'月份':u.month,'員工編號':newId,'上班時數':184,'加班時數':0,'加班費':0,'請假時數':u.leave?Math.round(u.leave/180):0,'請假扣款':u.leave,'遲到次數':0,'遲到扣款':0,'獎金':u.bonus,'扣款':0,'特殊調整':0,'備註':'由Excel匯入'});
+      } else if (u.action === 'UPDATE') {
+        const emp = _migCloudData.employees.find(e => e['員工姓名'] === u.name);
+        Object.assign(emp, u.struct);
+        let sal = _migCloudData.salary.find(s => s['員工編號'] === emp['員工編號'] && String(s['月份']) === u.month);
+        if (!sal) { sal = {'月份':u.month,'員工編號':emp['員工編號'],'上班時數':184,'加班時數':0,'加班費':0,'請假時數':0,'請假扣款':0,'遲到次數':0,'遲到扣款':0,'獎金':0,'扣款':0,'特殊調整':0,'備註':null}; _migCloudData.salary.push(sal); }
+        sal['獎金'] = u.bonus;
+        sal['請假扣款'] = u.leave;
+        sal['請假時數'] = u.leave ? Math.round(u.leave/180) : 0;
+        if (!sal['備註']) sal['備註'] = '由Excel匯入';
+      }
+    }
+    migSetStatus('寫入中…');
+    try {
+      const j = await cloudPost('write', {data: _migCloudData});
+      migSetStatus('✓ 寫入成功 ' + (j.ts||''), 'ok');
+      $('migrateResult').innerHTML = '<div style="padding:20px;background:#dcfce7;color:#065f46;border-radius:8px;text-align:center;"><b>✅ 已寫入雲端</b><br><small>請關閉此視窗，重新整理頁面即可看到更新後的薪資。</small></div>';
+      $('migrateApplyBtn').disabled = true;
+      appendLog({time:nowTimestamp(), user:currentUser.fullName, text:`執行 Excel 薪資同步 (Boss授權)`});
+      // Reload local DATA from cloud
+      try { DATA = await loadData(); renderManagerTable(); if (currentUser.role==='owner') renderOwnerTable(); renderPayslip(); renderDashboard(); } catch(_) {}
+    } catch (e) {
+      migSetStatus('✗ ' + e.message, 'err');
+    }
+  }
+  // Enter key triggers password validate
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && $('migratePwdOverlay') && $('migratePwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'migratePwdInput') {
+      e.preventDefault(); validateMigratePwd();
+    }
+  });
+
   function renderChangeLog() {
     const ul = $('mgrLogList');
     if (!ul) return;
