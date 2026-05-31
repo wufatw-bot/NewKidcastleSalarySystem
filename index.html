@@ -5451,8 +5451,11 @@
     _otherItems = Array.isArray(emp['其他津貼明細'])
       ? emp['其他津貼明細'].map(x => ({ name: x.name || '', amount: Number(x.amount) || 0 }))
       : [];
-    const readOnly = !currentUser || currentUser.role !== 'owner';
-    $('drawerTitle').textContent = readOnly ? '檢視員工資料 (僅老闆可修改)' : '編輯員工資料';
+    // Owner + Manager can edit; only employee role is read-only
+    const readOnly = !currentUser || currentUser.role === 'employee';
+    $('drawerTitle').textContent = readOnly
+      ? '檢視員工資料 (唯讀)'
+      : (currentUser.role === 'owner' ? '編輯員工資料' : '編輯員工資料 (主管)');
     $('drawerSub').textContent = `${emp['員工編號']} · ${emp['員工姓名']} (${emp['校區']})`;
     // Initialize month context — default to current mgr month, or latest available
     if (!_drawerMonth) {
@@ -5546,17 +5549,31 @@
     }
     toast(`✓ 已複製 ${prevMonth} → ${_drawerMonth}`, 'success');
   }
+  // Fields that managers (主管) cannot modify — these stay locked even when drawer is editable
+  const MANAGER_LOCKED_FIELDS = ['員工編號', '底薪', '勞保自付', '健保自付', '退休金提撥', '登入帳號', '登入密碼'];
   function applyDrawerReadOnly(readOnly) {
     const body = $('drawerBody');
     if (!body) return;
+    const isManager = !readOnly && currentUser && currentUser.role === 'manager';
     body.querySelectorAll('input, select, textarea, button').forEach(el => {
-      // Allow only the "其他津貼明細" preview chips? Actually no — readonly means no edits at all.
       if (readOnly) {
         el.setAttribute('disabled', 'disabled');
       } else {
         el.removeAttribute('disabled');
       }
     });
+    // For managers: lock specific structural fields (cannot modify 底薪/勞健保/系統核心)
+    if (isManager) {
+      MANAGER_LOCKED_FIELDS.forEach(k => {
+        const fld = body.querySelector(`[data-key="${k}"]`);
+        if (fld) {
+          fld.setAttribute('disabled', 'disabled');
+          fld.title = '此欄位僅老闆可修改';
+          fld.style.background = '#fef3c7';
+          fld.style.cursor = 'not-allowed';
+        }
+      });
+    }
     // Hide Save button in drawer foot for read-only viewers
     const foot = document.querySelector('#drawer .drawer-foot');
     if (foot) {
@@ -5807,6 +5824,16 @@
     if (!form['員工編號']) { toast('員工編號為必填', 'error'); return; }
     if (!form['員工姓名']) { toast('員工姓名為必填', 'error'); return; }
     if (!['同安','莊敬'].includes(form['校區'])) { toast('校區須為 同安 或 莊敬', 'error'); return; }
+
+    // Defense: managers cannot modify structural fields — revert any tampered changes
+    if (currentUser && currentUser.role === 'manager' && _editingEid) {
+      const orig = DATA.employees.find(e => e['員工編號'] === _editingEid);
+      if (orig) {
+        MANAGER_LOCKED_FIELDS.forEach(k => {
+          form[k] = orig[k];   // force-keep original value
+        });
+      }
+    }
 
     if (_editingEid) {
       // Edit existing
