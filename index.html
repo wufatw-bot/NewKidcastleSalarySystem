@@ -135,6 +135,32 @@
     font-size: 12px; font-weight: 600;
   }
   .card.school2 .chip { background: #FFF1E5; color: #B45309; }
+  .card .emp-lookup {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: #ECFDF5;
+    border-left: 3px solid #10B981;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #065F46;
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap;
+  }
+  .card.school2 .emp-lookup {
+    background: #FFF7ED;
+    border-left-color: #F4A340;
+    color: #92400E;
+  }
+  .card .emp-lookup a {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.55);
+  }
+  .card .emp-lookup a:hover { background: rgba(255,255,255,0.85); }
 
   .card .enter {
     margin-top: 22px; display: inline-flex; align-items: center; gap: 8px;
@@ -1759,9 +1785,9 @@
         <p>進入同安校區之薪資管理後台，輸入工時、計算薪資、產生薪資條。</p>
         <p>請使用主管或老闆帳號登入。</p>
       </div>
-      <div class="meta">
-        <span class="chip">主管 Manager</span>
-        <span class="chip">老闆 Owner</span>
+      <div class="emp-lookup">
+        查看薪資明細，請輸入員工編號 →
+        <a href="Employee_Number.html" onclick="event.stopPropagation();">點此進入</a>
       </div>
       <div class="enter">進入校區一 <span>→</span></div>
     </div>
@@ -1779,9 +1805,9 @@
         <p>進入莊敬校區之薪資管理後台，管理員工資料、底薪設定及薪資報表。</p>
         <p>請使用主管或老闆帳號登入。</p>
       </div>
-      <div class="meta">
-        <span class="chip">主管 Manager</span>
-        <span class="chip">老闆 Owner</span>
+      <div class="emp-lookup">
+        查看薪資明細，請輸入員工編號 →
+        <a href="Employee_Number.html" onclick="event.stopPropagation();">點此進入</a>
       </div>
       <div class="enter">進入校區二 <span>→</span></div>
     </div>
