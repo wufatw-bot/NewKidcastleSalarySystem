@@ -2157,7 +2157,6 @@
           <tr>
             <th style="text-align:left;padding-left:12px;">員工</th>
             <th>校區</th>
-            <th>上班時數</th>
             <th>加班時數</th>
             <th>請假時數</th>
             <th>遲到次數</th>
@@ -4211,7 +4210,6 @@
   // Manager Input page — render, edit, save, export
   // ==========================================================================
   const MGR_FIELDS = [
-    { key: '上班時數', type: 'num', min: 0, max: 400, step: 1 },
     { key: '加班時數', type: 'num', min: 0, max: 200, step: 0.5 },
     { key: '請假時數', type: 'num', min: 0, max: 200, step: 0.5 },
     { key: '遲到次數', type: 'num', min: 0, max: 50,  step: 1 },
@@ -4276,7 +4274,7 @@
 
     const tbody = $('mgrTbody');
     if (!emps.length) {
-      tbody.innerHTML = '<tr><td colspan="11" class="empty">沒有符合條件的員工</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="empty">沒有符合條件的員工</td></tr>';
       return;
     }
 
