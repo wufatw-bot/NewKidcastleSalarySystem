@@ -3074,6 +3074,9 @@
       // Guild insurance subsidies — default 0 for existing records
       if (e['補貼公會投保勞保'] == null) e['補貼公會投保勞保'] = 0;
       if (e['補貼公會健保自付'] == null) e['補貼公會健保自付'] = 0;
+      // Manager-view headcount fields (used to derive allowance amounts)
+      ['分校人數超額人數','美語人數','英文輔導人數','數學班人數','混班/混校人數','帶班人數']
+        .forEach(k => { if (e[k] == null) e[k] = 0; });
     });
     if (migAcademic > 0) console.log('[migration] 教務津貼 → 主管津貼 (MAX) for ' + migAcademic + ' employees');
     if (migRemoved > 0) console.log('[migration] 導師/行政/交通津貼 (>0) merged into 其他津貼: ' + migRemoved + ' fields');
@@ -5563,6 +5566,34 @@
   }
   // Fields that managers (主管) cannot modify — these stay locked even in edit mode
   const MANAGER_LOCKED_FIELDS = ['員工編號', '底薪', '勞保自付', '健保自付', '退休金提撥', '登入帳號', '登入密碼'];
+  // Manager-only drawer: hide these structural fields entirely
+  const MANAGER_HIDDEN_FIELDS = ['底薪', '年資津貼', '主管津貼'];
+  // Manager-only drawer: each allowance has a headcount counterpart; 津貼 = 人數 × rate
+  // (Rates are editable in const here; owner can fine-tune by directly editing 津貼 in their view)
+  const HEAD_RATES = {
+    '分校人數超額獎金': 100,   // 1人 = 100 元
+    '美語津貼':         100,
+    '英文輔導津貼':    2000,    // 1人(天) = 2000 元
+    '數學班津貼':       100,
+    '混班/混校津貼':    500,
+    '帶班人數津貼':     100
+  };
+  const HEAD_COUNT_KEYS = {   // 津貼欄位 → 對應的人數欄位
+    '分校人數超額獎金': '分校人數超額人數',
+    '美語津貼':         '美語人數',
+    '英文輔導津貼':     '英文輔導人數',
+    '數學班津貼':       '數學班人數',
+    '混班/混校津貼':    '混班/混校人數',
+    '帶班人數津貼':     '帶班人數'
+  };
+  const HEAD_LABELS = {       // 主管視圖用的中文標籤
+    '分校人數超額獎金': { headcount:'分校人數超額 (人)', money:'人數超額津貼 (元)' },
+    '美語津貼':         { headcount:'美語人數 (人)',     money:'美語津貼 (元)' },
+    '英文輔導津貼':     { headcount:'英文輔導人數 (人)', money:'英文輔導津貼 (元)' },
+    '數學班津貼':       { headcount:'數學班人數 (人)',   money:'數學班津貼 (元)' },
+    '混班/混校津貼':    { headcount:'混班/混校人數 (人)', money:'混班/混校津貼 (元)' },
+    '帶班人數津貼':     { headcount:'帶班人數 (人)',     money:'帶班人數津貼 (元)' }
+  };
   // Toggle: switch drawer between view mode (default) and edit mode
   function toggleDrawerEdit() {
     if (!currentUser || currentUser.role === 'employee') {
@@ -5685,12 +5716,95 @@
     _drawerMonth = null;
   }
 
+  // Renders the "② 薪資組成" section using manager-only layout:
+  //  - hides 底薪/年資/主管津貼/全勤獎金 numeric input
+  //  - shows 全勤/非全勤 toggle (binds to emp['全勤獎金']: 500 vs 0, using current value if set)
+  //  - for 6 allowance types: 人數 (editable) + 津貼 (readonly, computed = 人數 × rate)
+  function renderManagerSalarySection(emp) {
+    const att = (Number(emp['全勤獎金']) || 0) > 0;
+    const ATT_DEFAULT = 500;   // 全勤時的預設獎金額
+    // Toggle (radio) for attendance bonus
+    const attHtml = `
+      <div class="field-cell wide" style="background:#FEF9C3;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;">
+        <label style="display:block;margin-bottom:6px;color:#92400E;">全勤狀態</label>
+        <div style="display:flex;gap:18px;font-size:14px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="attStatus" value="att" data-key="全勤獎金" data-att-val="${ATT_DEFAULT}" ${att ? 'checked' : ''}> 全勤 (+${ATT_DEFAULT})
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="radio" name="attStatus" value="none" data-key="全勤獎金" data-att-val="0" ${att ? '' : 'checked'}> 非全勤 (0)
+          </label>
+        </div>
+      </div>`;
+
+    // For each allowance: render 人數 + 津貼 (readonly auto-computed) side by side
+    const allowKeys = ['分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼','混班/混校津貼','帶班人數津貼'];
+    const allowanceHtml = allowKeys.map(moneyKey => {
+      const hcKey = HEAD_COUNT_KEYS[moneyKey];
+      const lbls  = HEAD_LABELS[moneyKey];
+      const rate  = HEAD_RATES[moneyKey];
+      const hcVal = Number(emp[hcKey]) || 0;
+      const mVal  = Number(emp[moneyKey]) || 0;
+      return `
+        <div class="field-cell">
+          <label>${lbls.headcount} <small style="color:#94a3b8;font-weight:normal;">× ${rate}元/人</small></label>
+          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-rate="${rate}" min="0" step="1" value="${hcVal}">
+        </div>
+        <div class="field-cell">
+          <label>${lbls.money}</label>
+          <input type="number" class="head-money-display" data-key="${moneyKey}" min="0" step="1" value="${mVal}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
+        </div>`;
+    }).join('');
+
+    // Other allowance with itemizer (kept as-is for managers)
+    const otherItems = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'] : [];
+    const chipsHtml = otherItems.length
+      ? otherItems.map((it, i) =>
+          `<span class="chip-item"><span>${(it.name||'')}</span><span class="amt">+$${fmtNT(it.amount||0)}</span>` +
+          `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`
+        ).join('')
+      : '<div class="empty-hint">尚無分項紀錄，可在上方加入</div>';
+    const otherTotal = Number(emp['其他津貼']) || 0;
+    const otherHtml = `
+      <div class="field-cell wide">
+        <div class="other-itemizer">
+          <div class="title">📝 其他津貼明細 — 輸入名目與金額逐項加入，會自動加總</div>
+          <div class="add-row">
+            <input type="text" class="name" id="otherItemName" placeholder="名目 (例：活動費)">
+            <input type="number" class="amount" id="otherItemAmt" placeholder="數目" min="0" step="1">
+            <button type="button" class="add-btn" id="otherItemAddBtn">＋ 加入</button>
+          </div>
+          <div class="chips" id="otherItemChips">${chipsHtml}</div>
+        </div>
+      </div>
+      <div class="field-cell">
+        <label>其他津貼合計 (元)</label>
+        <input type="number" data-key="其他津貼" min="0" step="1" value="${otherTotal}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
+      </div>`;
+
+    return `<div class="form-section salary">
+      <h3><span class="badge">②</span> 薪資組成 Salary <small style="color:#10B981;font-weight:normal;font-size:11px;">(主管視圖 — 部分欄位僅老闆可見)</small></h3>
+      <div class="field-grid">
+        ${attHtml}
+        ${allowanceHtml}
+        ${otherHtml}
+      </div>
+    </div>`;
+  }
+
   function renderDrawerForm(emp, isNew) {
     // 老闆儲存後的最新值優先當作「預設」基準（之後檢視時不會再顯示為紅字已修改）
     const ownerBase = (DATA && DATA.ownerBaseline && DATA.ownerBaseline[emp['員工編號']]) || null;
     const orig = isNew ? {} : (ownerBase || DEFAULT_DATA.employees.find(o => o['員工編號'] === emp['員工編號']) || {});
+    const isMgr = currentUser && currentUser.role === 'manager';
     const html = OWN_SECTIONS.map(sec => {
+      // Manager view: section 2 (薪資組成) gets entirely custom render
+      if (isMgr && sec.cls === 'salary') {
+        return renderManagerSalarySection(emp);
+      }
       const fields = sec.fields.map(f => {
+        // Manager view: skip hidden structural fields entirely
+        if (isMgr && MANAGER_HIDDEN_FIELDS.indexOf(f.key) >= 0) return '';
         const v = emp[f.key];
         const origV = orig[f.key];
         const changed = !isNew && (v == null ? '' : v) !== (origV == null ? '' : origV);
@@ -5822,6 +5936,11 @@
     const obj = {};
     $('drawerBody').querySelectorAll('[data-key]').forEach(el => {
       const k = el.dataset.key;
+      // Special: radio with data-att-val (manager view 全勤 toggle)
+      if (el.type === 'radio') {
+        if (el.checked) obj[k] = Number(el.dataset.attVal) || 0;
+        return;
+      }
       let v = el.value;
       if (el.type === 'number') v = v === '' ? 0 : Number(v);
       obj[k] = v;
@@ -5853,7 +5972,22 @@
 
   // Live update preview while editing
   document.addEventListener('input', e => {
-    if (e.target && e.target.closest && e.target.closest('#drawerBody')) updateNetPreview();
+    if (!e.target || !e.target.closest) return;
+    if (!e.target.closest('#drawerBody')) return;
+    // Manager view: when 人數 changes, auto-update 津貼 = 人數 × rate
+    if (e.target.classList && e.target.classList.contains('head-count-input')) {
+      const hc = Number(e.target.value) || 0;
+      const rate = Number(e.target.dataset.rate) || 0;
+      const moneyKey = e.target.dataset.moneyKey;
+      const moneyEl = $('drawerBody').querySelector(`.head-money-display[data-key="${moneyKey}"]`);
+      if (moneyEl) moneyEl.value = hc * rate;
+    }
+    // Manager 全勤 radio: update emp['全勤獎金'] virtual field
+    if (e.target.type === 'radio' && e.target.name === 'attStatus') {
+      // value is stored as data-att-val; the radio itself doesn't have a data-key for value,
+      // we'll read it from the checked option in readDrawerForm via custom logic
+    }
+    updateNetPreview();
   });
   document.addEventListener('change', e => {
     if (e.target && e.target.closest && e.target.closest('#drawerBody')) updateNetPreview();
