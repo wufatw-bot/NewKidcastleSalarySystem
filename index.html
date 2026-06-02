@@ -701,18 +701,18 @@
   .ps-row.zero { color: #cbd5e1; }
   .ps-row .lbl { color: #475569; }
   .ps-row .val { font-family: Arial; font-weight: 600; }
-  /* Employee view: hide zero-value rows entirely for a cleaner payslip */
-  body.role-employee .ps-row.zero { display: none !important; }
-  body.role-employee .ps-col.all-zero,
-  body.role-employee .ps-section-h > div.all-zero,
-  body.role-employee .ps-subtotal > div.all-zero,
-  body.role-employee .ps-cash-row.all-zero { display: none !important; }
+  /* Hide zero-value rows for ALL roles on payslip (owner / manager / employee) */
+  .ps-row.zero { display: none !important; }
+  .ps-col.all-zero,
+  .ps-section-h > div.all-zero,
+  .ps-subtotal > div.all-zero,
+  .ps-cash-row.all-zero { display: none !important; }
   @media print {
-    body.role-employee .ps-row.zero { display: none !important; }
-    body.role-employee .ps-col.all-zero,
-    body.role-employee .ps-section-h > div.all-zero,
-    body.role-employee .ps-subtotal > div.all-zero,
-    body.role-employee .ps-cash-row.all-zero { display: none !important; }
+    .ps-row.zero { display: none !important; }
+    .ps-col.all-zero,
+    .ps-section-h > div.all-zero,
+    .ps-subtotal > div.all-zero,
+    .ps-cash-row.all-zero { display: none !important; }
   }
 
   .ps-subtotal { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
