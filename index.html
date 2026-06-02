@@ -1249,6 +1249,31 @@
   .field-cell input[type=number] {
     text-align: right; font-family: Arial;
   }
+  .premium-pair {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .premium-pair .premium-amount {
+    width: 100%; padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 13px; font-family: Arial; text-align: right; background: #fff;
+  }
+  .premium-pair .premium-amount:focus {
+    outline: none; border-color: #F4A340;
+    box-shadow: 0 0 0 3px rgba(244,163,64,0.15);
+  }
+  .premium-pair .premium-modes {
+    display: flex; gap: 14px; padding: 3px 4px;
+    font-size: 12px; color: #475569;
+  }
+  .premium-pair .premium-modes label {
+    display: flex; align-items: center; gap: 4px; cursor: pointer;
+  }
+  .premium-pair .premium-modes input[type=radio] { cursor: pointer; }
+  .premium-pair[data-current-mode="deduct"] .premium-amount {
+    background: #FEF2F2; color: #991B1B; border-color: #FCA5A5;
+  }
+  .premium-pair[data-current-mode="subsidy"] .premium-amount {
+    background: #F0FDF4; color: #166534; border-color: #BBF7D0;
+  }
   .field-cell input.changed,
   .field-cell select.changed {
     background: #FEF2F2;
@@ -3074,6 +3099,7 @@
       // Guild insurance subsidies — default 0 for existing records
       if (e['補貼公會投保勞保'] == null) e['補貼公會投保勞保'] = 0;
       if (e['補貼公會健保自付'] == null) e['補貼公會健保自付'] = 0;
+      if (e['補貼退休金']     == null) e['補貼退休金']     = 0;
       // Manager-view headcount fields (used to derive allowance amounts)
       ['分校人數超額人數','美語人數','英文輔導人數','數學班人數','混班/混校人數','帶班人數']
         .forEach(k => { if (e[k] == null) e[k] = 0; });
@@ -3702,7 +3728,7 @@
     const allowKeys = ['年資津貼','主管津貼',
                        '分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼',
                        '混班/混校津貼','帶班人數津貼','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金'];
     const allowSum = allowKeys.reduce((s, k) => s + (Number(emp[k]) || 0), 0);
 
     const bonus = Number(sal['獎金']) || 0;
@@ -3712,7 +3738,8 @@
     const gross = base + attBonus + allowSum + otPay + bonus + adjust - leaveD - lateD - deduct;
     const labor = Number(emp['勞保自付']) || 0;
     const health = Number(emp['健保自付']) || 0;
-    const totalDeduct = labor + health;
+    const retire = Number(emp['退休金提撥']) || 0;  // 退休金 (扣薪 mode) — 補貼模式時為 0
+    const totalDeduct = labor + health + retire;
     const cashPay = Number(emp['現金給付']) || 0;   // D — 已現金給付，從實領再扣
     const net = gross - totalDeduct - cashPay;
 
@@ -3834,6 +3861,7 @@
     const deductions = [
       ['勞保自付 Labor Ins', emp['勞保自付']],
       ['健保自付 Health Ins', emp['健保自付']],
+      ['退休金提撥 Retirement', emp['退休金提撥']],
       ['請假時數 Leave Hours', sal['請假時數']],
       ['請假扣款 Leave Deduct (×180/hr)', sal['請假扣款']],
       ['遲到扣款 Late', sal['遲到扣款']],
@@ -4015,6 +4043,7 @@
     const deductions = [
       ['勞保自付',   emp['勞保自付']],
       ['健保自付',   emp['健保自付']],
+      ['退休金提撥', emp['退休金提撥']],
       ['請假時數',   sal['請假時數']],
       ['請假扣款 (×180/時)', sal['請假扣款']],
       ['遲到扣款',   sal['遲到扣款']],
@@ -5190,7 +5219,7 @@
     const allowKeys = ['年資津貼','主管津貼',
                        '分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼',
                        '混班/混校津貼','帶班人數津貼','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金'];
     const salRows = [salHeaders];
     filteredSals.slice()
       .sort((a, b) => {
@@ -5360,12 +5389,10 @@
       cls: 'deduct',
       badge: '③',
       fields: [
-        { key: '勞保自付',          type: 'money' },
-        { key: '補貼公會投保勞保',   type: 'money' },
-        { key: '健保自付',          type: 'money' },
-        { key: '補貼公會健保自付',   type: 'money' },
-        { key: '退休金提撥',         type: 'money' },
-        { key: '現金給付',          type: 'money' }
+        { key: '勞保保費', type: 'premium_pair', deductKey: '勞保自付',  subsidyKey: '補貼公會投保勞保' },
+        { key: '健保保費', type: 'premium_pair', deductKey: '健保自付',  subsidyKey: '補貼公會健保自付' },
+        { key: '退休金',   type: 'premium_pair', deductKey: '退休金提撥', subsidyKey: '補貼退休金' },
+        { key: '現金給付', type: 'money' }
       ]
     },
     {
@@ -5393,7 +5420,7 @@
     const keys = ['年資津貼','主管津貼',
                   '分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼',
                   '混班/混校津貼','帶班人數津貼','其他津貼',
-                  '補貼公會投保勞保','補貼公會健保自付'];
+                  '補貼公會投保勞保','補貼公會健保自付','補貼退休金'];
     return keys.reduce((s, k) => s + (Number(emp[k]) || 0), 0);
   }
 
@@ -5818,6 +5845,21 @@
           inputHtml = `<input type="date" class="${cls}" data-key="${f.key}" value="${v || ''}">`;
         } else if (f.type === 'money') {
           inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${v == null ? 0 : v}">`;
+        } else if (f.type === 'premium_pair') {
+          // Special: amount + 扣薪/補貼 radio (mutually exclusive)
+          const dVal = Number(emp[f.deductKey])  || 0;
+          const sVal = Number(emp[f.subsidyKey]) || 0;
+          const mode = sVal > 0 && dVal === 0 ? 'subsidy' : 'deduct';
+          const amount = mode === 'subsidy' ? sVal : dVal;
+          const pairId = 'prem_' + f.key.replace(/[^a-z0-9]/gi, '');
+          inputHtml = `
+            <div class="premium-pair" data-pair="${f.key}" data-current-mode="${mode}" data-deduct-key="${f.deductKey}" data-subsidy-key="${f.subsidyKey}">
+              <input type="number" class="premium-amount" data-pair-amount="${f.key}" min="0" step="1" value="${amount}">
+              <div class="premium-modes">
+                <label><input type="radio" name="${pairId}" value="deduct" data-pair-mode="${f.key}" ${mode==='deduct'?'checked':''}> 扣薪 (員工付)</label>
+                <label><input type="radio" name="${pairId}" value="subsidy" data-pair-mode="${f.key}" ${mode==='subsidy'?'checked':''}> 補貼 (公司付)</label>
+              </div>
+            </div>`;
         } else {
           const safe = String(v == null ? '' : v).replace(/"/g, '&quot;');
           inputHtml = `<input type="text" class="${cls}" data-key="${f.key}" value="${safe}"${f.readonly ? ' readonly' : ''}>`;
@@ -5945,6 +5987,21 @@
       if (el.type === 'number') v = v === '' ? 0 : Number(v);
       obj[k] = v;
     });
+    // Process premium_pair groups: route amount → deductKey or subsidyKey based on selected mode
+    $('drawerBody').querySelectorAll('.premium-pair').forEach(pp => {
+      const dKey = pp.dataset.deductKey;
+      const sKey = pp.dataset.subsidyKey;
+      const amt = Number(pp.querySelector('.premium-amount').value) || 0;
+      const modeRadio = pp.querySelector('input[data-pair-mode]:checked');
+      const mode = modeRadio ? modeRadio.value : 'deduct';
+      if (mode === 'subsidy') {
+        obj[sKey] = amt;
+        obj[dKey] = 0;
+      } else {
+        obj[dKey] = amt;
+        obj[sKey] = 0;
+      }
+    });
     return obj;
   }
 
@@ -5987,7 +6044,19 @@
       // value is stored as data-att-val; the radio itself doesn't have a data-key for value,
       // we'll read it from the checked option in readDrawerForm via custom logic
     }
+    // Premium-pair mode toggle: update the visual class on the parent
+    if (e.target.dataset && e.target.dataset.pairMode) {
+      const pp = e.target.closest('.premium-pair');
+      if (pp) pp.dataset.currentMode = e.target.value;
+    }
     updateNetPreview();
+  });
+  // Also initialize data-current-mode on radio change (capture-phase listener for visual)
+  document.addEventListener('change', e => {
+    if (e.target && e.target.dataset && e.target.dataset.pairMode) {
+      const pp = e.target.closest('.premium-pair');
+      if (pp) pp.dataset.currentMode = e.target.value;
+    }
   });
   document.addEventListener('change', e => {
     if (e.target && e.target.closest && e.target.closest('#drawerBody')) updateNetPreview();
@@ -6306,7 +6375,7 @@
     const allowKeys = ['年資津貼','主管津貼',
                        '分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼',
                        '混班/混校津貼','帶班人數津貼','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金'];
 
     const rows = [headers];
     // Sort by month, then by employee ID
