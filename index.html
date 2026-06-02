@@ -5512,7 +5512,12 @@
     // Employees can never edit.
     _drawerEditMode = false;
     $('drawerTitle').textContent = '檢視員工資料';
-    $('drawerSub').textContent = `${emp['員工編號']} · ${emp['員工姓名']} (${emp['校區']})`;
+    const roleTag = currentUser
+      ? (currentUser.role === 'owner'   ? '👑 老闆'
+       : currentUser.role === 'manager' ? '🛡 主管'
+       : '👤 員工')
+      : '訪客';
+    $('drawerSub').innerHTML = `<span style="background:rgba(255,255,255,0.3);padding:2px 8px;border-radius:6px;margin-right:8px;font-weight:700;">${roleTag}</span>${emp['員工編號']} · ${emp['員工姓名']} (${emp['校區']})`;
     // Initialize month context — default to current mgr month, or latest available
     if (!_drawerMonth) {
       _drawerMonth = (typeof getMgrMonth === 'function' && getMgrMonth()) ||
@@ -5839,6 +5844,10 @@
     const orig = isNew ? {} : (ownerBase || DEFAULT_DATA.employees.find(o => o['員工編號'] === emp['員工編號']) || {});
     const isMgr = currentUser && currentUser.role === 'manager';
     const html = OWN_SECTIONS.map(sec => {
+      // Manager view: hide structural sections (deductions / bank / login)
+      if (isMgr && (sec.cls === 'deduct' || sec.cls === 'bank' || sec.cls === 'login')) {
+        return '';
+      }
       // Manager view: section 2 (薪資組成) gets entirely custom render
       if (isMgr && sec.cls === 'salary') {
         return renderManagerSalarySection(emp);
