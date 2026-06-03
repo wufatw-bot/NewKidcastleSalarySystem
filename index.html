@@ -5647,7 +5647,14 @@
       return;
     }
     _drawerEditMode = !_drawerEditMode;
+    // Re-render form so structural fields (底薪/年資/主管津貼) show/hide based on new mode
+    const emp = findEmployee(_editingEid);
+    if (emp) {
+      renderDrawerForm(emp, false);
+      wireOtherItemizer();
+    }
     applyDrawerEditMode();
+    setTimeout(updateNetPreview, 30);
   }
   // Apply current edit-mode state to the drawer UI
   function applyDrawerEditMode() {
@@ -5853,8 +5860,9 @@
         return renderManagerSalarySection(emp);
       }
       const fields = sec.fields.map(f => {
-        // Manager view: skip hidden structural fields entirely
-        if (isMgr && MANAGER_HIDDEN_FIELDS.indexOf(f.key) >= 0) return '';
+        // Hide structural fields (底薪/年資/主管津貼) for everyone except OWNER in EDIT mode
+        const isOwnerEditing = currentUser && currentUser.role === 'owner' && _drawerEditMode;
+        if (MANAGER_HIDDEN_FIELDS.indexOf(f.key) >= 0 && !isOwnerEditing) return '';
         const v = emp[f.key];
         const origV = orig[f.key];
         const changed = !isNew && (v == null ? '' : v) !== (origV == null ? '' : origV);
