@@ -1256,25 +1256,11 @@
   .premium-pair .premium-amount {
     width: 100%; padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px;
     font-size: 13px; font-family: Arial; text-align: right; background: #fff;
+    font-weight: 700;
   }
   .premium-pair .premium-amount:focus {
     outline: none; border-color: #F4A340;
     box-shadow: 0 0 0 3px rgba(244,163,64,0.15);
-  }
-  .premium-pair .premium-modes {
-    display: flex; flex-wrap: wrap; gap: 6px 12px;
-    padding: 4px 2px;
-    font-size: 12px; color: #475569;
-  }
-  .premium-pair .premium-modes label {
-    display: inline-flex; align-items: center; gap: 5px;
-    cursor: pointer; white-space: nowrap;
-    padding: 2px 6px; border-radius: 5px;
-    transition: background .15s;
-  }
-  .premium-pair .premium-modes label:hover { background: rgba(0,0,0,0.04); }
-  .premium-pair .premium-modes input[type=radio] {
-    cursor: pointer; flex-shrink: 0; margin: 0;
   }
   .premium-pair[data-current-mode="deduct"] .premium-amount {
     background: #FEF2F2; color: #991B1B; border-color: #FCA5A5;
@@ -1282,11 +1268,52 @@
   .premium-pair[data-current-mode="subsidy"] .premium-amount {
     background: #F0FDF4; color: #166534; border-color: #BBF7D0;
   }
-  .premium-pair[data-current-mode="deduct"] .premium-modes label:has(input[value="deduct"]) {
-    background: #FEE2E2; color: #991B1B; font-weight: 700;
+  /* Segmented button toggle */
+  .premium-pair .seg-toggle {
+    display: flex; gap: 0;
+    background: #f1f5f9;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 3px;
+    overflow: hidden;
   }
-  .premium-pair[data-current-mode="subsidy"] .premium-modes label:has(input[value="subsidy"]) {
-    background: #D1FAE5; color: #166534; font-weight: 700;
+  .premium-pair .seg-btn {
+    flex: 1; min-width: 0;
+    background: transparent; border: none;
+    padding: 6px 4px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    color: #64748b;
+    transition: all .15s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    line-height: 1.2;
+  }
+  .premium-pair .seg-btn .seg-ic { font-size: 12px; }
+  .premium-pair .seg-btn .seg-tx { font-weight: 700; margin-top: 1px; }
+  .premium-pair .seg-btn small { font-size: 10px; opacity: 0.7; margin-top: 1px; }
+  .premium-pair .seg-btn:hover:not(.active):not(:disabled) {
+    background: rgba(0,0,0,0.04);
+    color: #1a202c;
+  }
+  .premium-pair .seg-btn.active {
+    background: #fff;
+    color: #1a202c;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .premium-pair[data-current-mode="deduct"] .seg-btn.active[data-pair-mode-btn="deduct"] {
+    background: #DC2626; color: #fff;
+    box-shadow: 0 2px 6px rgba(220,38,38,0.3);
+  }
+  .premium-pair[data-current-mode="subsidy"] .seg-btn.active[data-pair-mode-btn="subsidy"] {
+    background: #10B981; color: #fff;
+    box-shadow: 0 2px 6px rgba(16,185,129,0.3);
+  }
+  .premium-pair[data-current-mode="deduct"] .seg-btn.active[data-pair-mode-btn="deduct"] small,
+  .premium-pair[data-current-mode="subsidy"] .seg-btn.active[data-pair-mode-btn="subsidy"] small {
+    opacity: 0.95; color: #fff;
   }
   .field-cell input.changed,
   .field-cell select.changed {
@@ -5877,18 +5904,23 @@
         } else if (f.type === 'money') {
           inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${v == null ? 0 : v}">`;
         } else if (f.type === 'premium_pair') {
-          // Special: amount + 扣薪/補貼 radio (mutually exclusive)
+          // Special: amount + 扣薪/補貼 segmented toggle (mutually exclusive)
           const dVal = Number(emp[f.deductKey])  || 0;
           const sVal = Number(emp[f.subsidyKey]) || 0;
           const mode = sVal > 0 && dVal === 0 ? 'subsidy' : 'deduct';
           const amount = mode === 'subsidy' ? sVal : dVal;
-          const pairId = 'prem_' + f.key.replace(/[^a-z0-9]/gi, '');
           inputHtml = `
             <div class="premium-pair" data-pair="${f.key}" data-current-mode="${mode}" data-deduct-key="${f.deductKey}" data-subsidy-key="${f.subsidyKey}">
               <input type="number" class="premium-amount" data-pair-amount="${f.key}" min="0" step="1" value="${amount}">
-              <div class="premium-modes">
-                <label><input type="radio" name="${pairId}" value="deduct" data-pair-mode="${f.key}" ${mode==='deduct'?'checked':''}> 扣薪 (員工付)</label>
-                <label><input type="radio" name="${pairId}" value="subsidy" data-pair-mode="${f.key}" ${mode==='subsidy'?'checked':''}> 補貼 (公司付)</label>
+              <div class="seg-toggle" data-pair-toggle="${f.key}">
+                <button type="button" class="seg-btn ${mode==='deduct'?'active':''}" data-pair-mode-btn="deduct">
+                  <span class="seg-ic">🔴</span><span class="seg-tx">扣薪</span>
+                  <small>員工付</small>
+                </button>
+                <button type="button" class="seg-btn ${mode==='subsidy'?'active':''}" data-pair-mode-btn="subsidy">
+                  <span class="seg-ic">🟢</span><span class="seg-tx">補貼</span>
+                  <small>公司付</small>
+                </button>
               </div>
             </div>`;
         } else {
@@ -6018,13 +6050,13 @@
       if (el.type === 'number') v = v === '' ? 0 : Number(v);
       obj[k] = v;
     });
-    // Process premium_pair groups: route amount → deductKey or subsidyKey based on selected mode
+    // Process premium_pair groups: route amount → deductKey or subsidyKey based on active seg button
     $('drawerBody').querySelectorAll('.premium-pair').forEach(pp => {
       const dKey = pp.dataset.deductKey;
       const sKey = pp.dataset.subsidyKey;
       const amt = Number(pp.querySelector('.premium-amount').value) || 0;
-      const modeRadio = pp.querySelector('input[data-pair-mode]:checked');
-      const mode = modeRadio ? modeRadio.value : 'deduct';
+      const activeBtn = pp.querySelector('.seg-btn.active[data-pair-mode-btn]');
+      const mode = activeBtn ? activeBtn.dataset.pairModeBtn : (pp.dataset.currentMode || 'deduct');
       if (mode === 'subsidy') {
         obj[sKey] = amt;
         obj[dKey] = 0;
@@ -6075,19 +6107,22 @@
       // value is stored as data-att-val; the radio itself doesn't have a data-key for value,
       // we'll read it from the checked option in readDrawerForm via custom logic
     }
-    // Premium-pair mode toggle: update the visual class on the parent
-    if (e.target.dataset && e.target.dataset.pairMode) {
-      const pp = e.target.closest('.premium-pair');
-      if (pp) pp.dataset.currentMode = e.target.value;
-    }
     updateNetPreview();
   });
-  // Also initialize data-current-mode on radio change (capture-phase listener for visual)
-  document.addEventListener('change', e => {
-    if (e.target && e.target.dataset && e.target.dataset.pairMode) {
-      const pp = e.target.closest('.premium-pair');
-      if (pp) pp.dataset.currentMode = e.target.value;
-    }
+  // Segmented button toggle: click 扣薪 / 補貼 → set mode
+  document.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('.seg-btn[data-pair-mode-btn]');
+    if (!btn) return;
+    if (btn.disabled) return;
+    const pp = btn.closest('.premium-pair');
+    if (!pp) return;
+    const newMode = btn.dataset.pairModeBtn;
+    pp.dataset.currentMode = newMode;
+    // Toggle .active on the two seg buttons
+    pp.querySelectorAll('.seg-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.pairModeBtn === newMode);
+    });
+    setTimeout(updateNetPreview, 10);
   });
   document.addEventListener('change', e => {
     if (e.target && e.target.closest && e.target.closest('#drawerBody')) updateNetPreview();
