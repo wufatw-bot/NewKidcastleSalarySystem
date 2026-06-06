@@ -2336,6 +2336,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn-mini secondary" onclick="togglePsPreview()" id="psPreviewBtn">👁 預覽模式</button>
           <button class="btn-mini secondary" onclick="copyPayslip()">📋 複製</button>
+          <button class="btn-mini secondary" onclick="openPayslipSettings()" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;">⚙ 編輯顯示項目</button>
           <button class="btn-action" onclick="window.print()">🖨 列印 / 存 PDF</button>
           <button class="btn-mini primary" onclick="openPayslipSummary()" style="background:linear-gradient(135deg,#10B981,#047857);">📊 薪資條匯總</button>
         </div>
@@ -2588,6 +2589,29 @@
     <div class="foot">
       <button class="btn-mini secondary" onclick="closeMigratePwd()">取消</button>
       <button class="btn-mini primary" onclick="validateMigratePwd()" style="background:linear-gradient(135deg,#DC2626,#991B1B);">🔓 解鎖</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payslip Display Settings modal -->
+<div class="small-modal-overlay" id="psSettingsOverlay" onclick="closePayslipSettings(event)">
+  <div class="small-modal" style="max-width:640px;" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#F59E0B,#B45309);">
+      <div class="icon-l">⚙</div>
+      <h2>編輯薪水條的顯示項目</h2>
+      <button class="close" onclick="closePayslipSettings()">✕</button>
+    </div>
+    <div class="body">
+      <p style="margin:0 0 12px;color:#475569;font-size:13px;">
+        勾選的項目即使值為 0 仍會顯示在薪水條上；未勾選的項目，0 值時會自動隱藏。<br>
+        <small style="color:#94a3b8;">本設定為全域，套用所有員工的薪水條。</small>
+      </p>
+      <div id="psSettingsBody" style="max-height:50vh;overflow:auto;"></div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="resetPayslipSettings()">↺ 全部清除</button>
+      <button class="btn-mini secondary" onclick="closePayslipSettings()">取消</button>
+      <button class="btn-mini primary" onclick="savePayslipSettings()" style="background:linear-gradient(135deg,#F59E0B,#B45309);">💾 儲存</button>
     </div>
   </div>
 </div>
@@ -3100,6 +3124,8 @@
     if (!d || !Array.isArray(d.employees)) return d;
     // Ensure owner-saved baseline map exists (per-employee snapshot of last owner-confirmed values)
     if (!d.ownerBaseline || typeof d.ownerBaseline !== 'object') d.ownerBaseline = {};
+    // Ensure payslip force-display list exists (items to show even if value is 0)
+    if (!Array.isArray(d.displayOverrides)) d.displayOverrides = [];
     let migAcademic = 0;
     let migRemoved  = 0;
     d.employees.forEach(e => {
@@ -3919,15 +3945,23 @@
     const net = subA + subB - subC - subD;
     const today = new Date().toISOString().substr(0, 10);
 
+    // Force-show overrides: items whose key prefix matches displayOverrides should NOT be hidden even if 0
+    const forceShow = (DATA && Array.isArray(DATA.displayOverrides)) ? DATA.displayOverrides : [];
+    function isForceShown(label) {
+      // label is e.g. "底薪 Base"; check if any forceShow key matches the leading Chinese token
+      return forceShow.some(fs => label === fs || label.startsWith(fs + ' ') || label.startsWith(fs + '（') || label.startsWith(fs + '/') || label.startsWith(fs));
+    }
     const renderRows = (items) => items.map(([k, v]) => {
       const num = Number(v) || 0;
-      return `<div class="ps-row${num === 0 ? ' zero' : ''}"><span class="lbl">${k}</span><span class="val">${fmtNT(num)}</span></div>`;
+      const cls = (num === 0 && !isForceShown(k)) ? ' zero' : '';
+      return `<div class="ps-row${cls}"><span class="lbl">${k}</span><span class="val">${fmtNT(num)}</span></div>`;
     }).join('');
 
     // For employee view: detect whether each section is all-zero (so we can hide column entirely)
-    const isFixedZero    = fixed.every(([_, v]) => (Number(v) || 0) === 0);
-    const isVariableZero = variable.every(([_, v]) => (Number(v) || 0) === 0);
-    const isDeductZero   = deductions.every(([_, v]) => (Number(v) || 0) === 0);
+    // Section is "all-zero" only if every item is 0 AND not force-shown
+    const isFixedZero    = fixed.every(([k, v]) => (Number(v) || 0) === 0 && !isForceShown(k));
+    const isVariableZero = variable.every(([k, v]) => (Number(v) || 0) === 0 && !isForceShown(k));
+    const isDeductZero   = deductions.every(([k, v]) => (Number(v) || 0) === 0 && !isForceShown(k));
     const cashRowClass   = (subD === 0) ? ' all-zero' : '';
 
     $('payslip').innerHTML = `
@@ -4152,6 +4186,106 @@
   // ==========================================================================
   // 薪資條匯總 Payslip Summary
   // ==========================================================================
+  // =========================================================================
+  // Payslip Display Settings — force-show items even if value is 0
+  // =========================================================================
+  // All payslip items grouped by section (key + label)
+  const PS_DISPLAY_ITEMS = {
+    'fixed': {
+      title: '① 約定薪資結構 Fixed',
+      items: [
+        ['底薪',              '底薪 Base'],
+        ['全勤獎金',          '全勤獎金 Attendance'],
+        ['年資津貼',          '年資津貼 Seniority'],
+        ['主管津貼',          '主管津貼 Manager'],
+        ['分校人數超額獎金',  '分校人數超額獎金 Excess'],
+        ['美語津貼',          '美語津貼 English'],
+        ['英文輔導津貼',      '英文輔導津貼 Tutoring'],
+        ['數學班津貼',        '數學班津貼 Math'],
+        ['混班/混校津貼',     '混班/混校津貼 Mixed'],
+        ['帶班人數津貼',      '帶班人數津貼 Class Size'],
+        ['其他津貼',          '其他津貼 Others'],
+        ['補貼公會投保勞保',  '補貼公會投保勞保 Guild Labor'],
+        ['補貼公會健保自付',  '補貼公會健保自付 Guild Health'],
+        ['補貼退休金',        '補貼退休金 Retirement Subsidy']
+      ]
+    },
+    'variable': {
+      title: '② 非固定支付 Variable',
+      items: [
+        ['加班費',     '加班費 OT Pay'],
+        ['加班時數',   '加班時數 OT Hours'],
+        ['獎金',       '獎金 Bonus'],
+        ['特殊調整',   '特殊調整 Adjust']
+      ]
+    },
+    'deduct': {
+      title: '③ 應代扣項目 Deductions',
+      items: [
+        ['勞保自付',   '勞保自付 Labor Ins'],
+        ['健保自付',   '健保自付 Health Ins'],
+        ['退休金提撥', '退休金提撥 Retirement'],
+        ['請假時數',   '請假時數 Leave Hours'],
+        ['請假扣款',   '請假扣款 Leave Deduct'],
+        ['遲到扣款',   '遲到扣款 Late'],
+        ['扣款',       '扣款 Deduction']
+      ]
+    },
+    'cash': {
+      title: '④ 現金給付 Cash',
+      items: [
+        ['現金給付', '現金給付 Cash Payment']
+      ]
+    }
+  };
+  function openPayslipSettings() {
+    if (!currentUser) { toast('請先登入', 'error'); return; }
+    const overrides = (DATA && Array.isArray(DATA.displayOverrides)) ? DATA.displayOverrides : [];
+    let html = '';
+    Object.entries(PS_DISPLAY_ITEMS).forEach(([secKey, sec]) => {
+      const bgColor = secKey === 'deduct' ? '#FEE2E2' : secKey === 'variable' ? '#DBEAFE' : secKey === 'cash' ? '#FEF3C7' : '#DBEAFE';
+      const titleColor = secKey === 'deduct' ? '#991B1B' : secKey === 'cash' ? '#92400E' : '#1E40AF';
+      html += `<div style="margin-bottom:14px;padding:10px 12px;background:${bgColor};border-radius:8px;">
+        <div style="font-weight:700;color:${titleColor};margin-bottom:8px;">${sec.title}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;">`;
+      sec.items.forEach(([key, label]) => {
+        const checked = overrides.includes(key) ? 'checked' : '';
+        html += `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:3px 4px;">
+          <input type="checkbox" class="ps-disp-chk" value="${key}" ${checked}>
+          <span>${label}</span>
+        </label>`;
+      });
+      html += '</div></div>';
+    });
+    $('psSettingsBody').innerHTML = html;
+    $('psSettingsOverlay').classList.add('show');
+  }
+  function closePayslipSettings(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('psSettingsOverlay').classList.remove('show');
+  }
+  function resetPayslipSettings() {
+    if (!confirm('確定清除所有強制顯示設定？\n之後 0 值項目都會自動隱藏。')) return;
+    $('psSettingsBody').querySelectorAll('.ps-disp-chk').forEach(c => c.checked = false);
+  }
+  function savePayslipSettings() {
+    const selected = [];
+    $('psSettingsBody').querySelectorAll('.ps-disp-chk:checked').forEach(c => {
+      selected.push(c.value);
+    });
+    if (!DATA) DATA = {};
+    DATA.displayOverrides = selected;
+    persistData();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser ? currentUser.fullName : '系統',
+      text: `更新薪資條強制顯示項目 (${selected.length} 項)`
+    });
+    closePayslipSettings();
+    renderPayslip();
+    toast(`✓ 已儲存 (${selected.length} 項強制顯示)`, 'success');
+  }
+
   function openPayslipSummary() {
     if (!currentUser) { toast('請先登入', 'error'); return; }
     const month = $('psMonth') && $('psMonth').value;
