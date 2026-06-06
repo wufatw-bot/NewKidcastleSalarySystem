@@ -1213,6 +1213,32 @@
   .form-section.bank   { border-left-color: #8B5CF6; }
   .form-section.login  { border-left-color: #0EA5E9; }
   .form-section.login h3 .badge { background: #0EA5E9; }
+  .form-section.leave  { border-left-color: #14B8A6; }
+  .form-section.leave h3 .badge { background: #14B8A6; }
+  .leave-info-card {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #ECFEFF, #CFFAFE);
+    border-radius: 10px; padding: 14px;
+    border: 1.5px solid #67E8F9;
+  }
+  .leave-info-card .leave-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 6px; font-size: 13px;
+    border-bottom: 1px dashed rgba(20,184,166,0.25);
+  }
+  .leave-info-card .leave-row:last-child { border-bottom: none; }
+  .leave-info-card .leave-row .lbl { color: #0F766E; font-weight: 600; }
+  .leave-info-card .leave-row .val {
+    font-family: Arial; font-weight: 700; color: #134E4A;
+  }
+  .leave-info-card .leave-row.highlight .val {
+    background: #14B8A6; color: #fff;
+    padding: 4px 12px; border-radius: 6px;
+    font-size: 14px;
+  }
+  .leave-info-card .leave-na {
+    padding: 14px; text-align: center; color: #64748b; font-style: italic;
+  }
   .form-section h3 {
     font-size: 13px; font-weight: 700; color: #1a202c;
     margin-bottom: 12px;
@@ -3170,6 +3196,9 @@
       // Manager-view headcount fields (used to derive allowance amounts)
       ['分校人數超額人數','美語人數','英文輔導人數','數學班人數','混班/混校人數','帶班人數']
         .forEach(k => { if (e[k] == null) e[k] = 0; });
+      // Annual leave (特休) tracking fields — manual override allowed; auto-calc shown if blank
+      if (e['已休日數'] == null) e['已休日數'] = 0;
+      if (e['可休日數_手動'] == null) e['可休日數_手動'] = 0;  // 0 = use auto-calc
     });
     if (migAcademic > 0) console.log('[migration] 教務津貼 → 主管津貼 (MAX) for ' + migAcademic + ' employees');
     if (migRemoved > 0) console.log('[migration] 導師/行政/交通津貼 (>0) merged into 其他津貼: ' + migRemoved + ' fields');
@@ -4005,6 +4034,21 @@
         <div class="lbl">實領金額 Net Salary  =  (A) + (B) − (C) − (D)</div>
         <div class="val">NT$ ${fmtNT(net)}</div>
       </div>
+
+      ${(() => {
+        const al = computeAnnualLeave(emp);
+        if (!al) return '';
+        return `<div style="margin-top:12px;padding:12px 16px;background:linear-gradient(135deg,#ECFEFF,#CFFAFE);border:1.5px solid #67E8F9;border-radius:10px;">
+          <div style="font-weight:700;color:#0F766E;margin-bottom:8px;font-size:14px;">🏖 特休資訊 Annual Leave</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:13px;">
+            <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">📅 最近滿N年</span><span style="font-weight:700;color:#134E4A;">滿 ${al.anniversary} 年</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">📆 可請假期間</span><span style="font-weight:700;color:#134E4A;font-size:11px;">${al.periodStart} ~ ${al.periodEnd}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">🎯 可休日數</span><span style="font-weight:700;color:#134E4A;">${al.daysEntitled} 天</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">✅ 已休日數</span><span style="font-weight:700;color:#134E4A;">${al.daysUsed} 天</span></div>
+            <div style="grid-column:1/-1;display:flex;justify-content:space-between;padding:8px 12px;background:#14B8A6;color:#fff;border-radius:8px;margin-top:4px;"><span style="font-weight:600;">🟢 未休日數 Remaining</span><span style="font-weight:800;font-size:16px;">${al.daysRemaining} 天</span></div>
+          </div>
+        </div>`;
+      })()}
 
       <div class="ps-sign">
         <div class="box">發放單位簽章 Issued by<br><br>&nbsp;</div>
@@ -5588,8 +5632,71 @@
         { key: '登入密碼', type: 'text' },
         { key: 'Email',   type: 'text', wide: true }
       ]
+    },
+    {
+      title: '特休管理 Annual Leave',
+      cls: 'leave',
+      badge: '⑥',
+      fields: [
+        { key: '特休資訊', type: 'leave_info', wide: true },   // 顯示自動計算結果 (唯讀)
+        { key: '可休日數_手動', type: 'money' },               // 老闆覆寫 (>0 才使用)
+        { key: '已休日數',     type: 'money' }
+      ]
     }
   ];
+
+  // =========================================================================
+  // 特休 (Annual Leave) — auto-calculated from 到職日 per Taiwan Labor Law
+  // 滿6月→3天, 滿1年→7天, 滿2年→10天, 滿3年→14天, 滿5年→15天,
+  // 滿10年→16天, 之後每滿1年+1天, 上限30天
+  // =========================================================================
+  function laborLawDays(years) {
+    if (years < 0.5) return 0;
+    if (years < 1) return 3;
+    if (years < 2) return 7;
+    if (years < 3) return 10;
+    if (years < 5) return 14;
+    if (years < 10) return 15;
+    // 10年以上：每滿1年+1天，最多30天
+    const yrInt = Math.floor(years);
+    return Math.min(30, 15 + (yrInt - 9));
+  }
+  function computeAnnualLeave(emp) {
+    if (!emp || !emp['到職日']) return null;
+    const hire = new Date(emp['到職日']);
+    if (isNaN(hire.getTime())) return null;
+    const today = new Date();
+    // 滿N年 = 整數年數差
+    let yr = today.getFullYear() - hire.getFullYear();
+    const beforeAnniv = (today.getMonth() < hire.getMonth()) ||
+      (today.getMonth() === hire.getMonth() && today.getDate() < hire.getDate());
+    if (beforeAnniv) yr--;
+    if (yr < 0) yr = 0;
+    // 最近一次週年日
+    const lastAnniv = new Date(hire);
+    lastAnniv.setFullYear(hire.getFullYear() + yr);
+    if (lastAnniv > today) lastAnniv.setFullYear(lastAnniv.getFullYear() - 1);
+    const nextAnniv = new Date(lastAnniv);
+    nextAnniv.setFullYear(lastAnniv.getFullYear() + 1);
+    const yearsFloat = (today - hire) / (1000 * 60 * 60 * 24 * 365.25);
+    const daysEntitledAuto = laborLawDays(yearsFloat);
+    // 手動覆蓋值（若 > 0）
+    const daysEntitledManual = Number(emp['可休日數_手動']) || 0;
+    const daysEntitled = daysEntitledManual > 0 ? daysEntitledManual : daysEntitledAuto;
+    const daysUsed = Number(emp['已休日數']) || 0;
+    const daysRemaining = Math.max(0, daysEntitled - daysUsed);
+    const fmt = d => d.toISOString().substr(0, 10);
+    return {
+      anniversary:   yr,
+      periodStart:   fmt(lastAnniv),
+      periodEnd:     fmt(nextAnniv),
+      daysEntitled,
+      daysEntitledAuto,
+      daysUsed,
+      daysRemaining,
+      isManualOverride: daysEntitledManual > 0
+    };
+  }
 
   function allowSum(emp) {
     const keys = ['年資津貼','主管津貼',
@@ -6037,6 +6144,21 @@
           inputHtml = `<input type="date" class="${cls}" data-key="${f.key}" value="${v || ''}">`;
         } else if (f.type === 'money') {
           inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${v == null ? 0 : v}">`;
+        } else if (f.type === 'leave_info') {
+          // Read-only annual leave summary card (computed from 到職日)
+          const al = computeAnnualLeave(emp);
+          if (al) {
+            inputHtml = `<div class="leave-info-card">
+              <div class="leave-row"><span class="lbl">📅 最近滿N年</span><span class="val">滿 ${al.anniversary} 年</span></div>
+              <div class="leave-row"><span class="lbl">📆 可請假期間</span><span class="val">${al.periodStart} ~ ${al.periodEnd}</span></div>
+              <div class="leave-row"><span class="lbl">🎯 可休日數 ${al.isManualOverride ? '(手動)' : '(法定)'}</span><span class="val">${al.daysEntitled} 天</span></div>
+              <div class="leave-row"><span class="lbl">✅ 已休日數</span><span class="val">${al.daysUsed} 天</span></div>
+              <div class="leave-row highlight"><span class="lbl">🟢 未休日數</span><span class="val">${al.daysRemaining} 天</span></div>
+              ${al.isManualOverride ? '<div style="font-size:11px;color:#92400E;margin-top:6px;padding:4px 8px;background:#FEF3C7;border-radius:5px;">⚠ 目前使用「手動設定值」覆寫法定計算（'+al.daysEntitledAuto+' 天）</div>' : '<div style="font-size:11px;color:#0F766E;margin-top:6px;padding:4px 8px;">💡 依勞基法自動計算（如需手動覆寫，請在下方輸入「可休日數_手動」&gt; 0）</div>'}
+            </div>`;
+          } else {
+            inputHtml = `<div class="leave-info-card"><div class="leave-na">⚠ 需先填寫到職日才能計算特休</div></div>`;
+          }
         } else if (f.type === 'premium_pair') {
           // Special: amount + 扣薪/補貼 segmented toggle (mutually exclusive)
           const dVal = Number(emp[f.deductKey])  || 0;
