@@ -2346,7 +2346,10 @@
       </div>
       <div class="ctrl">
         <label>月份 Month</label>
-        <select id="psMonth"></select>
+        <div style="display:flex;gap:4px;">
+          <select id="psMonth" style="flex:1;"></select>
+          <button class="btn-mini secondary" onclick="addMonthFromPayslip()" title="新增下個月" style="padding:7px 10px;">➕</button>
+        </div>
       </div>
       <div class="ctrl">
         <label>紙張大小 Paper Size</label>
@@ -3897,14 +3900,14 @@
     empSel.disabled = false;
 
     const filter = campusSel.value;
-    const emps = DEFAULT_DATA.employees.filter(e =>
+    const emps = DATA.employees.filter(e =>
       e['在職狀態'] === '在職' && (filter === 'all' || !filter || e['校區'] === filter)
     );
     empSel.innerHTML = emps.map(e =>
       `<option value="${e['員工編號']}">${e['員工編號']} · ${e['員工姓名']} (${e['校區']} · ${e['職位']})</option>`
     ).join('');
 
-    const months = [...new Set(DEFAULT_DATA.salary.map(s => String(s['月份'])))].sort();
+    const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
     monthSel.innerHTML = months.map(m =>
       `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
     ).join('');
@@ -4328,6 +4331,39 @@
     closePayslipSettings();
     renderPayslip();
     toast(`✓ 已儲存 (${selected.length} 項強制顯示)`, 'success');
+  }
+
+  // Quick-add month from payslip dropdown
+  function addMonthFromPayslip() {
+    if (!currentUser || currentUser.role === 'employee') {
+      toast('員工無法新增月份', 'error'); return;
+    }
+    // Find latest existing month, suggest next month
+    const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
+    const cur = months[months.length - 1] || '11504';
+    const suggested = (typeof incrMonth === 'function') ? incrMonth(cur) : cur;
+    const next = prompt('輸入新月份 (5 位民國年月，例如 11505):', suggested);
+    if (!next) return;
+    if (!/^\d{5}$/.test(next)) { toast('月份格式錯誤（須為 5 位數字）', 'error'); return; }
+    if (DATA.salary.some(s => String(s['月份']) === next)) {
+      toast(`月份 ${next} 已存在`, 'error'); return;
+    }
+    let cnt = 0;
+    DATA.employees.filter(e => e['在職狀態'] === '在職').forEach(emp => {
+      ensureSalaryRecord(emp['員工編號'], next);
+      cnt++;
+    });
+    persistData();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `新增月份 ${next} (從薪資條頁面)，建立 ${cnt} 筆`
+    });
+    populatePayslipSelectors();
+    if (typeof populateManagerSelectors === 'function') populateManagerSelectors();
+    $('psMonth').value = next;
+    renderPayslip();
+    toast(`✓ 已新增月份 ${next} (${cnt} 名員工)`, 'success');
   }
 
   function openPayslipSummary() {
