@@ -2366,7 +2366,7 @@
           <button class="btn-mini secondary" onclick="togglePsPreview()" id="psPreviewBtn">👁 預覽模式</button>
           <button class="btn-mini secondary" onclick="copyPayslip()">📋 複製</button>
           <button class="btn-mini secondary" onclick="openPayslipSettings()" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;">⚙ 編輯顯示項目</button>
-          <button class="btn-action" onclick="window.print()">🖨 列印 / 存 PDF</button>
+          <button class="btn-action" onclick="printPayslip()">🖨 列印 / 存 PDF</button>
           <button class="btn-mini primary" onclick="openPayslipSummary()" style="background:linear-gradient(135deg,#10B981,#047857);">📊 薪資條匯總</button>
         </div>
       </div>
@@ -4340,6 +4340,27 @@
     closePayslipSettings();
     renderPayslip();
     toast(`✓ 已儲存 (${selected.length} 項強制顯示)`, 'success');
+  }
+
+  // Custom print: temporarily set document.title so the PDF filename suggestion
+  // shows the employee's 校區 + 姓名 instead of the generic site title.
+  function printPayslip() {
+    const eid = $('psEmp') && $('psEmp').value;
+    const month = $('psMonth') && $('psMonth').value;
+    const emp = eid ? findEmployee(eid) : null;
+    if (!emp || !month) {
+      window.print();
+      return;
+    }
+    const originalTitle = document.title;
+    const fname = `${emp['校區']}校區_${emp['員工姓名']}_${month}_薪資條`;
+    document.title = fname;
+    // setTimeout to allow title update before opening the print dialog
+    setTimeout(() => {
+      window.print();
+      // Restore title after the dialog closes (~1s buffer)
+      setTimeout(() => { document.title = originalTitle; }, 1000);
+    }, 50);
   }
 
   // Quick-add month from payslip dropdown
