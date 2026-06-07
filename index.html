@@ -3196,6 +3196,9 @@
       if (e['補貼公會投保勞保'] == null) e['補貼公會投保勞保'] = 0;
       if (e['補貼公會健保自付'] == null) e['補貼公會健保自付'] = 0;
       if (e['補貼退休金']     == null) e['補貼退休金']     = 0;
+      // 健保眷屬扣款 — 員工為配偶/子女/父母負擔健保的金額
+      if (e['健保眷屬自付'] == null) e['健保眷屬自付'] = 0;
+      if (e['補貼健保眷屬'] == null) e['補貼健保眷屬'] = 0;
       // Manager-view headcount fields (used to derive allowance amounts)
       ['分校人數超額人數','美語人數','英文輔導人數','數學班人數','混班/混校人數','帶班人數']
         .forEach(k => { if (e[k] == null) e[k] = 0; });
@@ -3827,7 +3830,7 @@
     const allowKeys = ['年資津貼','主管津貼',
                        '分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼',
                        '混班/混校津貼','帶班人數津貼','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
     const allowSum = allowKeys.reduce((s, k) => s + (Number(emp[k]) || 0), 0);
 
     const bonus = Number(sal['獎金']) || 0;
@@ -3837,8 +3840,9 @@
     const gross = base + attBonus + allowSum + otPay + bonus + adjust - leaveD - lateD - deduct;
     const labor = Number(emp['勞保自付']) || 0;
     const health = Number(emp['健保自付']) || 0;
+    const healthDep = Number(emp['健保眷屬自付']) || 0;  // 健保眷屬扣款 (扣薪 mode)
     const retire = Number(emp['退休金提撥']) || 0;  // 退休金 (扣薪 mode) — 補貼模式時為 0
-    const totalDeduct = labor + health + retire;
+    const totalDeduct = labor + health + healthDep + retire;
     const cashPay = Number(emp['現金給付']) || 0;   // D — 已現金給付，從實領再扣
     const net = gross - totalDeduct - cashPay;
 
@@ -3944,7 +3948,8 @@
       ['帶班人數津貼 Class Size', emp['帶班人數津貼']],
       ['其他津貼 Others', emp['其他津貼']],
       ['補貼公會投保勞保 Guild Labor Ins Subsidy', emp['補貼公會投保勞保']],
-      ['補貼公會健保自付 Guild Health Ins Subsidy', emp['補貼公會健保自付']]
+      ['補貼公會健保自付 Guild Health Ins Subsidy', emp['補貼公會健保自付']],
+      ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']]
     ];
     const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
@@ -3960,6 +3965,7 @@
     const deductions = [
       ['勞保自付 Labor Ins', emp['勞保自付']],
       ['健保自付 Health Ins', emp['健保自付']],
+      ['健保眷屬扣款 Health Dep', emp['健保眷屬自付']],
       ['退休金提撥 Retirement', emp['退休金提撥']],
       ['請假時數 Leave Hours', sal['請假時數']],
       ['請假扣款 Leave Deduct (×180/hr)', sal['請假扣款']],
@@ -4153,7 +4159,8 @@
       ['帶班人數津貼',  emp['帶班人數津貼']],
       ['其他津貼',      emp['其他津貼']],
       ['補貼公會投保勞保', emp['補貼公會投保勞保']],
-      ['補貼公會健保自付', emp['補貼公會健保自付']]
+      ['補貼公會健保自付', emp['補貼公會健保自付']],
+      ['補貼健保眷屬',     emp['補貼健保眷屬']]
     ];
     const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
     const variable = [
@@ -4163,9 +4170,10 @@
     ];
     const subB = variable.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
     const deductions = [
-      ['勞保自付',   emp['勞保自付']],
-      ['健保自付',   emp['健保自付']],
-      ['退休金提撥', emp['退休金提撥']],
+      ['勞保自付',     emp['勞保自付']],
+      ['健保自付',     emp['健保自付']],
+      ['健保眷屬扣款', emp['健保眷屬自付']],
+      ['退休金提撥',   emp['退休金提撥']],
       ['請假時數',   sal['請假時數']],
       ['請假扣款 (×180/時)', sal['請假扣款']],
       ['遲到扣款',   sal['遲到扣款']],
@@ -4269,9 +4277,10 @@
     'deduct': {
       title: '③ 應代扣項目 Deductions',
       items: [
-        ['勞保自付',   '勞保自付 Labor Ins'],
-        ['健保自付',   '健保自付 Health Ins'],
-        ['退休金提撥', '退休金提撥 Retirement'],
+        ['勞保自付',     '勞保自付 Labor Ins'],
+        ['健保自付',     '健保自付 Health Ins'],
+        ['健保眷屬扣款', '健保眷屬扣款 Health Dependent'],
+        ['退休金提撥',   '退休金提撥 Retirement'],
         ['請假時數',   '請假時數 Leave Hours'],
         ['請假扣款',   '請假扣款 Leave Deduct'],
         ['遲到扣款',   '遲到扣款 Late'],
@@ -5474,7 +5483,7 @@
     const allowKeys = ['年資津貼','主管津貼',
                        '分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼',
                        '混班/混校津貼','帶班人數津貼','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
     const salRows = [salHeaders];
     filteredSals.slice()
       .sort((a, b) => {
@@ -5644,10 +5653,11 @@
       cls: 'deduct',
       badge: '③',
       fields: [
-        { key: '勞保保費', type: 'premium_pair', deductKey: '勞保自付',  subsidyKey: '補貼公會投保勞保' },
-        { key: '健保保費', type: 'premium_pair', deductKey: '健保自付',  subsidyKey: '補貼公會健保自付' },
-        { key: '退休金',   type: 'premium_pair', deductKey: '退休金提撥', subsidyKey: '補貼退休金' },
-        { key: '現金給付', type: 'money' }
+        { key: '勞保保費',     type: 'premium_pair', deductKey: '勞保自付',  subsidyKey: '補貼公會投保勞保' },
+        { key: '健保保費',     type: 'premium_pair', deductKey: '健保自付',  subsidyKey: '補貼公會健保自付' },
+        { key: '健保眷屬扣款', type: 'premium_pair', deductKey: '健保眷屬自付', subsidyKey: '補貼健保眷屬' },
+        { key: '退休金',       type: 'premium_pair', deductKey: '退休金提撥', subsidyKey: '補貼退休金' },
+        { key: '現金給付',     type: 'money' }
       ]
     },
     {
@@ -5738,7 +5748,7 @@
     const keys = ['年資津貼','主管津貼',
                   '分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼',
                   '混班/混校津貼','帶班人數津貼','其他津貼',
-                  '補貼公會投保勞保','補貼公會健保自付','補貼退休金'];
+                  '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
     return keys.reduce((s, k) => s + (Number(emp[k]) || 0), 0);
   }
 
@@ -6733,7 +6743,7 @@
     const allowKeys = ['年資津貼','主管津貼',
                        '分校人數超額獎金','美語津貼','英文輔導津貼','數學班津貼',
                        '混班/混校津貼','帶班人數津貼','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
 
     const rows = [headers];
     // Sort by month, then by employee ID
