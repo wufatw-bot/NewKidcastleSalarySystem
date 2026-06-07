@@ -1239,6 +1239,13 @@
   .form-section.login h3 .badge { background: #0EA5E9; }
   .form-section.leave  { border-left-color: #14B8A6; }
   .form-section.leave h3 .badge { background: #14B8A6; }
+  .form-section.notes  { border-left-color: #6366F1; }
+  .form-section.notes h3 .badge { background: #6366F1; }
+  .form-section.notes textarea:focus {
+    outline: none;
+    border-color: #6366F1 !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+  }
   .leave-info-card {
     grid-column: 1 / -1;
     background: linear-gradient(135deg, #ECFEFF, #CFFAFE);
@@ -3238,6 +3245,8 @@
       // Annual leave (特休) tracking fields — manual override allowed; auto-calc shown if blank
       if (e['已休日數'] == null) e['已休日數'] = 0;
       if (e['可休日數_手動'] == null) e['可休日數_手動'] = 0;  // 0 = use auto-calc
+      // 備註 (owner notes about this employee) — owner-only
+      if (e['備註'] == null) e['備註'] = '';
     });
     if (migAcademic > 0) console.log('[migration] 教務津貼 → 主管津貼 (MAX) for ' + migAcademic + ' employees');
     if (migRemoved > 0) console.log('[migration] 導師/行政/交通津貼 (>0) merged into 其他津貼: ' + migRemoved + ' fields');
@@ -5545,7 +5554,7 @@
                         '健保眷屬自付','補貼健保眷屬',
                         '退休金提撥','補貼退休金',
                         '現金給付','銀行名稱','銀行帳號',
-                        '可休日數_手動','已休日數'];
+                        '可休日數_手動','已休日數','備註'];
     const empRows = [empHeaders];
     filteredEmps
       .slice()
@@ -5807,6 +5816,14 @@
         { key: '特休資訊', type: 'leave_info', wide: true },   // 顯示自動計算結果 (唯讀)
         { key: '可休日數_手動', type: 'money' },               // 老闆覆寫 (>0 才使用)
         { key: '已休日數',     type: 'money' }
+      ]
+    },
+    {
+      title: '備註 Notes',
+      cls: 'notes',
+      badge: '⑦',
+      fields: [
+        { key: '備註', type: 'textarea', wide: true }
       ]
     }
   ];
@@ -6304,8 +6321,8 @@
     const orig = isNew ? {} : (ownerBase || DEFAULT_DATA.employees.find(o => o['員工編號'] === emp['員工編號']) || {});
     const isMgr = currentUser && currentUser.role === 'manager';
     const html = OWN_SECTIONS.map(sec => {
-      // Manager view: hide structural sections (deductions / bank / login)
-      if (isMgr && (sec.cls === 'deduct' || sec.cls === 'bank' || sec.cls === 'login')) {
+      // Manager view: hide structural sections (deductions / bank / login / notes)
+      if (isMgr && (sec.cls === 'deduct' || sec.cls === 'bank' || sec.cls === 'login' || sec.cls === 'notes')) {
         return '';
       }
       // Manager view: section 2 (薪資組成) gets entirely custom render
@@ -6329,6 +6346,9 @@
           inputHtml = `<input type="date" class="${cls}" data-key="${f.key}" value="${v || ''}">`;
         } else if (f.type === 'money') {
           inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${v == null ? 0 : v}">`;
+        } else if (f.type === 'textarea') {
+          const safe = String(v == null ? '' : v).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+          inputHtml = `<textarea class="${cls}" data-key="${f.key}" rows="4" placeholder="可輸入多行備註…" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;background:#fff;">${safe}</textarea>`;
         } else if (f.type === 'leave_info') {
           // Read-only annual leave summary card (computed from 到職日)
           const al = computeAnnualLeave(emp);
@@ -6730,7 +6750,7 @@
                      '健保眷屬自付','補貼健保眷屬',
                      '退休金提撥','補貼退休金',
                      '現金給付','銀行名稱','銀行帳號',
-                     '可休日數_手動','已休日數'];
+                     '可休日數_手動','已休日數','備註'];
     const rows = [headers];
     DATA.employees.slice()
       .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])))
