@@ -1117,6 +1117,26 @@
   .own-table tbody tr:hover td { background: #FFF7ED; }
   .own-table .name-cell { text-align: left; }
   .own-table .num-cell { font-family: Arial; font-weight: 600; text-align: right; }
+  .own-name-edit-btn {
+    background: linear-gradient(135deg, #4F8BCC, #2E5984);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .15s;
+    box-shadow: 0 2px 4px rgba(46,89,132,0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-family: inherit;
+  }
+  .own-name-edit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(46,89,132,0.45);
+  }
+  .own-name-edit-btn:active { transform: translateY(0); }
   .own-table .status-chip {
     display: inline-block; padding: 3px 10px;
     border-radius: 999px; font-size: 11px; font-weight: 700;
@@ -5841,7 +5861,14 @@
         : `<button class="restore" onclick="toggleStatus('${e['員工編號']}')" title="恢復在職">▶ 復職</button>`;
       return `<tr>
         <td><b>${e['員工編號']}</b></td>
-        <td class="name-cell"><b>${e['員工姓名']}</b>${e['英文姓名'] ? ' <small style="color:#94a3b8">('+e['英文姓名']+')</small>' : ''}</td>
+        <td class="name-cell">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="own-name-edit-btn" onclick="openEditEmployee('${e['員工編號']}')" title="編輯員工資料">✏ 編輯</button>
+            <div>
+              <b>${e['員工姓名']}</b>${e['英文姓名'] ? ' <small style="color:#94a3b8">('+e['英文姓名']+')</small>' : ''}
+            </div>
+          </div>
+        </td>
         <td><span class="campus-chip ${campusChip}">${e['校區']}</span></td>
         <td>${e['職位'] || '—'}</td>
         <td><small>${e['到職日'] || '—'}</small></td>
@@ -5852,7 +5879,6 @@
         <td class="num-cell">${fmtNT(e['現金給付'])}</td>
         <td><span class="status-chip ${statCls}">${stat}</span></td>
         <td><div class="row-actions">
-          <button class="edit" onclick="openEditEmployee('${e['員工編號']}')">✏ 編輯</button>
           ${actionBtn}
         </div></td>
       </tr>`;
