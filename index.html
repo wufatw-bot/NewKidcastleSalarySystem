@@ -2242,6 +2242,28 @@
         </div>
       </div>
 
+      <!-- 多位老師備份 -->
+      <div class="backup-col" style="margin-top:14px;border-top:4px solid #8B5CF6;background:#F5F3FF;">
+        <h4>👥 多位老師備份</h4>
+        <div class="meta">勾選多位老師，一次匯出他們全部的薪資資料</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+          <button class="btn-mini secondary" onclick="bkMultiSelect('all')" style="background:#E0E7FF;color:#3730A3;">✓ 全選</button>
+          <button class="btn-mini secondary" onclick="bkMultiSelect('同安')" style="background:#DBEAFE;color:#1E40AF;">🏫 同安全選</button>
+          <button class="btn-mini secondary" onclick="bkMultiSelect('莊敬')" style="background:#FFF1E5;color:#B45309;">🎓 莊敬全選</button>
+          <button class="btn-mini secondary" onclick="bkMultiSelect('active')" style="background:#DCFCE7;color:#166534;">✓ 在職全選</button>
+          <button class="btn-mini secondary" onclick="bkMultiSelect('none')" style="background:#FEE2E2;color:#991B1B;">✕ 清除</button>
+          <span style="margin-left:auto;align-self:center;font-size:12px;color:#6D28D9;font-weight:700;">
+            已選擇 <span id="bkMultiCount">0</span> 位
+          </span>
+        </div>
+        <div id="bkMultiList" style="max-height:220px;overflow:auto;background:#fff;border:1.5px solid #cbd5e1;border-radius:9px;padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:4px;"></div>
+        <button class="backup-btn local" onclick="doBackupByMultiEmployees()" style="margin-top:10px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);width:100%;">
+          <span class="ico">💾</span>
+          <span class="lbl">備份所選老師到本地</span>
+          <span class="arrow">↓</span>
+        </button>
+      </div>
+
       <div class="backup-note">
         <b>使用說明：</b><br>
         💾 <b>「備份到本地」</b>：直接下載到您電腦的下載資料夾（建議搭配 Google Drive 桌面同步或手動拖入雲端硬碟）<br>
@@ -5468,12 +5490,26 @@
     }
     // Specific-teacher selector for backup
     const empSel = $('bkEmpSel');
+    const emps = DATA.employees.slice()
+      .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])));
     if (empSel) {
-      const emps = DATA.employees.slice()
-        .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])));
       empSel.innerHTML = '<option value="">— 請選擇老師 —</option>' +
         emps.map(e => `<option value="${e['員工編號']}">${e['員工編號']} · ${e['員工姓名']} (${e['校區']}${e['在職狀態']!=='在職'?' · '+e['在職狀態']:''})</option>`).join('');
     }
+    // Multi-select teacher list (checkboxes)
+    const multiList = $('bkMultiList');
+    if (multiList) {
+      multiList.innerHTML = emps.map(e => {
+        const campusColor = e['校區'] === '同安' ? '#DBEAFE;color:#1E40AF' : '#FFF1E5;color:#B45309';
+        const inactive = e['在職狀態'] !== '在職';
+        return `<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;font-size:12px;cursor:pointer;border-radius:5px;transition:background .12s;${inactive ? 'opacity:0.55;' : ''}" onmouseover="this.style.background='#F5F3FF'" onmouseout="this.style.background=''">
+          <input type="checkbox" class="bk-multi-chk" value="${e['員工編號']}" data-campus="${e['校區']}" data-active="${e['在職狀態']==='在職'?'1':'0'}" onchange="updateBkMultiCount()">
+          <span style="display:inline-block;padding:1px 5px;border-radius:4px;background:${campusColor};font-size:10px;font-weight:700;">${e['校區']}</span>
+          <span style="flex:1;"><b>${e['員工編號']}</b> ${e['員工姓名']}${inactive ? ' <small style="color:#94a3b8">'+e['在職狀態']+'</small>' : ''}</span>
+        </label>`;
+      }).join('');
+    }
+    updateBkMultiCount();
 
     // Update campus counts
     if ($('bkTaCount')) {
@@ -5503,6 +5539,11 @@
       const emp = DATA.employees.find(e => e['員工編號'] === eid);
       const nameLabel = emp ? (emp['員工編號'] + '_' + emp['員工姓名']) : eid;
       return `Kidcastle_老師_${nameLabel}_${dateStr}.xlsx`;
+    }
+    // Multi-employee scope: campus is "emps:TA001,TA002,..."
+    if (campus && campus.startsWith('emps:')) {
+      const ids = campus.slice(5).split(',');
+      return `Kidcastle_多位老師_${ids.length}人_${dateStr}.xlsx`;
     }
     const campusLabel = campus === 'both' ? '同安_莊敬合併'
                        : campus === '同安' ? '同安校'
@@ -5536,6 +5577,29 @@
     await doBackup('emp:' + eid, 'local');
   }
 
+  // Multi-employee backup helpers
+  function bkMultiSelect(mode) {
+    const list = document.querySelectorAll('#bkMultiList .bk-multi-chk');
+    list.forEach(chk => {
+      if (mode === 'all') chk.checked = true;
+      else if (mode === 'none') chk.checked = false;
+      else if (mode === 'active') chk.checked = chk.dataset.active === '1';
+      else if (mode === '同安' || mode === '莊敬') chk.checked = chk.dataset.campus === mode;
+    });
+    updateBkMultiCount();
+  }
+  function updateBkMultiCount() {
+    const checked = document.querySelectorAll('#bkMultiList .bk-multi-chk:checked').length;
+    const el = $('bkMultiCount');
+    if (el) el.textContent = checked;
+  }
+  async function doBackupByMultiEmployees() {
+    const ids = Array.from(document.querySelectorAll('#bkMultiList .bk-multi-chk:checked'))
+      .map(c => c.value);
+    if (!ids.length) { toast('請至少勾選一位老師', 'error'); return; }
+    await doBackup('emps:' + ids.join(','), 'local');
+  }
+
   async function doBackup(campusScope, destination) {
     if (typeof XLSX === 'undefined') { toast('SheetJS 未載入，無法備份', 'error'); return; }
     if (!currentUser) { toast('請先登入', 'error'); return; }
@@ -5544,11 +5608,14 @@
     const filename = backupFilename(campusScope, period);
 
     // Filter data by campus + period
-    // Scope can be 'both' / '同安' / '莊敬' / 'emp:<員工編號>'
-    const isEmpScope = campusScope && campusScope.startsWith('emp:');
-    const targetEid = isEmpScope ? campusScope.slice(4) : null;
+    // Scope can be 'both' / '同安' / '莊敬' / 'emp:<員工編號>' / 'emps:<id1,id2,...>'
+    const isEmpScope     = campusScope && campusScope.startsWith('emp:');
+    const isMultiEmpScope = campusScope && campusScope.startsWith('emps:');
+    const targetEid      = isEmpScope ? campusScope.slice(4) : null;
+    const targetEidSet   = isMultiEmpScope ? new Set(campusScope.slice(5).split(',')) : null;
     const empFilter = (e) =>
       isEmpScope ? e['員工編號'] === targetEid :
+      isMultiEmpScope ? targetEidSet.has(e['員工編號']) :
       (campusScope === 'both' ? true : e['校區'] === campusScope);
     const filteredEmps = DATA.employees.filter(empFilter);
     const empIds = new Set(filteredEmps.map(e => e['員工編號']));
@@ -5575,6 +5642,12 @@
       ['校區範圍 Campus Scope',
         isEmpScope
           ? ('指定老師: ' + targetEid + ' ' + (DATA.employees.find(e => e['員工編號']===targetEid)?.['員工姓名'] || ''))
+          : isMultiEmpScope
+          ? ('多位指定老師 (共 ' + targetEidSet.size + ' 位): ' +
+             Array.from(targetEidSet).map(id => {
+               const ep = DATA.employees.find(e => e['員工編號']===id);
+               return id + (ep ? '_'+ep['員工姓名'] : '');
+             }).join(', '))
           : (campusScope === 'both' ? '同安 + 莊敬' : campusScope + '校')],
       ['備份期間 Period', period.label],
       ['員工筆數 Employees', filteredEmps.length],
