@@ -2226,9 +2226,26 @@
         </div>
       </div>
 
+      <!-- 指定老師備份 -->
+      <div class="backup-col" style="margin-top:14px;border-top:4px solid #10B981;background:#ECFDF5;">
+        <h4>👤 指定老師備份</h4>
+        <div class="meta">只匯出一位老師的所有資料（員工資料 + 全部月份薪資）</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;">
+          <select id="bkEmpSel" style="flex:1;min-width:240px;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:9px;font-size:14px;font-family:inherit;background:#fff;">
+            <option value="">— 請選擇老師 —</option>
+          </select>
+          <button class="backup-btn local" onclick="doBackupByEmployee()" style="flex:0 0 auto;min-width:180px;background:linear-gradient(135deg,#10B981,#047857);">
+            <span class="ico">💾</span>
+            <span class="lbl">備份此老師到本地</span>
+            <span class="arrow">↓</span>
+          </button>
+        </div>
+      </div>
+
       <div class="backup-note">
         <b>使用說明：</b><br>
-        💾 <b>「備份到本地」</b>：直接下載到您電腦的下載資料夾（建議搭配 Google Drive 桌面同步或手動拖入雲端硬碟）
+        💾 <b>「備份到本地」</b>：直接下載到您電腦的下載資料夾（建議搭配 Google Drive 桌面同步或手動拖入雲端硬碟）<br>
+        👤 <b>「指定老師備份」</b>：下拉選擇單一老師，匯出該老師的所有歷史資料
       </div>
     </div>
 
@@ -5449,6 +5466,14 @@
         `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
       ).join('');
     }
+    // Specific-teacher selector for backup
+    const empSel = $('bkEmpSel');
+    if (empSel) {
+      const emps = DATA.employees.slice()
+        .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])));
+      empSel.innerHTML = '<option value="">— 請選擇老師 —</option>' +
+        emps.map(e => `<option value="${e['員工編號']}">${e['員工編號']} · ${e['員工姓名']} (${e['校區']}${e['在職狀態']!=='在職'?' · '+e['在職狀態']:''})</option>`).join('');
+    }
 
     // Update campus counts
     if ($('bkTaCount')) {
@@ -5472,6 +5497,13 @@
 
   function backupFilename(campus, period) {
     const dateStr = new Date().toISOString().substr(0, 10);
+    // Single-employee scope: campus is "emp:TA001"
+    if (campus && campus.startsWith('emp:')) {
+      const eid = campus.slice(4);
+      const emp = DATA.employees.find(e => e['員工編號'] === eid);
+      const nameLabel = emp ? (emp['員工編號'] + '_' + emp['員工姓名']) : eid;
+      return `Kidcastle_老師_${nameLabel}_${dateStr}.xlsx`;
+    }
     const campusLabel = campus === 'both' ? '同安_莊敬合併'
                        : campus === '同安' ? '同安校'
                        : campus === '莊敬' ? '莊敬校'
@@ -5497,6 +5529,13 @@
   if ($('bkMonth'))      $('bkMonth').addEventListener('change', updateBackupFilenameHint);
 
   // -------- doBackup: generate xlsx file + (optional) open GDrive --------
+  // Backup a single employee's full data (helper that delegates to doBackup with emp:ID scope)
+  async function doBackupByEmployee() {
+    const eid = $('bkEmpSel') && $('bkEmpSel').value;
+    if (!eid) { toast('請先選擇老師', 'error'); return; }
+    await doBackup('emp:' + eid, 'local');
+  }
+
   async function doBackup(campusScope, destination) {
     if (typeof XLSX === 'undefined') { toast('SheetJS 未載入，無法備份', 'error'); return; }
     if (!currentUser) { toast('請先登入', 'error'); return; }
@@ -5505,7 +5544,12 @@
     const filename = backupFilename(campusScope, period);
 
     // Filter data by campus + period
-    const empFilter = (e) => campusScope === 'both' ? true : e['校區'] === campusScope;
+    // Scope can be 'both' / '同安' / '莊敬' / 'emp:<員工編號>'
+    const isEmpScope = campusScope && campusScope.startsWith('emp:');
+    const targetEid = isEmpScope ? campusScope.slice(4) : null;
+    const empFilter = (e) =>
+      isEmpScope ? e['員工編號'] === targetEid :
+      (campusScope === 'both' ? true : e['校區'] === campusScope);
     const filteredEmps = DATA.employees.filter(empFilter);
     const empIds = new Set(filteredEmps.map(e => e['員工編號']));
 
@@ -5528,7 +5572,10 @@
       [],
       ['備份時間 Backup Time', today],
       ['備份人員 Backup By', currentUser.fullName + ' (' + currentUser.username + ')'],
-      ['校區範圍 Campus Scope', campusScope === 'both' ? '同安 + 莊敬' : campusScope + '校'],
+      ['校區範圍 Campus Scope',
+        isEmpScope
+          ? ('指定老師: ' + targetEid + ' ' + (DATA.employees.find(e => e['員工編號']===targetEid)?.['員工姓名'] || ''))
+          : (campusScope === 'both' ? '同安 + 莊敬' : campusScope + '校')],
       ['備份期間 Period', period.label],
       ['員工筆數 Employees', filteredEmps.length],
       ['薪資筆數 Salary Records', filteredSals.length],
