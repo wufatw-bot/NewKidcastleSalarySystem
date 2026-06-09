@@ -707,6 +707,50 @@
   .ps-section-h > div.all-zero,
   .ps-subtotal > div.all-zero,
   .ps-cash-row.all-zero { display: none !important; }
+
+  /* Floating zoom control */
+  #zoomControl {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9000;
+    background: rgba(255,255,255,0.96);
+    border: 1.5px solid #cbd5e1;
+    border-radius: 999px;
+    padding: 4px 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    display: flex; align-items: center; gap: 4px;
+    backdrop-filter: blur(8px);
+  }
+  #zoomControl button {
+    background: linear-gradient(135deg, #4472C4, #2E5984);
+    color: #fff; border: none;
+    border-radius: 999px;
+    width: 36px; height: 36px;
+    font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: transform .12s, box-shadow .15s;
+    box-shadow: 0 2px 6px rgba(46,89,132,0.3);
+  }
+  #zoomControl button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(46,89,132,0.5);
+  }
+  #zoomControl button:active { transform: translateY(0); }
+  #zoomControl #zoomLabel {
+    min-width: 50px; text-align: center;
+    font-size: 13px; font-weight: 700;
+    color: #1a202c; cursor: pointer;
+    padding: 4px 8px; border-radius: 6px;
+    transition: background .15s;
+  }
+  #zoomControl #zoomLabel:hover { background: #f1f5f9; }
+  @media (max-width: 720px) {
+    #zoomControl { bottom: 12px; right: 12px; padding: 3px 6px; }
+    #zoomControl button { width: 32px; height: 32px; font-size: 11px; }
+    #zoomControl #zoomLabel { min-width: 44px; font-size: 12px; }
+  }
+
   @media print {
     .ps-row.zero { display: none !important; }
     .ps-col.all-zero,
@@ -1961,6 +2005,13 @@
 </style>
 </head>
 <body>
+
+<!-- Floating zoom control -->
+<div id="zoomControl" class="no-print" title="調整字體與頁面大小">
+  <button onclick="changeZoom(-10)" title="縮小">🔍−</button>
+  <span id="zoomLabel" onclick="changeZoom(0,true)" title="點此重設為 100%">100%</span>
+  <button onclick="changeZoom(10)" title="放大">🔍+</button>
+</div>
 
 <div class="wrap" id="home">
   <header class="brand">
@@ -3764,6 +3815,39 @@
   }
 
   // DATA starts as default; will be overwritten by cloudLoadData() on first login
+  // ============== Zoom control (floating button) ==============
+  const ZOOM_KEY = 'kc_page_zoom_v1';
+  function applyPageZoom(pct) {
+    pct = Math.max(60, Math.min(200, Math.round(pct)));
+    // Use CSS zoom (Chrome/Safari/Edge/Firefox v126+); fallback to font-size
+    document.body.style.zoom = (pct / 100);
+    const lbl = document.getElementById('zoomLabel');
+    if (lbl) lbl.textContent = pct + '%';
+    try { localStorage.setItem(ZOOM_KEY, String(pct)); } catch(_) {}
+    return pct;
+  }
+  function changeZoom(delta, reset) {
+    let cur = 100;
+    try { cur = Number(localStorage.getItem(ZOOM_KEY)) || 100; } catch(_) {}
+    if (reset) cur = 100;
+    else cur = cur + delta;
+    applyPageZoom(cur);
+  }
+  // Apply saved zoom on first load
+  (function initZoom(){
+    try {
+      const saved = Number(localStorage.getItem(ZOOM_KEY)) || 100;
+      applyPageZoom(saved);
+    } catch(_) {}
+  })();
+  // Keyboard shortcut: Ctrl/Cmd + Plus/Minus/0
+  document.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    if (e.key === '=' || e.key === '+') { e.preventDefault(); changeZoom(10); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); changeZoom(-10); }
+    else if (e.key === '0') { e.preventDefault(); changeZoom(0, true); }
+  });
+
   let DATA = migrateEmployeeRecords(JSON.parse(JSON.stringify(DEFAULT_DATA)));
   let CHANGE_LOG = [];
   let _dataReady = false;   // true after first successful cloud read
