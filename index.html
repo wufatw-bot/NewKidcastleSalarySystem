@@ -2315,6 +2315,21 @@
         </button>
       </div>
 
+      <!-- 選擇備份欄位 -->
+      <div class="backup-col" style="margin-top:14px;border-top:4px solid #F59E0B;background:#FFFBEB;">
+        <h4>📋 選擇備份欄位</h4>
+        <div class="meta">勾選要包含在備份檔案中的欄位。預設全選；取消勾選的欄位不會出現在 xlsx 中。</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+          <button class="btn-mini secondary" onclick="bkFieldSelect('all')" style="background:#FEF3C7;color:#92400E;">✓ 全選</button>
+          <button class="btn-mini secondary" onclick="bkFieldSelect('core')" style="background:#FED7AA;color:#9A3412;">⭐ 只核心欄位</button>
+          <button class="btn-mini secondary" onclick="bkFieldSelect('none')" style="background:#FEE2E2;color:#991B1B;">✕ 清除</button>
+          <span style="margin-left:auto;align-self:center;font-size:12px;color:#92400E;font-weight:700;">
+            已選擇 <span id="bkFieldCount">0</span> 欄
+          </span>
+        </div>
+        <div id="bkFieldList" style="max-height:280px;overflow:auto;background:#fff;border:1.5px solid #FCD34D;border-radius:9px;padding:10px;"></div>
+      </div>
+
       <div class="backup-note">
         <b>使用說明：</b><br>
         💾 <b>「備份到本地」</b>：直接下載到您電腦的下載資料夾（建議搭配 Google Drive 桌面同步或手動拖入雲端硬碟）<br>
@@ -5594,6 +5609,7 @@
       }).join('');
     }
     updateBkMultiCount();
+    populateBackupFieldList();
 
     // Update campus counts
     if ($('bkTaCount')) {
@@ -5654,6 +5670,104 @@
   if ($('bkMonth'))      $('bkMonth').addEventListener('change', updateBackupFilenameHint);
 
   // -------- doBackup: generate xlsx file + (optional) open GDrive --------
+  // =========================================================================
+  // Backup field selector — let user choose which columns to include
+  // =========================================================================
+  const BACKUP_FIELDS = {
+    '基本資料': [
+      ['員工編號', true], ['員工姓名', true], ['英文姓名', false],
+      ['校區', true], ['職位', true], ['到職日', true],
+      ['離職日', false], ['在職狀態', true]
+    ],
+    '薪資組成': [
+      ['底薪', true], ['全勤獎金', true], ['年資津貼', true], ['主管津貼', true],
+      ['美語人數', true], ['美語津貼', true],
+      ['美語輔導人數', false], ['美語輔導津貼', true],
+      ['數學班人數', false], ['數學班津貼', true],
+      ['帶班人數', true], ['帶班人數津貼', true],
+      ['混班人數', false], ['混班津貼', true],
+      ['數學人數', false], ['數學津貼', false],
+      ['留班比率', false], ['留班獎金', true],
+      ['考試獎金', true], ['其他津貼', true]
+    ],
+    '扣款 / 補貼': [
+      ['投保級距', true],
+      ['勞保自付', true], ['補貼公會投保勞保', false],
+      ['健保自付', true], ['補貼公會健保自付', false],
+      ['健保眷屬自付', false], ['補貼健保眷屬', false],
+      ['退休金提撥', true], ['補貼退休金', false],
+      ['現金給付', true]
+    ],
+    '銀行 / 特休 / 備註': [
+      ['銀行名稱', true],
+      ['可休日數_手動', false], ['已休日數', true],
+      ['備註', false]
+    ],
+    '月度薪資': [
+      ['月份', true], ['上班時數', false], ['加班時數', true], ['加班費', true],
+      ['請假時數', true], ['請假扣款', true], ['遲到次數', true], ['遲到扣款', true],
+      ['獎金', true], ['扣款', true], ['特殊調整', true]
+    ]
+  };
+  const BK_FIELD_KEY = 'kc_backup_fields_v1';
+  function getBackupFieldSet() {
+    try {
+      const raw = localStorage.getItem(BK_FIELD_KEY);
+      if (raw) return new Set(JSON.parse(raw));
+    } catch(_) {}
+    // Default: union of all "default-on" fields
+    const def = [];
+    Object.values(BACKUP_FIELDS).forEach(grp => grp.forEach(([k, on]) => { if (on) def.push(k); }));
+    return new Set(def);
+  }
+  function saveBackupFieldSet(set) {
+    try { localStorage.setItem(BK_FIELD_KEY, JSON.stringify(Array.from(set))); } catch(_) {}
+  }
+  function populateBackupFieldList() {
+    const container = $('bkFieldList');
+    if (!container) return;
+    const sel = getBackupFieldSet();
+    container.innerHTML = Object.entries(BACKUP_FIELDS).map(([groupName, fields]) => {
+      return `<div style="margin-bottom:10px;">
+        <div style="font-weight:700;color:#92400E;font-size:12px;margin-bottom:5px;padding:3px 6px;background:#FEF3C7;border-radius:4px;">
+          ${groupName}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:3px 8px;padding-left:4px;">
+          ${fields.map(([k]) => `<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:2px 4px;border-radius:4px;" onmouseover="this.style.background='#FEF3C7'" onmouseout="this.style.background=''">
+            <input type="checkbox" class="bk-field-chk" value="${k}" ${sel.has(k)?'checked':''} onchange="updateBkFieldCount()">
+            <span>${k}</span>
+          </label>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+    updateBkFieldCount();
+  }
+  function updateBkFieldCount() {
+    const checked = document.querySelectorAll('#bkFieldList .bk-field-chk:checked').length;
+    const el = $('bkFieldCount');
+    if (el) el.textContent = checked;
+    // Persist immediately on each change
+    const sel = new Set();
+    document.querySelectorAll('#bkFieldList .bk-field-chk:checked').forEach(c => sel.add(c.value));
+    saveBackupFieldSet(sel);
+  }
+  function bkFieldSelect(mode) {
+    const list = document.querySelectorAll('#bkFieldList .bk-field-chk');
+    if (mode === 'all') list.forEach(c => c.checked = true);
+    else if (mode === 'none') list.forEach(c => c.checked = false);
+    else if (mode === 'core') {
+      list.forEach(c => {
+        // Re-check only the default-on fields
+        let found = false;
+        for (const grp of Object.values(BACKUP_FIELDS)) {
+          for (const [k, on] of grp) if (k === c.value) { found = on; break; }
+        }
+        c.checked = found;
+      });
+    }
+    updateBkFieldCount();
+  }
+
   // Backup a single employee's full data (helper that delegates to doBackup with emp:ID scope)
   async function doBackupByEmployee() {
     const eid = $('bkEmpSel') && $('bkEmpSel').value;
@@ -5692,6 +5806,15 @@
     const filename = backupFilename(campusScope, period);
 
     // Filter data by campus + period
+    // Honor backup field filter (chosen via 📋 選擇備份欄位 card)
+    const fieldFilter = getBackupFieldSet();
+    const keepField = k => fieldFilter.size === 0 || fieldFilter.has(k);
+    // Helper: filter a [header, value] pair list of column → keep only selected
+    const filterCols = (headers, rowFn) => {
+      const keepIdx = headers.map((h, i) => keepField(h) ? i : -1).filter(i => i >= 0);
+      const newHeaders = keepIdx.map(i => headers[i]);
+      return { headers: newHeaders, mapRow: row => keepIdx.map(i => row[i]) };
+    };
     // Scope can be 'both' / '同安' / '莊敬' / 'emp:<員工編號>' / 'emps:<id1,id2,...>'
     const isEmpScope     = campusScope && campusScope.startsWith('emp:');
     const isMultiEmpScope = campusScope && campusScope.startsWith('emps:');
@@ -5767,13 +5890,15 @@
                         '退休金提撥','補貼退休金',
                         '現金給付','銀行名稱',
                         '可休日數_手動','已休日數','備註'];
-    const empRows = [empHeaders];
+    // Apply user-selected field filter
+    const empFiltered = filterCols(empHeaders, null);
+    const empRows = [empFiltered.headers];
     filteredEmps
       .slice()
       .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])))
-      .forEach(e => empRows.push(empHeaders.map(h => e[h] == null ? '' : e[h])));
+      .forEach(e => empRows.push(empFiltered.mapRow(empHeaders.map(h => e[h] == null ? '' : e[h]))));
     const wsEmp = XLSX.utils.aoa_to_sheet(empRows);
-    wsEmp['!cols'] = empHeaders.map(h => ({ wch: h === '銀行帳號' ? 18 : 12 }));
+    wsEmp['!cols'] = empFiltered.headers.map(h => ({ wch: h === '銀行帳號' ? 18 : 12 }));
     XLSX.utils.book_append_sheet(wb, wsEmp, '員工資料 Employees');
 
     // Sheet 3: 薪資資料 (含計算結果) — 詳細逐欄展開
@@ -5845,8 +5970,11 @@
           s['備註'] || ''
         ]);
       });
-    const wsSal = XLSX.utils.aoa_to_sheet(salRows);
-    wsSal['!cols'] = salHeaders.map(h => ({ wch: h === '備註' ? 22 : 11 }));
+    // Apply user-selected field filter to salary sheet
+    const salFiltered = filterCols(salHeaders, null);
+    const salRowsOut = [salFiltered.headers, ...salRows.slice(1).map(r => salFiltered.mapRow(r))];
+    const wsSal = XLSX.utils.aoa_to_sheet(salRowsOut);
+    wsSal['!cols'] = salFiltered.headers.map(h => ({ wch: h === '備註' ? 22 : 11 }));
     XLSX.utils.book_append_sheet(wb, wsSal, '薪資資料 Salary');
 
     // Sheet 4: 變更紀錄
