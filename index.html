@@ -712,16 +712,26 @@
   #zoomControl {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    left: 20px;
     z-index: 9000;
     background: rgba(255,255,255,0.96);
     border: 1.5px solid #cbd5e1;
     border-radius: 999px;
-    padding: 4px 8px;
+    padding: 4px 8px 4px 4px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.18);
     display: flex; align-items: center; gap: 4px;
     backdrop-filter: blur(8px);
+    cursor: move;
+    user-select: none;
   }
+  #zoomControl::before {
+    content: '⠿';
+    font-size: 14px;
+    color: #94a3b8;
+    margin-right: 2px;
+    line-height: 1;
+  }
+  #zoomControl.dragging { opacity: 0.75; }
   #zoomControl button {
     background: linear-gradient(135deg, #4472C4, #2E5984);
     color: #fff; border: none;
@@ -746,7 +756,7 @@
   }
   #zoomControl #zoomLabel:hover { background: #f1f5f9; }
   @media (max-width: 720px) {
-    #zoomControl { bottom: 12px; right: 12px; padding: 3px 6px; }
+    #zoomControl { bottom: 12px; left: 12px; padding: 3px 6px; }
     #zoomControl button { width: 32px; height: 32px; font-size: 11px; }
     #zoomControl #zoomLabel { min-width: 44px; font-size: 12px; }
   }
@@ -3855,6 +3865,67 @@
       applyPageZoom(saved);
     } catch(_) {}
   })();
+  // Draggable zoom control
+  const ZOOM_POS_KEY = 'kc_zoom_pos_v1';
+  function initZoomDrag() {
+    const ctrl = document.getElementById('zoomControl');
+    if (!ctrl) return;
+    // Restore saved position
+    try {
+      const pos = JSON.parse(localStorage.getItem(ZOOM_POS_KEY) || 'null');
+      if (pos && typeof pos.left === 'number' && typeof pos.top === 'number') {
+        ctrl.style.left = pos.left + 'px';
+        ctrl.style.top  = pos.top  + 'px';
+        ctrl.style.bottom = 'auto';
+        ctrl.style.right  = 'auto';
+      }
+    } catch(_) {}
+    let drag = { active:false, sx:0, sy:0, ox:0, oy:0, moved:false };
+    function startDrag(ev) {
+      // Don't start drag on the buttons (they should still click)
+      if (ev.target.tagName === 'BUTTON' || ev.target.id === 'zoomLabel') return;
+      const e = ev.touches ? ev.touches[0] : ev;
+      const r = ctrl.getBoundingClientRect();
+      drag.active = true; drag.moved = false;
+      drag.sx = e.clientX; drag.sy = e.clientY;
+      drag.ox = r.left; drag.oy = r.top;
+      ctrl.classList.add('dragging');
+      ev.preventDefault();
+    }
+    function moveDrag(ev) {
+      if (!drag.active) return;
+      const e = ev.touches ? ev.touches[0] : ev;
+      const nx = drag.ox + (e.clientX - drag.sx);
+      const ny = drag.oy + (e.clientY - drag.sy);
+      // Clamp to viewport
+      const maxX = window.innerWidth - ctrl.offsetWidth;
+      const maxY = window.innerHeight - ctrl.offsetHeight;
+      ctrl.style.left   = Math.max(0, Math.min(maxX, nx)) + 'px';
+      ctrl.style.top    = Math.max(0, Math.min(maxY, ny)) + 'px';
+      ctrl.style.bottom = 'auto';
+      ctrl.style.right  = 'auto';
+      drag.moved = true;
+      ev.preventDefault();
+    }
+    function endDrag() {
+      if (!drag.active) return;
+      drag.active = false;
+      ctrl.classList.remove('dragging');
+      if (drag.moved) {
+        try {
+          const r = ctrl.getBoundingClientRect();
+          localStorage.setItem(ZOOM_POS_KEY, JSON.stringify({ left: r.left, top: r.top }));
+        } catch(_) {}
+      }
+    }
+    ctrl.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', moveDrag);
+    document.addEventListener('mouseup', endDrag);
+    ctrl.addEventListener('touchstart', startDrag, { passive: false });
+    document.addEventListener('touchmove', moveDrag, { passive: false });
+    document.addEventListener('touchend', endDrag);
+  }
+  window.addEventListener('DOMContentLoaded', initZoomDrag);
   // Keyboard shortcut: Ctrl/Cmd + Plus/Minus/0
   document.addEventListener('keydown', e => {
     if (!(e.ctrlKey || e.metaKey)) return;
@@ -4834,7 +4905,14 @@
 
       // Show 加扣薪小計 (gross) — sub-total of base + allowances + variable - deductions,
       // BEFORE labor/health insurance and cash payment.
-      const subTotal = r.gross;
+      // 加扣薪小計 = 只統計「主管能編輯的月度欄位」(不含底薪/各種津貼)
+      // 公式：加班費 + 獎金 + 特殊調整 - 請假扣款 - 遲到扣款 - 扣款
+      const subTotal = (Number(sal['加班費'])||0)
+                     + (Number(sal['獎金'])||0)
+                     + (Number(sal['特殊調整'])||0)
+                     - (Number(sal['請假扣款'])||0)
+                     - (Number(sal['遲到扣款'])||0)
+                     - (Number(sal['扣款'])||0);
       const stClass = subTotal < 0 ? 'net warn' : 'net';
 
       return `<tr>
@@ -4892,8 +4970,15 @@
     if (tr) {
       const netSpan = tr.querySelector('span.net');
       if (netSpan) {
-        netSpan.textContent = fmtNT(r.net);
-        netSpan.className = r.net < 0 ? 'net warn' : 'net';
+        // Manager 加扣薪小計 = 只統計月度主管欄位（與初次 render 一致）
+        const subTotal = (Number(sal['加班費'])||0)
+                       + (Number(sal['獎金'])||0)
+                       + (Number(sal['特殊調整'])||0)
+                       - (Number(sal['請假扣款'])||0)
+                       - (Number(sal['遲到扣款'])||0)
+                       - (Number(sal['扣款'])||0);
+        netSpan.textContent = fmtNT(subTotal);
+        netSpan.className = subTotal < 0 ? 'net warn' : 'net';
       } else {
         console.warn('[mgr] net span not found in row');
       }
