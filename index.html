@@ -4367,7 +4367,11 @@
     const fixed = [
       ['底薪 Base', emp['底薪']],
       ['全勤獎金 Attendance', attBonus],
-      ['年資津貼 Seniority', emp['年資津貼']],
+      ['年資津貼 Seniority', emp['年資津貼']]
+    ];
+    const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+
+    const variable = [
       ['主管津貼 Manager', emp['主管津貼']],
       ['美語津貼 English', emp['美語津貼']],
       ['美語輔導津貼 Tutoring', emp['美語輔導津貼']],
@@ -4380,11 +4384,7 @@
       ['其他津貼 Others', emp['其他津貼']],
       ['補貼公會投保勞保 Guild Labor Ins Subsidy', emp['補貼公會投保勞保']],
       ['補貼公會健保自付 Guild Health Ins Subsidy', emp['補貼公會健保自付']],
-      ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']]
-    ];
-    const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
-
-    const variable = [
+      ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']],
       ['加班費 OT Pay', sal['加班費']],
       ['加班時數 OT Hours', sal['加班時數']],
       ['獎金 Bonus', sal['獎金']],
@@ -4580,7 +4580,10 @@
     const fixed = [
       ['底薪',          emp['底薪']],
       ['全勤獎金',      attBonus],
-      ['年資津貼',      emp['年資津貼']],
+      ['年資津貼',      emp['年資津貼']]
+    ];
+    const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const variable = [
       ['主管津貼',      emp['主管津貼']],
       ['美語津貼',      emp['美語津貼']],
       ['美語輔導津貼',  emp['美語輔導津貼']],
@@ -4593,10 +4596,7 @@
       ['其他津貼',      emp['其他津貼']],
       ['補貼公會投保勞保', emp['補貼公會投保勞保']],
       ['補貼公會健保自付', emp['補貼公會健保自付']],
-      ['補貼健保眷屬',     emp['補貼健保眷屬']]
-    ];
-    const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
-    const variable = [
+      ['補貼健保眷屬',     emp['補貼健保眷屬']],
       ['加班費',     sal['加班費']],
       ['獎金',       sal['獎金']],
       ['特殊調整',   sal['特殊調整']]
