@@ -2347,16 +2347,82 @@
       </div>
     </div>
 
-    <!-- 🔧 管理工具：從 Excel 同步薪資 (owner-only) -->
+    <!-- 🔧 管理工具：從 Excel 同步薪資 + 批次清空 (owner-only) -->
     <div class="backup-card owner-only no-print" style="margin-top:14px;border-left:5px solid #DC2626;">
-      <h3>🔧 管理工具：從 Excel 同步薪資資料</h3>
+      <h3>🔧 管理工具</h3>
       <div class="desc">
-        將「同安薪資11407起.xlsx / 莊敬薪資11407起.xlsx」解析後的薪資結構同步到雲端。
-        <b style="color:#DC2626;">⚠ 高風險操作，需 boss 密碼</b>。
+        <b style="color:#DC2626;">⚠ 以下皆為高風險操作，需 boss 密碼</b>。每項操作會直接寫入雲端，請謹慎使用。
       </div>
-      <button class="btn-mini primary" style="background:linear-gradient(135deg,#DC2626,#991B1B);" onclick="openMigratePwd()">
-        🔒 開啟 Excel 同步工具（需 boss 密碼）
-      </button>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn-mini primary" style="background:linear-gradient(135deg,#DC2626,#991B1B);" onclick="openMigratePwd()">
+          🔒 開啟 Excel 同步工具
+        </button>
+        <button class="btn-mini primary" style="background:linear-gradient(135deg,#F59E0B,#B45309);" onclick="openClearBonusPwd()">
+          🗑 清空獎金欄位
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 清空獎金 — 密碼確認 modal -->
+  <div class="small-modal-overlay" id="clearBonusPwdOverlay" onclick="closeClearBonusPwd(event)">
+    <div class="small-modal" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#F59E0B,#B45309);">
+        <div class="icon-l">🗑</div>
+        <h2>清空獎金欄位 — 請輸入 Boss 密碼</h2>
+        <button class="close" onclick="closeClearBonusPwd()">✕</button>
+      </div>
+      <div class="body">
+        <p style="margin:0 0 12px;color:#92400E;font-size:13px;background:#FEF3C7;padding:8px 12px;border-radius:6px;border-left:3px solid #F59E0B;">
+          ⚠ 此操作會將員工的「獎金」欄位歸零。執行後無法復原，請先確認備份。
+        </p>
+        <div class="alert error" id="clearBonusPwdErr">⚠ <span id="clearBonusPwdErrMsg">—</span></div>
+        <div class="field">
+          <label>Boss 密碼</label>
+          <input type="password" id="clearBonusPwdInput" placeholder="輸入 boss 密碼">
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeClearBonusPwd()">取消</button>
+        <button class="btn-mini primary" onclick="validateClearBonusPwd()" style="background:linear-gradient(135deg,#F59E0B,#B45309);">🔓 解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 清空獎金 — 範圍選擇 modal -->
+  <div class="small-modal-overlay" id="clearBonusScopeOverlay" onclick="closeClearBonusScope(event)">
+    <div class="small-modal" style="max-width:520px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#F59E0B,#B45309);">
+        <div class="icon-l">🗑</div>
+        <h2>選擇清空範圍</h2>
+        <button class="close" onclick="closeClearBonusScope()">✕</button>
+      </div>
+      <div class="body">
+        <p style="margin:0 0 14px;color:#475569;font-size:13px;">
+          選擇要清空哪些範圍的「獎金」欄位：
+        </p>
+        <div class="field">
+          <label>清空範圍</label>
+          <select id="clearBonusScopeMonth">
+            <option value="all">全部月份（所有員工的所有月份）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>校區範圍</label>
+          <select id="clearBonusScopeCampus">
+            <option value="both">同安 + 莊敬</option>
+            <option value="同安">只清同安校區</option>
+            <option value="莊敬">只清莊敬校區</option>
+          </select>
+        </div>
+        <div id="clearBonusPreview" style="background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-top:8px;">
+          預覽：將清空 <b id="clearBonusPreviewCount">—</b> 筆紀錄
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeClearBonusScope()">取消</button>
+        <button class="btn-mini primary" onclick="executeClearBonus()" style="background:linear-gradient(135deg,#DC2626,#991B1B);">🗑 確認清空</button>
+      </div>
     </div>
   </div>
 
@@ -3819,10 +3885,106 @@
       migSetStatus('✗ ' + e.message, 'err');
     }
   }
+  // ==========================================================================
+  // 🗑 Clear Bonus tool (boss-password gated)
+  // ==========================================================================
+  function openClearBonusPwd() {
+    if (!currentUser || currentUser.role !== 'owner') {
+      toast('僅老闆可使用此功能', 'error'); return;
+    }
+    $('clearBonusPwdInput').value = '';
+    $('clearBonusPwdErr').classList.remove('show');
+    $('clearBonusPwdOverlay').classList.add('show');
+    setTimeout(() => $('clearBonusPwdInput').focus(), 80);
+  }
+  function closeClearBonusPwd(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('clearBonusPwdOverlay').classList.remove('show');
+  }
+  function validateClearBonusPwd() {
+    const pwd = ($('clearBonusPwdInput').value || '').trim();
+    if (!pwd) { $('clearBonusPwdErrMsg').textContent='請輸入密碼'; $('clearBonusPwdErr').classList.add('show'); return; }
+    const sid = currentUser && currentUser.schoolId;
+    const boss = sid && CREDENTIALS[sid] && CREDENTIALS[sid].users.find(u => u.username === 'boss');
+    if (!boss) { $('clearBonusPwdErrMsg').textContent='本校區無 boss 帳號'; $('clearBonusPwdErr').classList.add('show'); return; }
+    if (pwd !== boss.password) { $('clearBonusPwdErrMsg').textContent='密碼錯誤'; $('clearBonusPwdErr').classList.add('show'); return; }
+    closeClearBonusPwd();
+    openClearBonusScope();
+  }
+  function openClearBonusScope() {
+    // Populate month dropdown
+    const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
+    const ms = $('clearBonusScopeMonth');
+    ms.innerHTML = '<option value="all">全部月份（所有員工的所有月份）</option>' +
+      months.map(m => `<option value="${m}">指定月份: ${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`).join('');
+    ms.value = 'all';
+    $('clearBonusScopeCampus').value = 'both';
+    updateClearBonusPreview();
+    $('clearBonusScopeOverlay').classList.add('show');
+  }
+  function closeClearBonusScope(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('clearBonusScopeOverlay').classList.remove('show');
+  }
+  function getClearBonusTargets() {
+    const month = $('clearBonusScopeMonth').value;
+    const campus = $('clearBonusScopeCampus').value;
+    return DATA.salary.filter(s => {
+      if (month !== 'all' && String(s['月份']) !== String(month)) return false;
+      if (campus !== 'both') {
+        const emp = findEmployee(s['員工編號']);
+        if (!emp || emp['校區'] !== campus) return false;
+      }
+      return Number(s['獎金']) !== 0;   // only count non-zero records
+    });
+  }
+  function updateClearBonusPreview() {
+    const targets = getClearBonusTargets();
+    $('clearBonusPreviewCount').textContent = targets.length;
+  }
+  async function executeClearBonus() {
+    const targets = getClearBonusTargets();
+    if (!targets.length) { toast('沒有需要清空的紀錄', 'error'); return; }
+    const month = $('clearBonusScopeMonth').value;
+    const campus = $('clearBonusScopeCampus').value;
+    const scopeLabel = (month === 'all' ? '全部月份' : month) + ' / ' +
+                       (campus === 'both' ? '兩校區' : campus + '校');
+    if (!confirm(`確定清空「${scopeLabel}」共 ${targets.length} 筆獎金紀錄？\n\n此操作無法復原。`)) return;
+    let cleared = 0;
+    targets.forEach(s => { s['獎金'] = 0; cleared++; });
+    closeClearBonusScope();
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try {
+      await doPersistNow();
+      hideLoadingOverlay();
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser.fullName,
+        text: `清空獎金欄位 — ${scopeLabel}，共 ${cleared} 筆`
+      });
+      try { renderManagerTable(); } catch(_){}
+      try { renderPayslip(); } catch(_){}
+      try { renderDashboard(); } catch(_){}
+      toast(`✓ 已清空 ${cleared} 筆獎金（${scopeLabel}）`, 'success');
+    } catch (e) {
+      hideLoadingOverlay();
+      toast('雲端寫入失敗：' + e.message, 'error');
+    }
+  }
+  // Live preview when scope changes
+  document.addEventListener('change', e => {
+    if (e.target && (e.target.id === 'clearBonusScopeMonth' || e.target.id === 'clearBonusScopeCampus')) {
+      updateClearBonusPreview();
+    }
+  });
+
   // Enter key triggers password validate
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && $('migratePwdOverlay') && $('migratePwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'migratePwdInput') {
       e.preventDefault(); validateMigratePwd();
+    }
+    if (e.key === 'Enter' && $('clearBonusPwdOverlay') && $('clearBonusPwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'clearBonusPwdInput') {
+      e.preventDefault(); validateClearBonusPwd();
     }
   });
 
