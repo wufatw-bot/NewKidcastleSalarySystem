@@ -2360,6 +2360,9 @@
         <button class="btn-mini primary" style="background:linear-gradient(135deg,#F59E0B,#B45309);" onclick="openClearBonusPwd()">
           🗑 清空獎金欄位
         </button>
+        <button class="btn-mini primary" style="background:linear-gradient(135deg,#3B82F6,#1E40AF);" onclick="openHireDatePwd()">
+          📅 修正到職日
+        </button>
       </div>
     </div>
   </div>
@@ -2422,6 +2425,67 @@
       <div class="foot">
         <button class="btn-mini secondary" onclick="closeClearBonusScope()">取消</button>
         <button class="btn-mini primary" onclick="executeClearBonus()" style="background:linear-gradient(135deg,#DC2626,#991B1B);">🗑 確認清空</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📅 修正到職日 — 密碼確認 modal -->
+  <div class="small-modal-overlay" id="hireDatePwdOverlay" onclick="closeHireDatePwd(event)">
+    <div class="small-modal" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#3B82F6,#1E40AF);">
+        <div class="icon-l">📅</div>
+        <h2>修正到職日 — 請輸入 Boss 密碼</h2>
+        <button class="close" onclick="closeHireDatePwd()">✕</button>
+      </div>
+      <div class="body">
+        <p style="margin:0 0 12px;color:#1E40AF;font-size:13px;background:#EFF6FF;padding:8px 12px;border-radius:6px;border-left:3px solid #3B82F6;">
+          ℹ 此工具會比對雲端現有員工資料，依「員工姓名」匹配後，把預設清單中的「到職日」更新為紙本擷取的正確日期。執行後寫入雲端、無法復原（但會記錄到 change log）。
+        </p>
+        <div class="alert error" id="hireDatePwdErr">⚠ <span id="hireDatePwdErrMsg">—</span></div>
+        <div class="field">
+          <label>Boss 密碼</label>
+          <input type="password" id="hireDatePwdInput" placeholder="輸入 boss 密碼">
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeHireDatePwd()">取消</button>
+        <button class="btn-mini primary" onclick="validateHireDatePwd()" style="background:linear-gradient(135deg,#3B82F6,#1E40AF);">🔓 解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📅 修正到職日 — 預覽 modal -->
+  <div class="small-modal-overlay" id="hireDatePreviewOverlay" onclick="closeHireDatePreview(event)">
+    <div class="small-modal" style="max-width:760px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#3B82F6,#1E40AF);">
+        <div class="icon-l">📅</div>
+        <h2>到職日修正 — 預覽變更</h2>
+        <button class="close" onclick="closeHireDatePreview()">✕</button>
+      </div>
+      <div class="body" style="max-height:60vh;overflow:auto;">
+        <p style="margin:0 0 10px;color:#475569;font-size:13px;">
+          下列為將寫入的變更（已是正確日期者會自動跳過，並用灰色「＝」顯示）。
+        </p>
+        <div id="hireDateNotFound" style="display:none;background:#FEF3C7;color:#92400E;padding:8px 12px;border-radius:6px;border-left:3px solid #F59E0B;font-size:12px;margin-bottom:10px;"></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:#1e293b;color:#fff;">
+              <th style="padding:6px 8px;text-align:left;">校區</th>
+              <th style="padding:6px 8px;text-align:left;">姓名</th>
+              <th style="padding:6px 8px;text-align:left;">編號</th>
+              <th style="padding:6px 8px;text-align:left;">原日期</th>
+              <th style="padding:6px 8px;text-align:center;">→</th>
+              <th style="padding:6px 8px;text-align:left;">新日期</th>
+              <th style="padding:6px 8px;text-align:left;">來源</th>
+            </tr>
+          </thead>
+          <tbody id="hireDatePreviewTbody"></tbody>
+        </table>
+        <div id="hireDatePreviewSummary" style="background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-top:10px;"></div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeHireDatePreview()">取消</button>
+        <button class="btn-mini primary" id="hireDateApplyBtn" onclick="applyHireDateUpdates()" style="background:linear-gradient(135deg,#3B82F6,#1E40AF);">✏ 確認寫入雲端</button>
       </div>
     </div>
   </div>
@@ -3978,6 +4042,142 @@
     }
   });
 
+  // ═══════════════════════════════════════════════════════════════
+  // 📅 修正到職日 (HireDate Migration) — boss-gated bulk hire-date fix
+  // 來源: 莊敬校 2026/5 出缺勤表 + 二校老師 113 年度特休天數表
+  // ═══════════════════════════════════════════════════════════════
+  const HIRE_DATE_FIXES = [
+    // ── 同安 (TA) — from 113 年度特休天數表
+    { name:'廖月櫻', date:'2002-02-01', src:'特休表 91.2' },
+    { name:'陳明霞', date:'2004-09-01', src:'特休表 93.9' },
+    { name:'鄭錦雪', date:'2009-02-11', src:'特休表 98.2.11' },
+    { name:'謝明學', date:'2015-07-01', src:'特休表 104.7.1' },
+    { name:'翁麗美', date:'2021-08-16', src:'特休表 110.8.16' },
+    { name:'郭子綺', date:'2023-09-26', src:'特休表 112.9.26' },
+    { name:'陳渝潔', date:'2024-07-01', src:'特休表 113.7.1' },
+    // ── 莊敬 (ZJ) — from 5 月出缺勤表
+    { name:'李如蘋', date:'2006-08-14', src:'莊敬 95.08.14' },
+    { name:'蕭羽儂', date:'2022-09-15', src:'莊敬 111.09.15' },
+    { name:'黃玉華', date:'2019-11-12', src:'莊敬 108.11.12' },
+    { name:'洪子彤', date:'2023-10-13', src:'莊敬 112.10.13' },
+    { name:'吳湘晴', date:'2023-10-24', src:'莊敬 112.10.24' },
+    { name:'蕭文華', date:'2024-02-07', src:'莊敬 四年A班「蕭老師」' },
+    { name:'胡瑄曼', date:'2025-02-15', src:'莊敬 114.02.15' },
+    { name:'游晏慈', date:'2025-09-11', src:'莊敬 114.09.11' },
+    { name:'何革融', date:'2025-09-26', src:'莊敬 114.09.26' }
+  ];
+  let _hireDatePlan = [];   // populated by previewHireDate()
+
+  function openHireDatePwd() {
+    if (!currentUser || currentUser.role !== 'owner') {
+      toast('僅老闆可使用此功能', 'error'); return;
+    }
+    $('hireDatePwdInput').value = '';
+    $('hireDatePwdErr').classList.remove('show');
+    $('hireDatePwdOverlay').classList.add('show');
+    setTimeout(() => $('hireDatePwdInput').focus(), 80);
+  }
+  function closeHireDatePwd(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('hireDatePwdOverlay').classList.remove('show');
+  }
+  function validateHireDatePwd() {
+    const pwd = ($('hireDatePwdInput').value || '').trim();
+    if (!pwd) { $('hireDatePwdErrMsg').textContent='請輸入密碼'; $('hireDatePwdErr').classList.add('show'); return; }
+    const sid = currentUser && currentUser.schoolId;
+    const boss = sid && CREDENTIALS[sid] && CREDENTIALS[sid].users.find(u => u.username === 'boss');
+    if (!boss) { $('hireDatePwdErrMsg').textContent='本校區無 boss 帳號'; $('hireDatePwdErr').classList.add('show'); return; }
+    if (pwd !== boss.password) { $('hireDatePwdErrMsg').textContent='密碼錯誤'; $('hireDatePwdErr').classList.add('show'); return; }
+    closeHireDatePwd();
+    previewHireDate();
+  }
+  function previewHireDate() {
+    _hireDatePlan = [];
+    const notFound = [];
+    for (const u of HIRE_DATE_FIXES) {
+      const emp = DATA.employees.find(e => String(e['員工姓名']||'').trim() === u.name);
+      if (!emp) { notFound.push(u.name); continue; }
+      const oldDate = String(emp['到職日'] || '').slice(0, 10);
+      _hireDatePlan.push({
+        empId: emp['員工編號'],
+        name: emp['員工姓名'],
+        campus: emp['校區'],
+        old: oldDate,
+        new: u.date,
+        src: u.src,
+        unchanged: (oldDate === u.date)
+      });
+    }
+    // Render
+    const tbody = $('hireDatePreviewTbody');
+    let html = '';
+    for (const p of _hireDatePlan) {
+      const ccls = p.campus === '同安' ? 'background:#DBEAFE;color:#1E40AF;' : 'background:#FFF1E5;color:#B45309;';
+      const arrow = p.unchanged ? '＝' : '→';
+      const newStyle = p.unchanged ? 'color:#94a3b8;' : 'color:#059669;font-weight:700;';
+      const oldStyle = p.unchanged ? 'color:#94a3b8;' : 'color:#94a3b8;text-decoration:line-through;';
+      html += `<tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:5px 8px;"><span style="${ccls}padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">${p.campus||'—'}</span></td>
+        <td style="padding:5px 8px;"><b>${p.name}</b></td>
+        <td style="padding:5px 8px;"><span style="font-family:'Courier New',monospace;font-weight:700;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:5px;font-size:11px;">${p.empId||'—'}</span></td>
+        <td style="padding:5px 8px;${oldStyle}">${p.old||'(空)'}</td>
+        <td style="padding:5px 8px;text-align:center;color:#64748b;">${arrow}</td>
+        <td style="padding:5px 8px;${newStyle}">${p.new}</td>
+        <td style="padding:5px 8px;color:#64748b;font-size:11px;">${p.src}</td>
+      </tr>`;
+    }
+    tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:20px;">⚠ 雲端找不到任何匹配的員工姓名</td></tr>';
+
+    const changeCount = _hireDatePlan.filter(p => !p.unchanged).length;
+    const unchangedCount = _hireDatePlan.filter(p => p.unchanged).length;
+    $('hireDatePreviewSummary').innerHTML =
+      `✓ 共 ${_hireDatePlan.length} 筆對照。將寫入 <b style="color:#059669;">${changeCount}</b> 筆變更（${unchangedCount} 筆已是正確日期、自動跳過）。`;
+
+    const nfBox = $('hireDateNotFound');
+    if (notFound.length) {
+      nfBox.style.display = '';
+      nfBox.innerHTML = `⚠ 雲端找不到的姓名（請至「老闆編輯員工資料」確認或新增）：<b>${notFound.join('、')}</b>`;
+    } else {
+      nfBox.style.display = 'none';
+    }
+    $('hireDateApplyBtn').disabled = (changeCount === 0);
+    $('hireDateApplyBtn').style.opacity = (changeCount === 0) ? '0.5' : '';
+    $('hireDatePreviewOverlay').classList.add('show');
+  }
+  function closeHireDatePreview(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('hireDatePreviewOverlay').classList.remove('show');
+  }
+  async function applyHireDateUpdates() {
+    const toApply = _hireDatePlan.filter(p => !p.unchanged);
+    if (!toApply.length) { toast('沒有需要寫入的變更', 'error'); return; }
+    if (!confirm(`確認寫入 ${toApply.length} 筆到職日修正？\n\n此操作會立即同步到雲端。`)) return;
+    let applied = 0;
+    for (const p of toApply) {
+      const emp = DATA.employees.find(e => e['員工編號'] === p.empId);
+      if (emp) { emp['到職日'] = p.new; applied++; }
+    }
+    closeHireDatePreview();
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try {
+      await doPersistNow();
+      hideLoadingOverlay();
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser.fullName,
+        text: `修正到職日 — 共 ${applied} 筆：${toApply.map(p=>`${p.name}(${p.empId}) ${p.old}→${p.new}`).join('；')}`
+      });
+      try { renderOwnerTable(); } catch(_){}
+      try { renderManagerTable(); } catch(_){}
+      try { renderPayslip(); } catch(_){}
+      try { renderDashboard(); } catch(_){}
+      toast(`✓ 已修正 ${applied} 筆到職日`, 'success');
+    } catch (e) {
+      hideLoadingOverlay();
+      toast('雲端寫入失敗：' + e.message, 'error');
+    }
+  }
+
   // Enter key triggers password validate
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && $('migratePwdOverlay') && $('migratePwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'migratePwdInput') {
@@ -3985,6 +4185,9 @@
     }
     if (e.key === 'Enter' && $('clearBonusPwdOverlay') && $('clearBonusPwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'clearBonusPwdInput') {
       e.preventDefault(); validateClearBonusPwd();
+    }
+    if (e.key === 'Enter' && $('hireDatePwdOverlay') && $('hireDatePwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'hireDatePwdInput') {
+      e.preventDefault(); validateHireDatePwd();
     }
   });
 
