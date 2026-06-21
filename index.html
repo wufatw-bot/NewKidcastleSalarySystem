@@ -779,6 +779,18 @@
   }
   .ps-subtotal .deduct { background: #FEE2E2; color: #991B1B; }
   .ps-subtotal .val { font-family: Arial; }
+  .ps-total-due {
+    margin-top: 10px;
+    padding: 11px 16px;
+    background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+    color: #1E3A8A;
+    border-radius: 8px;
+    border-left: 5px solid #3B82F6;
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 15px;
+  }
+  .ps-total-due .lbl { letter-spacing: 0.5px; }
+  .ps-total-due .val { font-family: Arial; font-size: 18px; color: #1E40AF; }
   .ps-cash-row {
     margin-top: 8px;
     padding: 9px 13px;
@@ -4669,6 +4681,11 @@
         <div class="ps-col deduct${isDeductZero ? ' all-zero' : ''}">${renderRows(deductions)}</div>
       </div>
 
+      <div class="ps-total-due">
+        <div class="lbl">💰 本月應得總金額 Monthly Gross Pay  =  (A) + (B)</div>
+        <div class="val">NT$ ${fmtNT(subA + subB)}</div>
+      </div>
+
       <div class="ps-subtotal">
         <div class="${isFixedZero    ? 'all-zero' : ''}"><span>小計 (A)</span><span class="val">${fmtNT(subA)}</span></div>
         <div class="${isVariableZero ? 'all-zero' : ''}"><span>小計 (B)</span><span class="val">${fmtNT(subB)}</span></div>
@@ -4865,6 +4882,8 @@
       if (n !== 0) out += `    ${pad(k, 18)} ${fmtNum(v)}\n`;
     });
     out += `    ${pad('小計 (C)', 18)} ${fmtNum(subC)}\n`;
+    out += line + '\n';
+    out += `  💰 本月應得總金額 = (A) + (B) = NT$ ${fmtNT(subA + subB)}\n`;
     out += line + '\n';
     out += '  ④ 現金給付 Cash Payment (已現金支付)\n';
     out += line + '\n';
