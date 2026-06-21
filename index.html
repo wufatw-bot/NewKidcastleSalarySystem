@@ -3477,13 +3477,20 @@
       if (e['健保眷屬自付'] == null) e['健保眷屬自付'] = 0;
       if (e['補貼健保眷屬'] == null) e['補貼健保眷屬'] = 0;
       // 新增津貼欄位 (混班/數學/留班/考試)
-      if (e['混班人數']  == null) e['混班人數']  = 0;
+      // Migration: 混班人數 (舊) → 混班校數 (新) — 單位改為「校數」
+      if (e['混班校數'] == null) e['混班校數'] = Number(e['混班人數']) || 0;
+      if (e['混班人數']  == null) e['混班人數']  = 0;   // keep for legacy backup
       if (e['混班津貼']  == null) e['混班津貼']  = 0;
       if (e['數學人數']  == null) e['數學人數']  = 0;
       if (e['數學津貼']  == null) e['數學津貼']  = 0;
-      if (e['留班比率']  == null) e['留班比率']  = 0;  // 百分比 (0-100)
+      if (e['留班比率']  == null) e['留班比率']  = 0;  // legacy 百分比
       if (e['留班獎金']  == null) e['留班獎金']  = 0;
       if (e['考試獎金']  == null) e['考試獎金']  = 0;
+      // 美語輔導津貼 — fixed 3000/month if not set yet
+      if (e['美語輔導津貼'] == null || Number(e['美語輔導津貼']) === 0) {
+        // Don't auto-fill old data with non-zero value to avoid surprise; just ensure key exists
+        if (e['美語輔導津貼'] == null) e['美語輔導津貼'] = 0;
+      }
       // Manager-view headcount fields (used to derive allowance amounts)
       ['分校人數超額人數','美語人數','英文輔導人數','數學班人數','混班/混校人數','帶班人數']
         .forEach(k => { if (e[k] == null) e[k] = 0; });
@@ -6863,35 +6870,50 @@
   const MANAGER_LOCKED_FIELDS = ['員工編號', '底薪', '勞保自付', '健保自付', '退休金提撥', '登入帳號', '登入密碼'];
   // Manager-only drawer: hide these structural fields entirely
   const MANAGER_HIDDEN_FIELDS = ['底薪', '年資津貼', '主管津貼'];
-  // Manager-only drawer: each allowance has a headcount counterpart; 津貼 = 人數 × rate
-  // (Rates are editable in const here; owner can fine-tune by directly editing 津貼 in their view)
+  // Manager-only drawer: 7 個津貼欄位，每個有不同的算法
+  // type='linear' : 津貼 = 人數 × rate
+  // type='fixed'  : 固定金額（無人數欄位）
+  // type='classSize': 帶班人數分段公式（依月份切換暑期/平時費率）
+  // type='manual' : 無公式，主管自由輸入金額
+  const HEAD_SPEC = {
+    '美語津貼':         { type:'linear', rate:100,  countKey:'美語人數',
+                          labelHc:'美語人數 (人)',     labelMoney:'美語津貼 (元)' },
+    '美語輔導津貼':     { type:'fixed', value:3000,
+                          labelMoney:'美語輔導津貼 (3000 元/月)' },
+    '數學班津貼':       { type:'linear', rate:100,  countKey:'數學班人數',
+                          labelHc:'數學班人數 (人)',   labelMoney:'數學班津貼 (元)' },
+    '帶班人數津貼':     { type:'classSize',          countKey:'帶班人數',
+                          labelHc:'帶班人數 (人)',     labelMoney:'帶班人數津貼 (元) — 分段公式' },
+    '混班津貼':         { type:'linear', rate:500,  countKey:'混班校數',
+                          labelHc:'混班校數 (校)',     labelMoney:'混班津貼 (元) — 500元/校' },
+    '留班獎金':         { type:'manual',
+                          labelMoney:'留班獎金 (元) — 自由輸入' }
+    // 數學津貼：已移除自動計算，老闆可在 owner drawer 直接編輯該欄位
+  };
+  // Legacy compatibility (sites that still reference these)
   const HEAD_RATES = {
-    '美語津貼':         100,
-    '美語輔導津貼':    2000,    // 1人(天) = 2000 元
-    '數學班津貼':       100,
-    '帶班人數津貼':     100,
-    '混班津貼':         500,
-    '數學津貼':         200,
-    '留班獎金':         100     // 1% 留班率 = 100 元 (示意，可調整)
+    '美語津貼':100, '數學班津貼':100, '混班津貼':500
   };
-  const HEAD_COUNT_KEYS = {   // 津貼欄位 → 對應的人數欄位
-    '美語津貼':         '美語人數',
-    '美語輔導津貼':     '美語輔導人數',
-    '數學班津貼':       '數學班人數',
-    '帶班人數津貼':     '帶班人數',
-    '混班津貼':         '混班人數',
-    '數學津貼':         '數學人數',
-    '留班獎金':         '留班比率'
+  const HEAD_COUNT_KEYS = {
+    '美語津貼':'美語人數', '數學班津貼':'數學班人數', '混班津貼':'混班校數',
+    '帶班人數津貼':'帶班人數'
   };
-  const HEAD_LABELS = {       // 主管視圖用的中文標籤
-    '美語津貼':         { headcount:'美語人數 (人)',     money:'美語津貼 (元)' },
-    '美語輔導津貼':     { headcount:'美語輔導人數 (人)', money:'美語輔導津貼 (元)' },
-    '數學班津貼':       { headcount:'數學班人數 (人)',   money:'數學班津貼 (元)' },
-    '帶班人數津貼':     { headcount:'帶班人數 (人)',     money:'帶班人數津貼 (元)' },
-    '混班津貼':         { headcount:'混班人數 (人)',     money:'混班津貼 (元)' },
-    '數學津貼':         { headcount:'數學人數 (人)',     money:'數學津貼 (元)' },
-    '留班獎金':         { headcount:'留班比率 (%)',      money:'留班獎金 (元)' }
-  };
+  // 帶班人數津貼分段公式（依月份切換暑期 7/8 月與平時費率）
+  function computeClassSizeAllowance(headcount, monthStr) {
+    const hc = Number(headcount) || 0;
+    const mNum = parseInt(String(monthStr||'').slice(-2), 10);   // 11507 → 7
+    const isSummer = (mNum === 7 || mNum === 8);
+    if (hc < 16) return 0;
+    if (isSummer) {
+      // 暑期：(人數-15) × 1000；超過 20 人再 × 1500
+      if (hc <= 20) return (hc - 15) * 1000;
+      return 5 * 1000 + (hc - 20) * 1500;
+    } else {
+      // 平時：(人數-15) × 500；超過 20 人再 × 1000
+      if (hc <= 20) return (hc - 15) * 500;
+      return 5 * 500 + (hc - 20) * 1000;
+    }
+  }
   // Toggle: switch drawer between view mode (default) and edit mode
   function toggleDrawerEdit() {
     if (!currentUser || currentUser.role === 'employee') {
@@ -7042,21 +7064,80 @@
         </div>
       </div>`;
 
-    // For each allowance: render 人數 + 津貼 (readonly auto-computed) side by side
-    const allowKeys = ['美語津貼','美語輔導津貼','數學班津貼','帶班人數津貼','混班津貼','數學津貼','留班獎金'];
+    // For each allowance: render based on its type
+    const allowKeys = ['美語津貼','美語輔導津貼','數學班津貼','帶班人數津貼','混班津貼','留班獎金'];
     const allowanceHtml = allowKeys.map(moneyKey => {
-      const hcKey = HEAD_COUNT_KEYS[moneyKey];
-      const lbls  = HEAD_LABELS[moneyKey];
-      const rate  = HEAD_RATES[moneyKey];
+      const spec = HEAD_SPEC[moneyKey];
+      if (!spec) return '';
+      const mVal = Number(emp[moneyKey]) || 0;
+
+      // ── 固定金額類：美語輔導津貼 3000元/月 ──
+      // 用 yes/no 切換：有提供 → 3000；無 → 0
+      if (spec.type === 'fixed') {
+        const hasAllowance = mVal > 0;
+        return `
+        <div class="field-cell wide">
+          <label>${spec.labelMoney}</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:2px solid ${hasAllowance ? '#10B981' : '#cbd5e1'};border-radius:8px;background:${hasAllowance ? '#ECFDF5' : '#fff'};">
+              <input type="radio" name="fixed_${moneyKey}" class="fixed-allow-toggle" data-money-key="${moneyKey}" data-fixed-val="${spec.value}" value="${spec.value}" ${hasAllowance ? 'checked' : ''}>
+              <b style="color:#059669;">✓ 有 (${spec.value} 元/月)</b>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:2px solid ${!hasAllowance ? '#94a3b8' : '#cbd5e1'};border-radius:8px;background:${!hasAllowance ? '#f1f5f9' : '#fff'};">
+              <input type="radio" name="fixed_${moneyKey}" class="fixed-allow-toggle" data-money-key="${moneyKey}" data-fixed-val="0" value="0" ${!hasAllowance ? 'checked' : ''}>
+              <b style="color:#64748b;">○ 無 (0)</b>
+            </label>
+            <input type="number" class="head-money-display" data-key="${moneyKey}" min="0" step="1" value="${mVal}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;width:120px;">
+          </div>
+        </div>`;
+      }
+
+      // ── 自由輸入類：留班獎金 ──
+      if (spec.type === 'manual') {
+        return `
+        <div class="field-cell wide">
+          <label>${spec.labelMoney}</label>
+          <input type="number" data-key="${moneyKey}" min="0" step="1" value="${mVal}" placeholder="主管自由輸入金額">
+        </div>`;
+      }
+
+      // ── 分段公式類：帶班人數津貼 ──
+      if (spec.type === 'classSize') {
+        const hcKey = spec.countKey;
+        const hcVal = Number(emp[hcKey]) || 0;
+        const monthStr = _drawerMonth || '';
+        const computed = computeClassSizeAllowance(hcVal, monthStr);
+        // 顯示分段提示
+        const mNum = parseInt(String(monthStr).slice(-2), 10);
+        const isSummer = (mNum === 7 || mNum === 8);
+        const hint = isSummer
+          ? '暑期(7/8月)：< 16人 = 0；16~20人 × 1000；超 20 人後續 × 1500'
+          : '平時：< 16人 = 0；16~20人 × 500；超 20 人後續 × 1000';
+        if (mVal !== computed) emp[moneyKey] = computed;
+        return `
+        <div class="field-cell">
+          <label>${spec.labelHc} <small style="color:#94a3b8;font-weight:normal;">分段</small></label>
+          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-formula="classSize" min="0" step="1" value="${hcVal}">
+          <small style="color:#94a3b8;font-size:11px;display:block;margin-top:4px;line-height:1.4;">${hint}</small>
+        </div>
+        <div class="field-cell">
+          <label>${spec.labelMoney}</label>
+          <input type="number" class="head-money-display" data-key="${moneyKey}" min="0" step="1" value="${computed}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
+        </div>`;
+      }
+
+      // ── 線性公式類：美語/數學班/混班 ──
+      // (type === 'linear')
+      const hcKey = spec.countKey;
+      const rate = spec.rate;
       const hcVal = Number(emp[hcKey]) || 0;
-      const mVal  = Number(emp[moneyKey]) || 0;
       return `
         <div class="field-cell">
-          <label>${lbls.headcount} <small style="color:#94a3b8;font-weight:normal;">× ${rate}元/人</small></label>
+          <label>${spec.labelHc} <small style="color:#94a3b8;font-weight:normal;">× ${rate}元</small></label>
           <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-rate="${rate}" min="0" step="1" value="${hcVal}">
         </div>
         <div class="field-cell">
-          <label>${lbls.money}</label>
+          <label>${spec.labelMoney}</label>
           <input type="number" class="head-money-display" data-key="${moneyKey}" min="0" step="1" value="${mVal}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
         </div>`;
     }).join('');
@@ -7341,13 +7422,43 @@
   document.addEventListener('input', e => {
     if (!e.target || !e.target.closest) return;
     if (!e.target.closest('#drawerBody')) return;
-    // Manager view: when 人數 changes, auto-update 津貼 = 人數 × rate
+    // Manager view: when 人數 changes, auto-update 津貼
     if (e.target.classList && e.target.classList.contains('head-count-input')) {
       const hc = Number(e.target.value) || 0;
-      const rate = Number(e.target.dataset.rate) || 0;
       const moneyKey = e.target.dataset.moneyKey;
+      const formula = e.target.dataset.formula;
       const moneyEl = $('drawerBody').querySelector(`.head-money-display[data-key="${moneyKey}"]`);
-      if (moneyEl) moneyEl.value = hc * rate;
+      let newVal;
+      if (formula === 'classSize') {
+        // 帶班人數津貼 — 分段公式 + 月份判斷
+        newVal = computeClassSizeAllowance(hc, _drawerMonth || '');
+      } else {
+        // 線性公式：人數 × rate
+        const rate = Number(e.target.dataset.rate) || 0;
+        newVal = hc * rate;
+      }
+      if (moneyEl) moneyEl.value = newVal;
+    }
+    // Fixed allowance toggle (有/無)：美語輔導津貼 3000/月
+    if (e.target.classList && e.target.classList.contains('fixed-allow-toggle')) {
+      const moneyKey = e.target.dataset.moneyKey;
+      const val = Number(e.target.dataset.fixedVal) || 0;
+      const moneyEl = $('drawerBody').querySelector(`.head-money-display[data-key="${moneyKey}"]`);
+      if (moneyEl) moneyEl.value = val;
+      // Re-render radio button styles
+      const radios = $('drawerBody').querySelectorAll(`.fixed-allow-toggle[data-money-key="${moneyKey}"]`);
+      radios.forEach(r => {
+        const lbl = r.closest('label');
+        if (!lbl) return;
+        const isYes = Number(r.dataset.fixedVal) > 0;
+        if (r.checked) {
+          lbl.style.borderColor = isYes ? '#10B981' : '#94a3b8';
+          lbl.style.background  = isYes ? '#ECFDF5' : '#f1f5f9';
+        } else {
+          lbl.style.borderColor = '#cbd5e1';
+          lbl.style.background  = '#fff';
+        }
+      });
     }
     // Manager 全勤 radio: update emp['全勤獎金'] virtual field
     if (e.target.type === 'radio' && e.target.name === 'attStatus') {
