@@ -6559,17 +6559,15 @@
         { key: '主管津貼',     type: 'money' },
         { key: '美語人數',     type: 'money' },
         { key: '美語津貼',     type: 'money' },
-        { key: '美語輔導人數', type: 'money' },
-        { key: '美語輔導津貼', type: 'money' },
+        { key: '美語輔導津貼', type: 'money' },   // 固定 3000元/月（無人數欄）
+        { key: '數學班人數',   type: 'money' },
         { key: '數學班津貼',   type: 'money' },
         { key: '帶班人數',     type: 'money' },
-        { key: '帶班人數津貼', type: 'money' },
-        { key: '混班人數',     type: 'money' },
-        { key: '混班津貼',     type: 'money' },
-        { key: '數學人數',     type: 'money' },
-        { key: '數學津貼',     type: 'money' },
-        { key: '留班比率',     type: 'money' },
-        { key: '留班獎金',     type: 'money' },
+        { key: '帶班人數津貼', type: 'money' },   // 自動 = computeClassSizeAllowance(帶班人數, 月份)
+        { key: '混班校數',     type: 'money' },   // 從舊「混班人數」改名
+        { key: '混班津貼',     type: 'money' },   // = 混班校數 × 500
+        { key: '數學津貼',     type: 'money' },   // 已移除自動計算，可手動編輯
+        { key: '留班獎金',     type: 'money' },   // 已移除自動計算，自由輸入
         { key: '考試獎金',     type: 'money' },
         { key: '其他津貼',     type: 'money' }
       ]
@@ -7418,11 +7416,36 @@
     }
   }
 
+  // ── 通用：人數欄位 → 津貼欄位 公式對照（適用於 owner & manager 視圖）──
+  // 由 data-key 觸發，不依賴特定 class，所以任一視圖都能自動更新對應津貼
+  const ALLOWANCE_AUTO_FORMULA = {
+    '美語人數':   { moneyKey: '美語津貼',       compute: (n)=> n * 100 },
+    '數學班人數': { moneyKey: '數學班津貼',     compute: (n)=> n * 100 },
+    '混班校數':   { moneyKey: '混班津貼',       compute: (n)=> n * 500 },
+    '帶班人數':   { moneyKey: '帶班人數津貼',   compute: (n)=> computeClassSizeAllowance(n, _drawerMonth || '') }
+  };
+
   // Live update preview while editing
   document.addEventListener('input', e => {
     if (!e.target || !e.target.closest) return;
     if (!e.target.closest('#drawerBody')) return;
-    // Manager view: when 人數 changes, auto-update 津貼
+
+    // ── 通用 auto-formula：任何視圖中的人數欄位變更，都自動更新對應津貼 ──
+    const dataKey = e.target.dataset && e.target.dataset.key;
+    if (dataKey && ALLOWANCE_AUTO_FORMULA[dataKey]) {
+      const spec = ALLOWANCE_AUTO_FORMULA[dataKey];
+      const n = Number(e.target.value) || 0;
+      const newVal = spec.compute(n);
+      const moneyEl = $('drawerBody').querySelector(`[data-key="${spec.moneyKey}"]`);
+      if (moneyEl) {
+        moneyEl.value = newVal;
+        // Flash green to show auto-update
+        moneyEl.style.background = '#ECFDF5';
+        setTimeout(() => { moneyEl.style.background = ''; }, 400);
+      }
+    }
+
+    // Manager view: when 人數 changes, auto-update 津貼 (legacy listener kept for compatibility)
     if (e.target.classList && e.target.classList.contains('head-count-input')) {
       const hc = Number(e.target.value) || 0;
       const moneyKey = e.target.dataset.moneyKey;
