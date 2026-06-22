@@ -4522,6 +4522,22 @@
     return String(CREDENTIALS[schoolId].name || '').replace(/校區$/, '');
   }
 
+  // 計算上個月的民國年月（YYYMM 格式），例如 2026-06 → "11505"
+  function getPrevMonthROC() {
+    const d = new Date();
+    d.setDate(1);                       // 避免月底 bug
+    d.setMonth(d.getMonth() - 1);
+    const rocYear = d.getFullYear() - 1911;
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${rocYear}${mm}`;
+  }
+  // 從月份清單中選出「預設要顯示的月份」 — 優先上個月，否則取最後一個月
+  function pickDefaultPayslipMonth(months) {
+    if (!months || !months.length) return '';
+    const prev = getPrevMonthROC();
+    return months.indexOf(prev) >= 0 ? prev : months[months.length - 1];
+  }
+
   function populatePayslipSelectors() {
     const userCampus = currentUser ? campusShort(currentUser.schoolId) : null;
     const isOwner = currentUser && currentUser.role === 'owner';
@@ -4543,6 +4559,7 @@
         monthSel.innerHTML = months.map(m =>
           `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
         ).join('');
+        monthSel.value = pickDefaultPayslipMonth(months);
         // Hide 薪資條匯總 button (employee can't see other people's data)
         document.querySelectorAll('.payslip-controls button').forEach(b => {
           if (b.textContent.includes('薪資條匯總')) b.style.display = 'none';
@@ -4577,6 +4594,7 @@
     monthSel.innerHTML = months.map(m =>
       `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
     ).join('');
+    monthSel.value = pickDefaultPayslipMonth(months);
   }
 
   function renderPayslip() {
