@@ -5879,14 +5879,7 @@
           detail: `失全勤 + 遲到扣款 ${fmtNT(item.lateD)}`
         });
       }
-      // Missing 銀行帳號
-      if (!e['銀行帳號']) {
-        alerts.push({
-          level: 'info', icon: '🏦',
-          title: `${e['員工姓名']} 未設定銀行帳號`,
-          detail: `${e['員工編號']} · ${e['校區']} — 請至「老闆輸入」補上匯款資料`
-        });
-      }
+      // (銀行帳號 section removed — no longer alerting on missing bank account)
     });
     // Cap alerts
     return alerts.slice(0, 50);
@@ -6616,17 +6609,9 @@
       ]
     },
     {
-      title: '銀行帳戶 Bank',
-      cls: 'bank',
-      badge: '④',
-      fields: [
-        { key: '銀行名稱', type: 'text', wide: true }
-      ]
-    },
-    {
       title: '員工登入帳號 Employee Login',
       cls: 'login',
-      badge: '⑤',
+      badge: '④',
       fields: [
         { key: '登入帳號', type: 'text' },
         { key: '登入密碼', type: 'text' },
@@ -6636,7 +6621,7 @@
     {
       title: '特休管理 Annual Leave',
       cls: 'leave',
-      badge: '⑥',
+      badge: '⑤',
       fields: [
         { key: '特休資訊', type: 'leave_info', wide: true },   // 顯示自動計算結果 (唯讀)
         { key: '可休日數_手動', type: 'money' },               // 老闆覆寫 (>0 才使用)
@@ -6646,7 +6631,7 @@
     {
       title: '備註 Notes',
       cls: 'notes',
-      badge: '⑦',
+      badge: '⑥',
       fields: [
         { key: '備註', type: 'textarea', wide: true }
       ]
@@ -7215,7 +7200,8 @@
     const isMgr = currentUser && currentUser.role === 'manager';
     const html = OWN_SECTIONS.map(sec => {
       // Manager view: hide structural sections (deductions / bank / login / notes)
-      if (isMgr && (sec.cls === 'deduct' || sec.cls === 'bank' || sec.cls === 'login' || sec.cls === 'notes')) {
+      // Manager view: hide deduct/bank/login sections; 備註 (notes) is allowed
+      if (isMgr && (sec.cls === 'deduct' || sec.cls === 'bank' || sec.cls === 'login')) {
         return '';
       }
       // Manager view: section 2 (薪資組成) gets entirely custom render
