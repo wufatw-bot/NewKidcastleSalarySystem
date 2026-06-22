@@ -7273,12 +7273,21 @@
           // ── Canned-text quick-insert chips (only for 備註 field) ──
           let cannedHtml = '';
           if (f.key === '備註') {
+            // owner-only bulk-copy buttons
+            const isOwner = currentUser && currentUser.role === 'owner';
+            const bulkHtml = isOwner ? `
+              <div class="canned-bulk no-print" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding:8px 10px;background:#EFF6FF;border:1px dashed #3B82F6;border-radius:8px;">
+                <div style="width:100%;font-size:11px;color:#1E40AF;font-weight:600;margin-bottom:2px;">📋 將本欄備註複製到（限老闆）</div>
+                <button type="button" class="bulk-note-btn" data-scope="all" style="padding:5px 12px;background:#fff;border:1.5px solid #3B82F6;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📋 複製到所有員工</button>
+                <button type="button" class="bulk-note-btn" data-scope="同安" style="padding:5px 12px;background:#fff;border:1.5px solid #1E40AF;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🏫 複製到同安員工</button>
+                <button type="button" class="bulk-note-btn" data-scope="莊敬" style="padding:5px 12px;background:#fff;border:1.5px solid #B45309;color:#92400E;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🎓 複製到莊敬員工</button>
+              </div>` : '';
             cannedHtml = `
               <div class="canned-chips no-print" data-target-key="備註" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;padding:8px 10px;background:#FFFBEB;border:1px dashed #FBBF24;border-radius:8px;">
                 <div style="width:100%;font-size:11px;color:#92400E;font-weight:600;margin-bottom:2px;">🍡 快速插入罐頭文字（點擊加入）</div>
                 ${CANNED_NOTES.map(c => `<button type="button" class="canned-chip" data-text="${c.replace(/"/g,'&quot;')}" style="padding:4px 10px;background:#fff;border:1px solid #F59E0B;color:#92400E;border-radius:999px;font-size:12px;cursor:pointer;font-family:inherit;">${c}</button>`).join('')}
                 <button type="button" class="canned-clear" style="margin-left:auto;padding:4px 10px;background:#FEE2E2;border:1px solid #DC2626;color:#991B1B;border-radius:999px;font-size:11px;cursor:pointer;font-family:inherit;">🗑 清空備註</button>
-              </div>`;
+              </div>` + bulkHtml;
           }
           inputHtml = cannedHtml + `<textarea class="${cls}" data-key="${f.key}" rows="4" placeholder="可輸入多行備註，或點上方按鈕插入罐頭文字…" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;background:#fff;">${safe}</textarea>`;
         } else if (f.type === 'leave_info') {
@@ -7583,6 +7592,45 @@
       // Brief flash to show insert
       ta.style.background = '#FEF9C3';
       setTimeout(() => { ta.style.background = '#fff'; }, 400);
+      return;
+    }
+    // Bulk-copy 備註 to all / 同安 / 莊敬
+    const bulkBtn = e.target.closest('.bulk-note-btn');
+    if (bulkBtn) {
+      e.preventDefault();
+      if (!currentUser || currentUser.role !== 'owner') {
+        toast('僅老闆可使用此功能', 'error'); return;
+      }
+      const scope = bulkBtn.dataset.scope;   // 'all' | '同安' | '莊敬'
+      const ta = $('drawerBody') && $('drawerBody').querySelector('textarea[data-key="備註"]');
+      if (!ta) return;
+      const content = (ta.value || '').trim();
+      if (!content) { toast('備註欄為空，沒有內容可複製', 'error'); return; }
+      // Filter targets
+      const targets = DATA.employees.filter(emp => {
+        if (emp['員工編號'] === _editingEid) return false;   // skip self
+        if (scope === 'all') return true;
+        return emp['校區'] === scope;
+      });
+      if (!targets.length) { toast('沒有符合條件的員工', 'error'); return; }
+      const scopeLabel = scope === 'all' ? '所有員工' : `${scope}校員工`;
+      const msg = `確定要把目前的備註覆蓋到「${scopeLabel}」共 ${targets.length} 人嗎？\n\n` +
+                  `備註內容：\n${content.slice(0, 200)}${content.length > 200 ? '...' : ''}\n\n` +
+                  `此操作會直接覆蓋他們現有的備註，不可復原。`;
+      if (!confirm(msg)) return;
+      targets.forEach(emp => { emp['備註'] = content; });
+      // Persist
+      persistData();
+      // Log
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser.fullName,
+        text: `批次複製備註到 ${scopeLabel}（${targets.length} 人）: ${content.slice(0, 60)}${content.length > 60 ? '...' : ''}`
+      });
+      toast(`✓ 已複製備註到 ${targets.length} 位${scopeLabel}`, 'success');
+      // Flash blue to confirm
+      bulkBtn.style.background = '#DBEAFE';
+      setTimeout(() => { bulkBtn.style.background = '#fff'; }, 600);
       return;
     }
     // Clear notes
