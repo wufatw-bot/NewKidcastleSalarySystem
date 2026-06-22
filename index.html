@@ -6659,6 +6659,28 @@
     }
   ];
 
+  // ── 罐頭文字（備註欄位快速插入）──
+  // 可依需要新增 / 修改項目
+  const CANNED_NOTES = [
+    '🐉 端午節快樂',
+    '🐉 端午節津貼 NT$ 1,000',
+    '🌕 中秋節快樂',
+    '🌕 中秋節津貼 NT$ 1,000',
+    '🎊 新年快樂',
+    '🧧 春節獎金',
+    '🎂 生日快樂！',
+    '🎂 生日禮金 NT$ 500',
+    '🏆 表現優異獎金',
+    '🌟 感謝您的辛勞與付出',
+    '👶 兒童節快樂',
+    '🍎 教師節快樂',
+    '💐 母親節快樂',
+    '🎁 公司年終獎金',
+    '☂ 補貼公會勞健保',
+    '⚠ 本月請假/遲到，全勤獎金未發',
+    '📅 試用期通過 — 正式聘僱'
+  ];
+
   // =========================================================================
   // 特休 (Annual Leave) — auto-calculated from 到職日 per Taiwan Labor Law
   // 滿6月→3天, 滿1年→7天, 滿2年→10天, 滿3年→14天, 滿5年→15天,
@@ -7248,7 +7270,17 @@
           inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${v == null ? 0 : v}">`;
         } else if (f.type === 'textarea') {
           const safe = String(v == null ? '' : v).replace(/</g, '&lt;').replace(/"/g, '&quot;');
-          inputHtml = `<textarea class="${cls}" data-key="${f.key}" rows="4" placeholder="可輸入多行備註…" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;background:#fff;">${safe}</textarea>`;
+          // ── Canned-text quick-insert chips (only for 備註 field) ──
+          let cannedHtml = '';
+          if (f.key === '備註') {
+            cannedHtml = `
+              <div class="canned-chips no-print" data-target-key="備註" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;padding:8px 10px;background:#FFFBEB;border:1px dashed #FBBF24;border-radius:8px;">
+                <div style="width:100%;font-size:11px;color:#92400E;font-weight:600;margin-bottom:2px;">🍡 快速插入罐頭文字（點擊加入）</div>
+                ${CANNED_NOTES.map(c => `<button type="button" class="canned-chip" data-text="${c.replace(/"/g,'&quot;')}" style="padding:4px 10px;background:#fff;border:1px solid #F59E0B;color:#92400E;border-radius:999px;font-size:12px;cursor:pointer;font-family:inherit;">${c}</button>`).join('')}
+                <button type="button" class="canned-clear" style="margin-left:auto;padding:4px 10px;background:#FEE2E2;border:1px solid #DC2626;color:#991B1B;border-radius:999px;font-size:11px;cursor:pointer;font-family:inherit;">🗑 清空備註</button>
+              </div>`;
+          }
+          inputHtml = cannedHtml + `<textarea class="${cls}" data-key="${f.key}" rows="4" placeholder="可輸入多行備註，或點上方按鈕插入罐頭文字…" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;background:#fff;">${safe}</textarea>`;
         } else if (f.type === 'leave_info') {
           // Read-only annual leave summary card (computed from 到職日)
           const al = computeAnnualLeave(emp);
@@ -7525,6 +7557,51 @@
     }
     updateNetPreview();
   });
+  // ── Canned-text chip click → insert into 備註 textarea ──
+  document.addEventListener('click', e => {
+    if (!e.target || !e.target.closest) return;
+    // Insert canned text
+    const chip = e.target.closest('.canned-chip');
+    if (chip) {
+      e.preventDefault();
+      const wrap = chip.closest('.canned-chips');
+      const targetKey = wrap && wrap.dataset.targetKey;
+      const txt = chip.dataset.text || chip.textContent.trim();
+      const ta = $('drawerBody') && $('drawerBody').querySelector(`textarea[data-key="${targetKey}"]`);
+      if (!ta) return;
+      if (ta.disabled) { toast('請先點「✏ 編輯內容」進入編輯模式', 'error'); return; }
+      // Append with date prefix; auto-newline if textarea already has content
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+      const newLine = `${dateStr} ${txt}`;
+      ta.value = ta.value.trim()
+        ? `${ta.value.replace(/\s+$/, '')}\n${newLine}`
+        : newLine;
+      ta.focus();
+      // Move cursor to end
+      ta.selectionStart = ta.selectionEnd = ta.value.length;
+      // Brief flash to show insert
+      ta.style.background = '#FEF9C3';
+      setTimeout(() => { ta.style.background = '#fff'; }, 400);
+      return;
+    }
+    // Clear notes
+    const clr = e.target.closest('.canned-clear');
+    if (clr) {
+      e.preventDefault();
+      const wrap = clr.closest('.canned-chips');
+      const targetKey = wrap && wrap.dataset.targetKey;
+      const ta = $('drawerBody') && $('drawerBody').querySelector(`textarea[data-key="${targetKey}"]`);
+      if (!ta) return;
+      if (ta.disabled) { toast('請先點「✏ 編輯內容」進入編輯模式', 'error'); return; }
+      if (!ta.value.trim()) return;
+      if (!confirm('確定要清空整個備註欄位嗎？')) return;
+      ta.value = '';
+      ta.focus();
+      return;
+    }
+  });
+
   // Segmented button toggle: click 扣薪 / 補貼 → set mode
   document.addEventListener('click', e => {
     const btn = e.target.closest && e.target.closest('.seg-btn[data-pair-mode-btn]');
