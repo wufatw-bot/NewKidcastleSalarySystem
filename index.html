@@ -824,14 +824,7 @@
     line-height: 1.7;
     border-left: 3px solid #F59E0B;
   }
-  .ps-sign {
-    margin-top: 14px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-  }
-  .ps-sign .box {
-    border: 1px dashed #cbd5e1; border-radius: 8px;
-    padding: 12px 14px 28px; font-size: 11px; color: #64748b;
-  }
+  /* (.ps-sign removed — 發放單位簽章 / 員工簽收 sections no longer rendered) */
 
   /* Print styles — default A4; specific sizes overridden via JS-injected @page */
   @media print {
@@ -4723,10 +4716,6 @@
         </div>`;
       })()}
 
-      <div class="ps-sign">
-        <div class="box">發放單位簽章 Issued by<br><br>&nbsp;</div>
-        <div class="box">員工簽收 Employee Signature<br><br>&nbsp;</div>
-      </div>
     `;
   }
 
