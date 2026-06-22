@@ -4589,9 +4589,11 @@
     const fixed = [
       ['底薪 Base', emp['底薪']],
       ['全勤獎金 Attendance', attBonus],
-      ['年資津貼 Seniority', emp['年資津貼']]
+      ['年資津貼 Seniority', emp['年資津貼']],
+      ['投保薪資級距 Salary Tier', emp['投保級距']]   // 資訊欄，不列入 A 加總
     ];
-    const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    // 投保薪資級距僅作顯示，不計入 A 加總
+    const subA = fixed.filter(([k]) => !k.startsWith('投保薪資級距')).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
     const variable = [
       ['主管津貼 Manager', emp['主管津貼']],
@@ -4610,10 +4612,14 @@
       ['加班費 OT Pay', sal['加班費']],
       ['加班時數 OT Hours', sal['加班時數']],
       ['獎金 Bonus', sal['獎金']],
-      ['特殊調整 Adjust', sal['特殊調整']]
+      ['特殊調整 Adjust', sal['特殊調整']],
+      ['帶班人數 Class Size (人)', emp['帶班人數']],   // 資訊欄，不列入 B
+      ['混班校數 Mixed Class (校)', emp['混班校數']]   // 資訊欄，不列入 B
     ];
-    // exclude OT hours from sum (it's hours, not money)
-    const subB = variable.filter(([k]) => !k.startsWith('加班時數')).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    // exclude OT hours / 人數 / 校數 from sum (they're counts, not money)
+    const subB = variable.filter(([k]) =>
+      !k.startsWith('加班時數') && !k.startsWith('帶班人數') && !k.startsWith('混班校數')
+    ).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
     const deductions = [
       ['勞保自付 Labor Ins', emp['勞保自付']],
@@ -4681,15 +4687,15 @@
         <div class="ps-col deduct${isDeductZero ? ' all-zero' : ''}">${renderRows(deductions)}</div>
       </div>
 
-      <div class="ps-total-due">
-        <div class="lbl">💰 本月應得總金額 Monthly Gross Pay  =  (A) + (B)</div>
-        <div class="val">NT$ ${fmtNT(subA + subB)}</div>
-      </div>
-
       <div class="ps-subtotal">
         <div class="${isFixedZero    ? 'all-zero' : ''}"><span>小計 (A)</span><span class="val">${fmtNT(subA)}</span></div>
         <div class="${isVariableZero ? 'all-zero' : ''}"><span>小計 (B)</span><span class="val">${fmtNT(subB)}</span></div>
         <div class="deduct ${isDeductZero ? 'all-zero' : ''}"><span>小計 (C)</span><span class="val">${fmtNT(subC)}</span></div>
+      </div>
+
+      <div class="ps-total-due">
+        <div class="lbl">💰 本月應得總金額 Monthly Gross Pay  =  (A) + (B) − (C)</div>
+        <div class="val">NT$ ${fmtNT(subA + subB - subC)}</div>
       </div>
 
       <div class="ps-cash-row${cashRowClass}">
@@ -4698,7 +4704,7 @@
       </div>
 
       <div class="ps-net">
-        <div class="lbl">實領金額 Net Salary  =  (A) + (B) − (C) − (D)</div>
+        <div class="lbl">餘款轉帳金額 Net Transfer  =  (A) + (B) − (C) − (D)</div>
         <div class="val">NT$ ${fmtNT(net)}</div>
       </div>
 
@@ -4807,9 +4813,10 @@
     const fixed = [
       ['底薪',          emp['底薪']],
       ['全勤獎金',      attBonus],
-      ['年資津貼',      emp['年資津貼']]
+      ['年資津貼',      emp['年資津貼']],
+      ['投保薪資級距',  emp['投保級距']]   // 資訊欄
     ];
-    const subA = fixed.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const subA = fixed.filter(([k]) => k !== '投保薪資級距').reduce((s, [_, v]) => s + (Number(v) || 0), 0);
     const variable = [
       ['主管津貼',      emp['主管津貼']],
       ['美語津貼',      emp['美語津貼']],
@@ -4826,9 +4833,11 @@
       ['補貼健保眷屬',     emp['補貼健保眷屬']],
       ['加班費',     sal['加班費']],
       ['獎金',       sal['獎金']],
-      ['特殊調整',   sal['特殊調整']]
+      ['特殊調整',   sal['特殊調整']],
+      ['帶班人數 (人)', emp['帶班人數']],   // 資訊欄
+      ['混班校數 (校)', emp['混班校數']]    // 資訊欄
     ];
-    const subB = variable.reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const subB = variable.filter(([k]) => k !== '帶班人數 (人)' && k !== '混班校數 (校)').reduce((s, [_, v]) => s + (Number(v) || 0), 0);
     const deductions = [
       ['勞保自付',     emp['勞保自付']],
       ['健保自付',     emp['健保自付']],
@@ -4883,13 +4892,13 @@
     });
     out += `    ${pad('小計 (C)', 18)} ${fmtNum(subC)}\n`;
     out += line + '\n';
-    out += `  💰 本月應得總金額 = (A) + (B) = NT$ ${fmtNT(subA + subB)}\n`;
+    out += `  💰 本月應得總金額 = (A) + (B) − (C) = NT$ ${fmtNT(subA + subB - subC)}\n`;
     out += line + '\n';
     out += '  ④ 現金給付 Cash Payment (已現金支付)\n';
     out += line + '\n';
     out += `    ${pad('小計 (D)', 18)} ${fmtNum(subD)}\n`;
     out += dline + '\n';
-    out += `  實領金額 = (A) + (B) − (C) − (D) = NT$ ${fmtNT(net)}\n`;
+    out += `  餘款轉帳金額 = (A) + (B) − (C) − (D) = NT$ ${fmtNT(net)}\n`;
     out += dline + '\n';
     return out;
   }
