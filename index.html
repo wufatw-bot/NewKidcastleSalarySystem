@@ -826,6 +826,24 @@
   }
   /* (.ps-sign removed — 發放單位簽章 / 員工簽收 sections no longer rendered) */
 
+  .ps-notes {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #FEF9C3, #FEF3C7);
+    border-left: 5px solid #EAB308;
+    border-radius: 10px;
+    color: #713F12;
+  }
+  .ps-notes-h {
+    font-weight: 700; font-size: 14px; margin-bottom: 6px;
+    color: #854D0E; letter-spacing: 0.5px;
+  }
+  .ps-notes-body {
+    font-size: 13px; line-height: 1.7;
+    white-space: pre-wrap;
+    color: #422006;
+  }
+
   /* Print styles — default A4; specific sizes overridden via JS-injected @page */
   @media print {
     body::before { display: none; }
@@ -4716,6 +4734,20 @@
         </div>`;
       })()}
 
+      ${(() => {
+        const note = String(emp['備註'] || '').trim();
+        if (!note) return '';
+        // Escape HTML and preserve line breaks
+        const safe = note
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+        return `<div class="ps-notes">
+          <div class="ps-notes-h">📝 備註 Notes</div>
+          <div class="ps-notes-body">${safe}</div>
+        </div>`;
+      })()}
     `;
   }
 
