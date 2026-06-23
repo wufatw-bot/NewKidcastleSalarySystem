@@ -4790,7 +4790,10 @@
       })()}
 
       ${(() => {
-        const note = String(emp['備註'] || '').trim();
+        // 優先用本月薪資紀錄的備註 (sal['備註'])，否則 fallback 員工層級的 emp['備註']
+        const salNote = String((sal && sal['備註']) || '').trim();
+        const empNote = String(emp['備註'] || '').trim();
+        const note = salNote || empNote;
         if (!note) return '';
         // Escape HTML and preserve line breaks
         const safe = note
@@ -4798,8 +4801,9 @@
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
           .replace(/\n/g, '<br>');
+        const sourceLabel = salNote ? `本月 (${month})` : '員工預設';
         return `<div class="ps-notes">
-          <div class="ps-notes-h">📝 備註 Notes</div>
+          <div class="ps-notes-h">📝 備註 Notes <small style="font-weight:400;color:#92400E;opacity:.7;">· 來源：${sourceLabel}</small></div>
           <div class="ps-notes-body">${safe}</div>
         </div>`;
       })()}
@@ -7340,6 +7344,9 @@
                 <button type="button" class="bulk-note-btn" data-scope="all" style="padding:5px 12px;background:#fff;border:1.5px solid #3B82F6;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📋 複製到所有員工</button>
                 <button type="button" class="bulk-note-btn" data-scope="同安" style="padding:5px 12px;background:#fff;border:1.5px solid #1E40AF;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🏫 複製到同安員工</button>
                 <button type="button" class="bulk-note-btn" data-scope="莊敬" style="padding:5px 12px;background:#fff;border:1.5px solid #B45309;color:#92400E;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🎓 複製到莊敬員工</button>
+                <div style="width:100%;font-size:11px;color:#0F766E;font-weight:600;margin:8px 0 2px;padding-top:6px;border-top:1px dashed #99F6E4;">📅 將本欄備註複製到本員工的（限老闆）</div>
+                <button type="button" class="bulk-note-btn" data-scope="next-month" style="padding:5px 12px;background:#fff;border:1.5px solid #14B8A6;color:#0F766E;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📅 複製到下個月份</button>
+                <button type="button" class="bulk-note-btn" data-scope="year" style="padding:5px 12px;background:#fff;border:1.5px solid #06B6D4;color:#155E75;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🗓 複製到整年份</button>
               </div>` : '';
             cannedHtml = `
               <div class="canned-chips no-print" data-target-key="備註" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;padding:8px 10px;background:#FFFBEB;border:1px dashed #FBBF24;border-radius:8px;">
@@ -7671,18 +7678,66 @@
       setTimeout(() => { ta.style.background = '#fff'; }, 400);
       return;
     }
-    // Bulk-copy 備註 to all / 同安 / 莊敬
+    // Bulk-copy 備註 to all / 同安 / 莊敬 / next-month / year
     const bulkBtn = e.target.closest('.bulk-note-btn');
     if (bulkBtn) {
       e.preventDefault();
       if (!currentUser || currentUser.role !== 'owner') {
         toast('僅老闆可使用此功能', 'error'); return;
       }
-      const scope = bulkBtn.dataset.scope;   // 'all' | '同安' | '莊敬'
+      const scope = bulkBtn.dataset.scope;   // 'all' | '同安' | '莊敬' | 'next-month' | 'year'
       const ta = $('drawerBody') && $('drawerBody').querySelector('textarea[data-key="備註"]');
       if (!ta) return;
       const content = (ta.value || '').trim();
       if (!content) { toast('備註欄為空，沒有內容可複製', 'error'); return; }
+
+      // ── 月份範圍複製：next-month / year ──
+      // 把備註寫入「本員工」對應月份的 salary record（sal['備註']）
+      if (scope === 'next-month' || scope === 'year') {
+        if (!_editingEid) { toast('尚未鎖定員工', 'error'); return; }
+        if (!_drawerMonth) { toast('尚未選定月份', 'error'); return; }
+        const empName = (DATA.employees.find(e => e['員工編號']===_editingEid)||{})['員工姓名'] || _editingEid;
+        let targetMonths = [];
+        let scopeLabel = '';
+        if (scope === 'next-month') {
+          targetMonths = [ incrMonth(_drawerMonth) ];
+          scopeLabel = `下個月份 (${targetMonths[0]})`;
+        } else {
+          // 整年份：取 _drawerMonth 前 3 碼 ROC year，補齊 01-12
+          const rocYear = String(_drawerMonth).slice(0, 3);
+          targetMonths = [];
+          for (let m = 1; m <= 12; m++) {
+            const mm = String(m).padStart(2, '0');
+            const month = rocYear + mm;
+            if (month === _drawerMonth) continue;  // skip current
+            targetMonths.push(month);
+          }
+          scopeLabel = `民國 ${rocYear} 年全年 (除本月外共 ${targetMonths.length} 個月)`;
+        }
+        const msg = `確定要把目前的備註複製到「${empName}」的「${scopeLabel}」嗎？\n\n` +
+                    `備註內容：\n${content.slice(0, 200)}${content.length > 200 ? '...' : ''}\n\n` +
+                    `說明：會將備註寫入每個月的薪資紀錄（sal.備註）；如尚無紀錄會自動建立。\n` +
+                    `此操作不可復原。`;
+        if (!confirm(msg)) return;
+        let count = 0;
+        targetMonths.forEach(month => {
+          const sal = ensureSalaryRecord(_editingEid, month);
+          sal['備註'] = content;
+          count++;
+        });
+        persistData();
+        appendLog({
+          time: nowTimestamp(),
+          user: currentUser.fullName,
+          text: `[${empName}] 備註複製到 ${scopeLabel}（${count} 個月）: ${content.slice(0, 60)}${content.length > 60 ? '...' : ''}`
+        });
+        toast(`✓ 已複製備註到 ${empName} 的 ${count} 個月份`, 'success');
+        bulkBtn.style.background = '#A7F3D0';
+        setTimeout(() => { bulkBtn.style.background = '#fff'; }, 600);
+        return;
+      }
+
+      // ── 員工範圍複製：all / 同安 / 莊敬 ──
       // Filter targets
       const targets = DATA.employees.filter(emp => {
         if (emp['員工編號'] === _editingEid) return false;   // skip self
