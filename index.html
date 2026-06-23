@@ -826,6 +826,28 @@
   }
   /* (.ps-sign removed — 發放單位簽章 / 員工簽收 sections no longer rendered) */
 
+  .ps-other-notes {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #ECFEFF, #CFFAFE);
+    border-left: 5px solid #06B6D4;
+    border-radius: 10px;
+    color: #134E4A;
+  }
+  .ps-other-h {
+    font-weight: 700; font-size: 14px; margin-bottom: 8px;
+    color: #0F766E; letter-spacing: 0.5px;
+  }
+  .ps-other-row {
+    display: grid; grid-template-columns: 1fr auto 2fr; gap: 12px;
+    padding: 4px 0; font-size: 13px; line-height: 1.6;
+    border-bottom: 1px dashed #99F6E4;
+  }
+  .ps-other-row:last-child { border-bottom: none; }
+  .ps-other-name { font-weight: 600; color: #134E4A; }
+  .ps-other-amt { color: #047857; font-weight: 700; font-family: Arial; }
+  .ps-other-note { color: #0F766E; font-style: italic; }
+
   .ps-notes {
     margin-top: 14px;
     padding: 12px 16px;
@@ -4753,6 +4775,21 @@
       })()}
 
       ${(() => {
+        // 其他津貼明細 — 顯示每項說明（如有）
+        const items = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'] : [];
+        const withNotes = items.filter(it => it && (it.note || '').toString().trim());
+        if (!withNotes.length) return '';
+        const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const rows = withNotes.map(it =>
+          `<div class="ps-other-row"><span class="ps-other-name">${esc(it.name)}</span><span class="ps-other-amt">NT$ ${fmtNT(it.amount||0)}</span><span class="ps-other-note">${esc(it.note)}</span></div>`
+        ).join('');
+        return `<div class="ps-other-notes">
+          <div class="ps-other-h">📋 其他津貼明細說明 Others Detail</div>
+          ${rows}
+        </div>`;
+      })()}
+
+      ${(() => {
         const note = String(emp['備註'] || '').trim();
         if (!note) return '';
         // Escape HTML and preserve line breaks
@@ -6833,7 +6870,7 @@
     if (!emp) { toast('找不到員工', 'error'); return; }
     _editingEid = eid;
     _otherItems = Array.isArray(emp['其他津貼明細'])
-      ? emp['其他津貼明細'].map(x => ({ name: x.name || '', amount: Number(x.amount) || 0 }))
+      ? emp['其他津貼明細'].map(x => ({ name: x.name || '', amount: Number(x.amount) || 0, note: x.note || '' }))
       : [];
     // Drawer always opens in read-only "view" mode for safety.
     // Owner / Manager can click ✏ 編輯內容 button to enter edit mode.
@@ -7217,19 +7254,23 @@
     // Other allowance with itemizer (kept as-is for managers)
     const otherItems = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'] : [];
     const chipsHtml = otherItems.length
-      ? otherItems.map((it, i) =>
-          `<span class="chip-item"><span>${(it.name||'')}</span><span class="amt">+$${fmtNT(it.amount||0)}</span>` +
-          `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`
-        ).join('')
+      ? otherItems.map((it, i) => {
+          const noteHtml = it.note
+            ? `<span class="note" style="color:#0F766E;font-size:11px;font-style:italic;margin-left:4px;">📝${it.note}</span>`
+            : '';
+          return `<span class="chip-item"><span>${(it.name||'')}</span><span class="amt">+$${fmtNT(it.amount||0)}</span>${noteHtml}` +
+          `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`;
+        }).join('')
       : '<div class="empty-hint">尚無分項紀錄，可在上方加入</div>';
     const otherTotal = Number(emp['其他津貼']) || 0;
     const otherHtml = `
       <div class="field-cell wide">
         <div class="other-itemizer">
-          <div class="title">📝 其他津貼明細 — 輸入名目與金額逐項加入，會自動加總</div>
-          <div class="add-row">
+          <div class="title">📝 其他津貼明細 — 輸入名目、金額、說明逐項加入，會自動加總</div>
+          <div class="add-row" style="display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:6px;">
             <input type="text" class="name" id="otherItemName" placeholder="名目 (例：活動費)">
             <input type="number" class="amount" id="otherItemAmt" placeholder="數目" min="0" step="1">
+            <input type="text" class="note" id="otherItemNote" placeholder="說明 (選填，會顯示在薪資條)">
             <button type="button" class="add-btn" id="otherItemAddBtn">＋ 加入</button>
           </div>
           <div class="chips" id="otherItemChips">${chipsHtml}</div>
@@ -7362,17 +7403,21 @@
         if (f.key === '其他津貼') {
           const items = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'] : [];
           const chipsHtml = items.length
-            ? items.map((it, i) =>
-                `<span class="chip-item"><span>${(it.name||'')}</span><span class="amt">+$${fmtNT(it.amount||0)}</span>` +
-                `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`
-              ).join('')
+            ? items.map((it, i) => {
+                const noteHtml = it.note
+                  ? `<span class="note" style="color:#0F766E;font-size:11px;font-style:italic;margin-left:4px;">📝${it.note}</span>`
+                  : '';
+                return `<span class="chip-item"><span>${(it.name||'')}</span><span class="amt">+$${fmtNT(it.amount||0)}</span>${noteHtml}` +
+                `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`;
+              }).join('')
             : '<div class="empty-hint">尚無分項紀錄，可在上方加入</div>';
           itemizerHtml = `
             <div class="other-itemizer">
-              <div class="title">📝 其他津貼明細 — 輸入名目與金額逐項加入，會自動加總</div>
-              <div class="add-row">
+              <div class="title">📝 其他津貼明細 — 輸入名目、金額、說明逐項加入，會自動加總</div>
+              <div class="add-row" style="display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:6px;">
                 <input type="text" class="name" id="otherItemName" placeholder="名目 (例：活動費)">
                 <input type="number" class="amount" id="otherItemAmt" placeholder="數目" min="0" step="1">
+                <input type="text" class="note" id="otherItemNote" placeholder="說明 (選填，會顯示在薪資條)">
                 <button type="button" class="add-btn" id="otherItemAddBtn">＋ 加入</button>
               </div>
               <div class="chips" id="otherItemChips">${chipsHtml}</div>
@@ -7405,11 +7450,14 @@
       chipsEl.innerHTML = '<div class="empty-hint">尚無分項紀錄，可在上方加入</div>';
       return;
     }
-    chipsEl.innerHTML = _otherItems.map((it, i) =>
-      `<span class="chip-item"><span>${(it.name||'').replace(/</g,'&lt;')}</span>` +
-      `<span class="amt">+$${fmtNT(it.amount||0)}</span>` +
-      `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`
-    ).join('');
+    chipsEl.innerHTML = _otherItems.map((it, i) => {
+      const noteHtml = it.note
+        ? `<span class="note" style="color:#0F766E;font-size:11px;font-style:italic;margin-left:4px;">📝${String(it.note).replace(/</g,'&lt;')}</span>`
+        : '';
+      return `<span class="chip-item"><span>${(it.name||'').replace(/</g,'&lt;')}</span>` +
+      `<span class="amt">+$${fmtNT(it.amount||0)}</span>${noteHtml}` +
+      `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`;
+    }).join('');
   }
 
   function syncOtherTotal() {
@@ -7427,24 +7475,35 @@
     addBtn.addEventListener('click', () => {
       const nameEl = $('otherItemName');
       const amtEl  = $('otherItemAmt');
+      const noteEl = $('otherItemNote');
       const name = (nameEl.value || '').trim();
       const amt  = Number(amtEl.value);
+      const note = noteEl ? (noteEl.value || '').trim() : '';
       if (!name) { nameEl.focus(); toast('請輸入名目', 'error'); return; }
       if (!amt || isNaN(amt) || amt <= 0) { amtEl.focus(); toast('請輸入大於 0 的金額', 'error'); return; }
-      _otherItems.push({ name, amount: amt });
+      _otherItems.push({ name, amount: amt, note });
       nameEl.value = '';
       amtEl.value = '';
+      if (noteEl) noteEl.value = '';
       renderOtherItemChips();
       syncOtherTotal();
       nameEl.focus();
     });
-    // Pressing Enter in name → focus amount; Enter in amount → click 加入
+    // Pressing Enter: name → amount → note → 加入
     $('otherItemName').addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); $('otherItemAmt').focus(); }
     });
     $('otherItemAmt').addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
+      if (e.key === 'Enter') { e.preventDefault();
+        const ne = $('otherItemNote'); if (ne) ne.focus(); else addBtn.click();
+      }
     });
+    const noteEl = $('otherItemNote');
+    if (noteEl) {
+      noteEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
+      });
+    }
     // Remove chip
     $('otherItemChips').addEventListener('click', e => {
       const rm = e.target.closest('.rm-btn');
