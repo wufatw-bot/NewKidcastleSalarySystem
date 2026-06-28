@@ -2408,6 +2408,9 @@
         <button class="btn-mini primary" style="background:linear-gradient(135deg,#3B82F6,#1E40AF);" onclick="openHireDatePwd()">
           📅 修正到職日
         </button>
+        <button class="btn-mini primary" style="background:linear-gradient(135deg,#8B5CF6,#5B21B6);" onclick="openIdNumPwd()">
+          🆔 批次匯入身份證字號
+        </button>
       </div>
     </div>
   </div>
@@ -2531,6 +2534,66 @@
       <div class="foot">
         <button class="btn-mini secondary" onclick="closeHireDatePreview()">取消</button>
         <button class="btn-mini primary" id="hireDateApplyBtn" onclick="applyHireDateUpdates()" style="background:linear-gradient(135deg,#3B82F6,#1E40AF);">✏ 確認寫入雲端</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🆔 批次匯入身份證字號 — 密碼確認 modal -->
+  <div class="small-modal-overlay" id="idNumPwdOverlay" onclick="closeIdNumPwd(event)">
+    <div class="small-modal" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#8B5CF6,#5B21B6);">
+        <div class="icon-l">🆔</div>
+        <h2>批次匯入身份證字號 — 請輸入 Boss 密碼</h2>
+        <button class="close" onclick="closeIdNumPwd()">✕</button>
+      </div>
+      <div class="body">
+        <p style="margin:0 0 12px;color:#5B21B6;font-size:13px;background:#F3E8FF;padding:8px 12px;border-radius:6px;border-left:3px solid #8B5CF6;">
+          🆔 此工具會依「員工姓名」匹配，把預設清單中的「身份證字號」寫入雲端。執行後寫入雲端、無法復原（但會記錄到 change log）。
+        </p>
+        <div class="alert error" id="idNumPwdErr">⚠ <span id="idNumPwdErrMsg">—</span></div>
+        <div class="field">
+          <label>Boss 密碼</label>
+          <input type="password" id="idNumPwdInput" placeholder="輸入 boss 密碼">
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeIdNumPwd()">取消</button>
+        <button class="btn-mini primary" onclick="validateIdNumPwd()" style="background:linear-gradient(135deg,#8B5CF6,#5B21B6);">🔓 解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🆔 批次匯入身份證字號 — 預覽 modal -->
+  <div class="small-modal-overlay" id="idNumPreviewOverlay" onclick="closeIdNumPreview(event)">
+    <div class="small-modal" style="max-width:720px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#8B5CF6,#5B21B6);">
+        <div class="icon-l">🆔</div>
+        <h2>身份證字號 — 預覽變更</h2>
+        <button class="close" onclick="closeIdNumPreview()">✕</button>
+      </div>
+      <div class="body" style="max-height:60vh;overflow:auto;">
+        <p style="margin:0 0 10px;color:#475569;font-size:13px;">
+          下列為將寫入的變更（已是正確值者會自動跳過）。
+        </p>
+        <div id="idNumNotFound" style="display:none;background:#FEF3C7;color:#92400E;padding:8px 12px;border-radius:6px;border-left:3px solid #F59E0B;font-size:12px;margin-bottom:10px;"></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="background:#1e293b;color:#fff;">
+              <th style="padding:6px 8px;text-align:left;">校區</th>
+              <th style="padding:6px 8px;text-align:left;">姓名</th>
+              <th style="padding:6px 8px;text-align:left;">編號</th>
+              <th style="padding:6px 8px;text-align:left;">原值</th>
+              <th style="padding:6px 8px;text-align:center;">→</th>
+              <th style="padding:6px 8px;text-align:left;">新身份證字號</th>
+            </tr>
+          </thead>
+          <tbody id="idNumPreviewTbody"></tbody>
+        </table>
+        <div id="idNumPreviewSummary" style="background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-top:10px;"></div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeIdNumPreview()">取消</button>
+        <button class="btn-mini primary" id="idNumApplyBtn" onclick="applyIdNumUpdates()" style="background:linear-gradient(135deg,#8B5CF6,#5B21B6);">✏ 確認寫入雲端</button>
       </div>
     </div>
   </div>
@@ -4100,39 +4163,41 @@
   // 📅 修正到職日 (HireDate Migration) — boss-gated bulk hire-date fix
   // 來源: 健保加保日資料（被保險人 = 保險對象，共 28 筆）
   // 民國 + 1911 = 西元。OCR 變字（蔡銘孝/蔡明孝、胡暄曼/胡瑄曼）以雲端官方姓名為主
+  // 比對方式：優先依「身份證字號」匹配（即使姓名 OCR 不同也能對到正確人）
+  //          身份證字號為空時再 fallback 依「姓名」匹配
   // ═══════════════════════════════════════════════════════════════
   const HIRE_DATE_FIXES = [
     // ── 大立昇美語（同安 TA）──
-    { name:'謝明學', date:'2016-07-01', src:'加保日 105/07/01' },
-    { name:'蕭宜帆', date:'2022-03-01', src:'加保日 111/03/01' },
-    { name:'廖繹雯', date:'2022-03-14', src:'加保日 111/03/14' },
-    { name:'呂理平', date:'2011-04-25', src:'加保日 100/04/25（新員工）' },
-    { name:'呂學龍', date:'2022-02-14', src:'加保日 111/02/14' },
-    { name:'陳允謙', date:'2024-11-14', src:'加保日 113/11/14' },
-    { name:'蔡明孝', date:'2023-08-08', src:'加保日 112/08/08（蔡銘孝）' },
-    { name:'吳芳芝', date:'2016-01-01', src:'加保日 105/01/01' },
+    { name:'謝明學', idNum:'A225593072', date:'2016-07-01', src:'加保日 105/07/01' },
+    { name:'蕭宜帆', idNum:'F125666171', date:'2022-03-01', src:'加保日 111/03/01' },
+    { name:'廖繹雯', idNum:'F228967140', date:'2022-03-14', src:'加保日 111/03/14' },
+    { name:'呂理平', idNum:'H120363239', date:'2011-04-25', src:'加保日 100/04/25（新員工）' },
+    { name:'呂學龍', idNum:'H124644520', date:'2022-02-14', src:'加保日 111/02/14' },
+    { name:'陳允謙', idNum:'H124848206', date:'2024-11-14', src:'加保日 113/11/14' },
+    { name:'蔡明孝', idNum:'H124854151', date:'2023-08-08', src:'加保日 112/08/08（蔡銘孝）' },
+    { name:'吳芳芝', idNum:'H221553293', date:'2016-01-01', src:'加保日 105/01/01' },
     // ── 同安分班 ──
-    { name:'陳正芬', date:'2024-10-01', src:'加保日 113/10/01（新員工）' },
-    { name:'張濠祥', date:'2026-06-17', src:'加保日 115/06/17（新員工）' },
-    { name:'陳敬翔', date:'2025-08-18', src:'加保日 114/08/18' },
-    { name:'廖月櫻', date:'2024-10-01', src:'加保日 113/10/01' },
-    { name:'郭子綺', date:'2024-10-01', src:'加保日 113/10/01' },
-    { name:'周芯薇', date:'2024-10-01', src:'加保日 113/10/01（新員工）' },
-    { name:'陳渝潔', date:'2024-10-01', src:'加保日 113/10/01' },
-    { name:'林歆怡', date:'2026-04-22', src:'加保日 115/04/22（新員工）' },
-    { name:'翁麗美', date:'2024-10-01', src:'加保日 113/10/01' },
+    { name:'陳正芬', idNum:'F220825805', date:'2024-10-01', src:'加保日 113/10/01（新員工）' },
+    { name:'張濠祥', idNum:'H124265403', date:'2026-06-17', src:'加保日 115/06/17（新員工）' },
+    { name:'陳敬翔', idNum:'H125559735', date:'2025-08-18', src:'加保日 114/08/18' },
+    { name:'廖月櫻', idNum:'H221377462', date:'2024-10-01', src:'加保日 113/10/01' },
+    { name:'郭子綺', idNum:'H222147208', date:'2024-10-01', src:'加保日 113/10/01' },
+    { name:'周芯薇', idNum:'H224306116', date:'2024-10-01', src:'加保日 113/10/01（新員工）' },
+    { name:'陳渝潔', idNum:'H224906894', date:'2024-10-01', src:'加保日 113/10/01' },
+    { name:'林歆怡', idNum:'L225245972', date:'2026-04-22', src:'加保日 115/04/22（新員工）' },
+    { name:'翁麗美', idNum:'T220110864', date:'2024-10-01', src:'加保日 113/10/01' },
     // ── 莊敬分班（莊敬 ZJ）──
-    { name:'蕭羽儂', date:'2022-09-12', src:'加保日 111/09/12' },
-    { name:'吳湘晴', date:'2023-11-01', src:'加保日 112/11/01' },
-    { name:'洪子彤', date:'2023-10-26', src:'加保日 112/10/26' },
-    { name:'呂學宗', date:'2022-04-25', src:'加保日 111/04/25（新員工）' },
-    { name:'吳鈺蘋', date:'2024-12-23', src:'加保日 113/12/23' },
-    { name:'陳宇薇', date:'2019-07-01', src:'加保日 108/07/01（新員工）' },
-    { name:'陳詩佳', date:'2026-05-20', src:'加保日 115/05/20（新員工）' },
-    { name:'何宥蓉', date:'2025-09-12', src:'加保日 114/09/12' },
-    { name:'胡瑄曼', date:'2025-08-20', src:'加保日 114/08/20（胡暄曼）' },
-    { name:'何革融', date:'2025-10-01', src:'加保日 114/10/01' },
-    { name:'游晏慈', date:'2025-09-11', src:'加保日 114/09/11' }
+    { name:'蕭羽儂', idNum:'C221124724', date:'2022-09-12', src:'加保日 111/09/12' },
+    { name:'吳湘晴', idNum:'F223728189', date:'2023-11-01', src:'加保日 112/11/01' },
+    { name:'洪子彤', idNum:'F230309096', date:'2023-10-26', src:'加保日 112/10/26' },
+    { name:'呂學宗', idNum:'H124742281', date:'2022-04-25', src:'加保日 111/04/25（新員工）' },
+    { name:'吳鈺蘋', idNum:'H224433261', date:'2024-12-23', src:'加保日 113/12/23' },
+    { name:'陳宇薇', idNum:'H224519686', date:'2019-07-01', src:'加保日 108/07/01（新員工）' },
+    { name:'陳詩佳', idNum:'H225185451', date:'2026-05-20', src:'加保日 115/05/20（新員工）' },
+    { name:'何宥蓉', idNum:'I200151847', date:'2025-09-12', src:'加保日 114/09/12' },
+    { name:'胡瑄曼', idNum:'L225358189', date:'2025-08-20', src:'加保日 114/08/20（胡暄曼）' },
+    { name:'何革融', idNum:'Q123219770', date:'2025-10-01', src:'加保日 114/10/01' },
+    { name:'游晏慈', idNum:'U221964438', date:'2025-09-11', src:'加保日 114/09/11' }
   ];
   let _hireDatePlan = [];   // populated by previewHireDate()
 
@@ -4163,16 +4228,27 @@
     _hireDatePlan = [];
     const notFound = [];
     for (const u of HIRE_DATE_FIXES) {
-      const emp = DATA.employees.find(e => String(e['員工姓名']||'').trim() === u.name);
-      if (!emp) { notFound.push(u.name); continue; }
+      // 優先依「身份證字號」匹配（避免 OCR 字差），其次再用「姓名」
+      let emp = null;
+      let matchedBy = '';
+      if (u.idNum) {
+        emp = DATA.employees.find(e => String(e['身份證字號']||'').trim().toUpperCase() === u.idNum.trim().toUpperCase());
+        if (emp) matchedBy = '身份證';
+      }
+      if (!emp) {
+        emp = DATA.employees.find(e => String(e['員工姓名']||'').trim() === u.name);
+        if (emp) matchedBy = '姓名';
+      }
+      if (!emp) { notFound.push(`${u.name}${u.idNum ? ' / ' + u.idNum : ''}`); continue; }
       const oldDate = String(emp['到職日'] || '').slice(0, 10);
       _hireDatePlan.push({
         empId: emp['員工編號'],
         name: emp['員工姓名'],
+        srcName: u.name,        // 來源清單上的姓名（OCR 版本）
         campus: emp['校區'],
         old: oldDate,
         new: u.date,
-        src: u.src,
+        src: u.src + (matchedBy === '身份證' ? ' [✓身份證匹配]' : ' [姓名匹配]'),
         unchanged: (oldDate === u.date)
       });
     }
@@ -4246,6 +4322,147 @@
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // 🆔 批次匯入身份證字號 — boss-gated bulk ID number import
+  // 來源: 健保加保日資料（28 筆，姓名為雲端官方姓名，含 OCR 變字對應）
+  // ═══════════════════════════════════════════════════════════════
+  const ID_NUMBER_FIXES = [
+    // ── 大立昇美語（同安 TA）──
+    { name:'謝明學', id:'A225593072' },
+    { name:'蕭宜帆', id:'F125666171' },
+    { name:'廖繹雯', id:'F228967140' },
+    { name:'呂理平', id:'H120363239' },
+    { name:'呂學龍', id:'H124644520' },
+    { name:'陳允謙', id:'H124848206' },
+    { name:'蔡明孝', id:'H124854151' },   // OCR: 蔡銘孝
+    { name:'吳芳芝', id:'H221553293' },
+    // ── 同安分班 ──
+    { name:'陳正芬', id:'F220825805' },
+    { name:'張濠祥', id:'H124265403' },
+    { name:'陳敬翔', id:'H125559735' },
+    { name:'廖月櫻', id:'H221377462' },
+    { name:'郭子綺', id:'H222147208' },
+    { name:'周芯薇', id:'H224306116' },
+    { name:'陳渝潔', id:'H224906894' },
+    { name:'林歆怡', id:'L225245972' },
+    { name:'翁麗美', id:'T220110864' },
+    // ── 莊敬分班（莊敬 ZJ）──
+    { name:'蕭羽儂', id:'C221124724' },
+    { name:'吳湘晴', id:'F223728189' },
+    { name:'洪子彤', id:'F230309096' },
+    { name:'呂學宗', id:'H124742281' },
+    { name:'吳鈺蘋', id:'H224433261' },
+    { name:'陳宇薇', id:'H224519686' },
+    { name:'陳詩佳', id:'H225185451' },
+    { name:'何宥蓉', id:'I200151847' },
+    { name:'胡瑄曼', id:'L225358189' },   // OCR: 胡暄曼
+    { name:'何革融', id:'Q123219770' },
+    { name:'游晏慈', id:'U221964438' }
+  ];
+  let _idNumPlan = [];
+
+  function openIdNumPwd() {
+    if (!currentUser || currentUser.role !== 'owner') {
+      toast('僅老闆可使用此功能', 'error'); return;
+    }
+    $('idNumPwdInput').value = '';
+    $('idNumPwdErr').classList.remove('show');
+    $('idNumPwdOverlay').classList.add('show');
+    setTimeout(() => $('idNumPwdInput').focus(), 80);
+  }
+  function closeIdNumPwd(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('idNumPwdOverlay').classList.remove('show');
+  }
+  function validateIdNumPwd() {
+    const pwd = ($('idNumPwdInput').value || '').trim();
+    if (!pwd) { $('idNumPwdErrMsg').textContent='請輸入密碼'; $('idNumPwdErr').classList.add('show'); return; }
+    const sid = currentUser && currentUser.schoolId;
+    const boss = sid && CREDENTIALS[sid] && CREDENTIALS[sid].users.find(u => u.username === 'boss');
+    if (!boss) { $('idNumPwdErrMsg').textContent='本校區無 boss 帳號'; $('idNumPwdErr').classList.add('show'); return; }
+    if (pwd !== boss.password) { $('idNumPwdErrMsg').textContent='密碼錯誤'; $('idNumPwdErr').classList.add('show'); return; }
+    closeIdNumPwd();
+    previewIdNum();
+  }
+  function previewIdNum() {
+    _idNumPlan = [];
+    const notFound = [];
+    for (const u of ID_NUMBER_FIXES) {
+      const emp = DATA.employees.find(e => String(e['員工姓名']||'').trim() === u.name);
+      if (!emp) { notFound.push(u.name); continue; }
+      const oldVal = String(emp['身份證字號'] || '').trim();
+      _idNumPlan.push({
+        empId: emp['員工編號'],
+        name: emp['員工姓名'],
+        campus: emp['校區'],
+        old: oldVal,
+        new: u.id,
+        unchanged: (oldVal === u.id)
+      });
+    }
+    const tbody = $('idNumPreviewTbody');
+    let html = '';
+    for (const p of _idNumPlan) {
+      const ccls = p.campus === '同安' ? 'background:#DBEAFE;color:#1E40AF;' : 'background:#FFF1E5;color:#B45309;';
+      const arrow = p.unchanged ? '＝' : '→';
+      const newStyle = p.unchanged ? 'color:#94a3b8;' : 'color:#5B21B6;font-weight:700;font-family:Courier New,monospace;';
+      const oldStyle = p.unchanged ? 'color:#94a3b8;font-family:Courier New,monospace;' : 'color:#94a3b8;text-decoration:line-through;font-family:Courier New,monospace;';
+      html += `<tr style="border-bottom:1px solid #e2e8f0;">
+        <td style="padding:5px 8px;"><span style="${ccls}padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">${p.campus||'—'}</span></td>
+        <td style="padding:5px 8px;"><b>${p.name}</b></td>
+        <td style="padding:5px 8px;"><span style="font-family:Courier New,monospace;font-weight:700;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:5px;font-size:11px;">${p.empId||'—'}</span></td>
+        <td style="padding:5px 8px;${oldStyle}">${p.old||'(空)'}</td>
+        <td style="padding:5px 8px;text-align:center;color:#64748b;">${arrow}</td>
+        <td style="padding:5px 8px;${newStyle}">${p.new}</td>
+      </tr>`;
+    }
+    tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:20px;">⚠ 雲端找不到任何匹配的員工姓名</td></tr>';
+    const changeCount = _idNumPlan.filter(p => !p.unchanged).length;
+    const unchangedCount = _idNumPlan.filter(p => p.unchanged).length;
+    $('idNumPreviewSummary').innerHTML =
+      `✓ 共 ${_idNumPlan.length} 筆對照。將寫入 <b style="color:#5B21B6;">${changeCount}</b> 筆（${unchangedCount} 筆已是正確值、自動跳過）。`;
+    const nfBox = $('idNumNotFound');
+    if (notFound.length) {
+      nfBox.style.display = '';
+      nfBox.innerHTML = `⚠ 雲端找不到的姓名（請先新增員工再執行）：<b>${notFound.join('、')}</b>`;
+    } else {
+      nfBox.style.display = 'none';
+    }
+    $('idNumApplyBtn').disabled = (changeCount === 0);
+    $('idNumApplyBtn').style.opacity = (changeCount === 0) ? '0.5' : '';
+    $('idNumPreviewOverlay').classList.add('show');
+  }
+  function closeIdNumPreview(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('idNumPreviewOverlay').classList.remove('show');
+  }
+  async function applyIdNumUpdates() {
+    const toApply = _idNumPlan.filter(p => !p.unchanged);
+    if (!toApply.length) { toast('沒有需要寫入的變更', 'error'); return; }
+    if (!confirm(`確認寫入 ${toApply.length} 筆身份證字號？\n\n此操作會立即同步到雲端，且包含敏感資料。`)) return;
+    let applied = 0;
+    for (const p of toApply) {
+      const emp = DATA.employees.find(e => e['員工編號'] === p.empId);
+      if (emp) { emp['身份證字號'] = p.new; applied++; }
+    }
+    closeIdNumPreview();
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try {
+      await doPersistNow();
+      hideLoadingOverlay();
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser.fullName,
+        text: `批次匯入身份證字號 — 共 ${applied} 筆：${toApply.map(p=>`${p.name}(${p.empId})`).join('、')}`
+      });
+      try { renderOwnerTable(); } catch(_){}
+      toast(`✓ 已寫入 ${applied} 筆身份證字號`, 'success');
+    } catch (e) {
+      hideLoadingOverlay();
+      toast('雲端寫入失敗：' + e.message, 'error');
+    }
+  }
+
   // Enter key triggers password validate
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && $('migratePwdOverlay') && $('migratePwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'migratePwdInput') {
@@ -4256,6 +4473,9 @@
     }
     if (e.key === 'Enter' && $('hireDatePwdOverlay') && $('hireDatePwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'hireDatePwdInput') {
       e.preventDefault(); validateHireDatePwd();
+    }
+    if (e.key === 'Enter' && $('idNumPwdOverlay') && $('idNumPwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'idNumPwdInput') {
+      e.preventDefault(); validateIdNumPwd();
     }
   });
 
