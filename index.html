@@ -3544,6 +3544,8 @@
       if (e['可休日數_手動'] == null) e['可休日數_手動'] = 0;  // 0 = use auto-calc
       // 備註 (owner notes about this employee) — owner-only
       if (e['備註'] == null) e['備註'] = '';
+      // 身份證字號 — owner-only sensitive field, used for insurance enrollment matching
+      if (e['身份證字號'] == null) e['身份證字號'] = '';
       // Rename: 英文輔導津貼 → 美語輔導津貼 (preserve value)
       if (e['英文輔導津貼'] != null) {
         if (e['美語輔導津貼'] == null) e['美語輔導津貼'] = Number(e['英文輔導津貼']) || 0;
@@ -6248,6 +6250,7 @@
   const BACKUP_FIELDS = {
     '基本資料': [
       ['員工編號', true], ['員工姓名', true], ['英文姓名', false],
+      ['身份證字號', false],   // 敏感資料，預設不勾選
       ['校區', true], ['職位', true], ['到職日', true],
       ['離職日', false], ['在職狀態', true]
     ],
@@ -6657,6 +6660,7 @@
         { key: '在職狀態', type: 'select', options: ['在職','離職','留職停薪'] },
         { key: '員工姓名', type: 'text' },
         { key: '英文姓名', type: 'text' },
+        { key: '身份證字號', type: 'text' },
         { key: '校區',     type: 'select', options: ['同安','莊敬'] },
         { key: '職位',     type: 'select', options: ['老師','主任','組長','行政','老闆','其他'] },
         { key: '到職日',   type: 'date' },
