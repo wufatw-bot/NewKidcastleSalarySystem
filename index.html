@@ -2753,6 +2753,7 @@
           <button class="btn-mini secondary" onclick="openPayslipSettings()" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;">⚙ 編輯顯示項目</button>
           <button class="btn-action" onclick="printPayslip()">🖨 列印 / 存 PDF</button>
           <button class="btn-mini primary" onclick="openPayslipSummary()" style="background:linear-gradient(135deg,#10B981,#047857);">📊 薪資條匯總</button>
+         <button class="btn-mini primary" onclick="openResignCert()" style="background:linear-gradient(135deg,#DC2626,#991B1B);">📜 離職證明書</button>
         </div>
       </div>
     </div>
@@ -3098,6 +3099,49 @@
         <button class="btn-mini primary" onclick="exportPayslipSummary('both')"
           style="padding:14px;text-align:left;background:linear-gradient(135deg,#8B5CF6,#6D28D9);">
           🏫🎓 <b>同安+莊敬校</b> · 兩校全部員工合併
+         <!-- 離職證明書 modal -->
+<div class="small-modal-overlay" id="resignCertOverlay" onclick="closeResignCert(event)">
+  <div class="small-modal" style="max-width:480px;" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#DC2626,#991B1B);">
+      <div class="icon-l">📜</div>
+      <h2>離職證明書設定</h2>
+      <button class="close" onclick="closeResignCert()">✕</button>
+    </div>
+    <div class="body">
+      <div class="field">
+        <label>負責人 Owner Name</label>
+        <input type="text" id="rcOwnerName" placeholder="例：呂理平">
+      </div>
+      <div class="field">
+        <label>公司全銜 Company Name</label>
+        <input type="text" id="rcCompanyName" placeholder="例：私立大立昇文理語文短期補習班同安分班">
+      </div>
+      <div class="field">
+        <label>出生日期 Birth Date</label>
+        <input type="date" id="rcBirthDate">
+      </div>
+      <div class="field">
+        <label>離職日 Resign Date</label>
+        <input type="date" id="rcResignDate">
+      </div>
+      <div class="field">
+        <label>工作性質 Work Nature</label>
+        <input type="text" id="rcWorkNature" value="教學輔導">
+      </div>
+      <div class="field">
+        <label>性別 Gender</label>
+        <select id="rcGender"><option value="女">女</option><option value="男">男</option></select>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="closeResignCert()">取消</button>
+      <button class="btn-mini primary" onclick="printResignCert()" style="background:linear-gradient(135deg,#DC2626,#991B1B);">🖨 產生並列印</button>
+    </div>
+  </div>
+</div>
+
+<!-- 離職證明書 printable area (hidden until print) -->
+<div id="resignCertPrintArea" style="display:none;"></div>
         </button>
       </div>
     </div>
