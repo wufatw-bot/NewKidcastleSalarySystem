@@ -3373,7 +3373,8 @@
             e['在職狀態'] === '在職' &&
             e['校區'] === schoolCampus &&
             String(e['登入帳號'] || '').toLowerCase() === u.toLowerCase() &&
-            String(e['登入密碼'] || '') === p
+            // 密碼改用身份證字號後，英文字母大小寫不分（跟 Employee_Salary_View.html 的比對邏輯一致）
+            String(e['登入密碼'] || '').toLowerCase() === p.toLowerCase()
           );
           if (empHit) {
             hit = {
@@ -3578,8 +3579,12 @@
   const STORAGE_KEY = 'kc_salary_data_v1';
   const LOG_KEY     = 'kc_change_log_v1';
 
+  // 標記「一次性帳密遷移」剛才是否真的改了東西（給 loadData()/polling 判斷要不要寫回雲端）
+  let _credentialMigrationJustRan = false;
+
   function migrateEmployeeRecords(d) {
     if (!d || !Array.isArray(d.employees)) return d;
+    _credentialMigrationJustRan = false;
     // Ensure owner-saved baseline map exists (per-employee snapshot of last owner-confirmed values)
     if (!d.ownerBaseline || typeof d.ownerBaseline !== 'object') d.ownerBaseline = {};
     // Ensure payslip force-display list exists (items to show even if value is 0)
@@ -3617,8 +3622,15 @@
         delete e['安親津貼'];
       }
       // New fields: login account for employee role
-      if (!e['登入帳號']) e['登入帳號'] = String(e['員工編號'] || '').toLowerCase();
-      if (!e['登入密碼']) e['登入密碼'] = String(e['員工編號'] || '').toLowerCase();
+      // 非「老闆」職位的員工：帳號/密碼預設改用「身份證字號」；若身份證字號尚未填寫，暫用員工編號頂替。
+      // 職位＝老闆的紀錄（若有）維持原本以員工編號為預設的行為，因為老闆本來就是用 DEFAULT_CREDS 的專屬帳號登入。
+      if (e['職位'] !== '老闆') {
+        if (!e['登入帳號']) e['登入帳號'] = String(e['身份證字號'] || e['員工編號'] || '').trim();
+        if (!e['登入密碼']) e['登入密碼'] = String(e['身份證字號'] || e['員工編號'] || '').trim();
+      } else {
+        if (!e['登入帳號']) e['登入帳號'] = String(e['員工編號'] || '').toLowerCase();
+        if (!e['登入密碼']) e['登入密碼'] = String(e['員工編號'] || '').toLowerCase();
+      }
       // Email field for password reset (empty until user provides on first login)
       if (e['Email'] == null) e['Email'] = '';
       // Guild insurance subsidies — default 0 for existing records
@@ -3672,6 +3684,39 @@
     });
     if (migAcademic > 0) console.log('[migration] 教務津貼 → 主管津貼 (MAX) for ' + migAcademic + ' employees');
     if (migRemoved > 0) console.log('[migration] 導師/行政/交通津貼 (>0) merged into 其他津貼: ' + migRemoved + ' fields');
+
+    // ── 強制同步：非「老闆」職位的員工，登入帳號／密碼一律改為身份證字號 ──
+    // 規則（用 e['_lastSyncedIdCred'] 記錄「系統上次自動同步的值」來判斷）：
+    //   1) 該員工從沒被同步過 → 無論目前帳密是什麼（含員工自己改過的密碼），一律強制覆蓋為身份證字號。
+    //   2) 已同步過，且帳密目前仍等於「上次同步的值」（代表同步後沒有人手動改過）
+    //      → 若之後老闆更新了身份證字號，會自動再同步成新的號碼。
+    //   3) 已同步過，但帳密已被老闆手動編輯或員工自己在「修改密碼」改掉
+    //      → 視為手動指定，不再自動覆蓋，除非之後又被改回等於上次同步值。
+    let changed = 0;
+    d.employees.forEach(e => {
+      if (e['職位'] === '老闆') return;
+      const idNo = String(e['身份證字號'] || '').trim();
+      if (!idNo) return; // 尚未填身份證字號，先跳過，等填了之後下次載入會自動同步
+
+      const hasSyncedBefore = e['_lastSyncedIdCred'] != null;
+      const stillMatchesLastSync = hasSyncedBefore &&
+        e['登入帳號'] === e['_lastSyncedIdCred'] &&
+        e['登入密碼'] === e['_lastSyncedIdCred'];
+      const shouldSync = !hasSyncedBefore || stillMatchesLastSync;
+      const alreadyIdNo = e['登入帳號'] === idNo && e['登入密碼'] === idNo;
+
+      if (shouldSync) {
+        if (!alreadyIdNo) changed++;
+        e['登入帳號'] = idNo;
+        e['登入密碼'] = idNo;
+        e['_lastSyncedIdCred'] = idNo;
+      }
+    });
+    if (changed > 0) {
+      console.log('[migration] 登入帳號/密碼 → 身份證字號（非老闆職位）：' + changed + ' 位員工');
+      _credentialMigrationJustRan = true;
+    }
+
     return d;
   }
 
@@ -3742,7 +3787,13 @@
         try { await cloudPost('write', { data: DATA }); } catch(_) {}
         return init;
       }
-      return migrateEmployeeRecords(d);
+      const migrated = migrateEmployeeRecords(d);
+      // 若剛才觸發了「帳密→身份證字號」一次性遷移，立刻把結果寫回雲端，
+      // 這樣不論是老闆還是員工的瀏覽器先觸發，變更都會確實同步到雲端資料。
+      if (_credentialMigrationJustRan) {
+        try { await cloudPost('write', { data: migrated }); } catch(_) {}
+      }
+      return migrated;
     } catch(e) {
       console.error('loadData failed', e);
       throw e;
@@ -3856,6 +3907,9 @@
         const b = JSON.stringify(migrateEmployeeRecords(fresh));
         if (a !== b) {
           DATA = migrateEmployeeRecords(fresh);
+          if (_credentialMigrationJustRan) {
+            try { await cloudPost('write', { data: DATA }); } catch(_) {}
+          }
           try { renderManagerTable(); } catch(_) {}
           try { if (currentUser.role === 'owner') renderOwnerTable(); } catch(_) {}
           try { renderPayslip(); } catch(_) {}
@@ -4833,6 +4887,19 @@
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     return `${rocYear}${mm}`;
   }
+  // 計算「本月」的民國年月（YYYMM 格式）
+  function getCurrentMonthROC() {
+    const d = new Date();
+    const rocYear = d.getFullYear() - 1911;
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${rocYear}${mm}`;
+  }
+  // 員工自行查閱薪水條：當月薪資須等到每月17日（含）之後才開放查閱，17日前該月選項直接隱藏
+  const PAYSLIP_UNLOCK_DAY = 17;
+  function isPayslipMonthUnlockedForEmployee(month) {
+    if (String(month) !== getCurrentMonthROC()) return true; // 非當月，不受限制
+    return new Date().getDate() >= PAYSLIP_UNLOCK_DAY;
+  }
   // 從月份清單中選出「預設要顯示的月份」 — 優先上個月，否則取最後一個月
   function pickDefaultPayslipMonth(months) {
     if (!months || !months.length) return '';
@@ -4857,11 +4924,18 @@
         empSel.innerHTML = `<option value="${meEmp['員工編號']}">${meEmp['員工編號']} · ${meEmp['員工姓名']} (${meEmp['校區']} · ${meEmp['職位']})</option>`;
         empSel.disabled = true;
         // Month selector stays enabled (employee can view history)
-        const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort();
-        monthSel.innerHTML = months.map(m =>
-          `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
-        ).join('');
-        monthSel.value = pickDefaultPayslipMonth(months);
+        // 當月薪資：17日前不開放查閱，直接從下拉選單隱藏（過去月份不受影響）
+        const months = [...new Set(DATA.salary.map(s => String(s['月份'])))]
+          .filter(isPayslipMonthUnlockedForEmployee)
+          .sort();
+        if (months.length) {
+          monthSel.innerHTML = months.map(m =>
+            `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`
+          ).join('');
+          monthSel.value = pickDefaultPayslipMonth(months);
+        } else {
+          monthSel.innerHTML = `<option value="">尚無可查閱的薪資（本月薪資將於每月${PAYSLIP_UNLOCK_DAY}日開放查閱）</option>`;
+        }
         // Hide 薪資條匯總 button (employee can't see other people's data)
         document.querySelectorAll('.payslip-controls button').forEach(b => {
           if (b.textContent.includes('薪資條匯總')) b.style.display = 'none';

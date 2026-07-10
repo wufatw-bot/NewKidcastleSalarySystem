@@ -119,15 +119,15 @@ header .sub { font-size:14px; opacity:.9; margin-top:4px; }
   <!-- Login form -->
   <div class="card no-print" id="loginCard">
     <h2>🔐 員工登入</h2>
-    <p style="font-size:13px;color:#64748b;margin-bottom:14px;">請輸入您的員工編號與密碼，僅能查詢自己的薪資資料。</p>
+    <p style="font-size:13px;color:#64748b;margin-bottom:14px;">請輸入您的身份證字號與密碼，僅能查詢自己的薪資資料。</p>
     <div class="alert error" id="errMsg">⚠ <span id="errText"></span></div>
     <div class="field">
-      <label>員工編號 Employee ID</label>
-      <input type="text" id="empId" placeholder="例如：TA001 / ZJ005" autocomplete="username" autocapitalize="characters">
+      <label>身份證字號 ID Number</label>
+      <input type="text" id="empId" placeholder="例如：A123456789" autocomplete="username" autocapitalize="characters">
     </div>
     <div class="field">
       <label>登入密碼 Password</label>
-      <input type="password" id="empPwd" placeholder="預設為員工編號（小寫）" autocomplete="current-password">
+      <input type="password" id="empPwd" placeholder="與身份證字號相同" autocomplete="current-password">
     </div>
     <button class="btn" id="btnLogin" onclick="doLogin()">🔍 查詢薪資</button>
     <p style="margin-top:12px;font-size:12px;color:#94a3b8;">忘記密碼？請聯絡學校老闆協助重置。</p>
@@ -176,9 +176,9 @@ async function cloudGet(action) {
 }
 
 async function doLogin() {
-  const eid = ($('empId').value || '').trim().toUpperCase();
+  const idNo = ($('empId').value || '').trim().toUpperCase();
   const pwd = ($('empPwd').value || '').trim();
-  if (!eid) { showErr('請輸入員工編號'); $('empId').focus(); return; }
+  if (!idNo) { showErr('請輸入身份證字號'); $('empId').focus(); return; }
   if (!pwd) { showErr('請輸入密碼'); $('empPwd').focus(); return; }
   hideErr();
   $('btnLogin').disabled = true;
@@ -189,9 +189,9 @@ async function doLogin() {
     const j = await cloudGet('read');
     DATA = j.data || {};
     const emp = (DATA.employees || []).find(e =>
-      String(e['員工編號'] || '').toUpperCase() === eid
+      String(e['身份證字號'] || '').trim().toUpperCase() === idNo
     );
-    if (!emp) throw new Error('找不到此員工編號');
+    if (!emp) throw new Error('找不到此身份證字號，請確認輸入是否正確');
     if (emp['在職狀態'] !== '在職') throw new Error('此員工目前非在職狀態，如需查詢請聯絡老闆');
     const stored = String(emp['登入密碼'] || '');
     if (pwd !== stored && pwd.toLowerCase() !== stored.toLowerCase()) {
@@ -222,14 +222,30 @@ function doLogout() {
   hideErr();
 }
 
+// 計算「本月」的民國年月（YYYMM 格式）
+function getCurrentMonthROC() {
+  const d = new Date();
+  const rocYear = d.getFullYear() - 1911;
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${rocYear}${mm}`;
+}
+// 當月薪資須等到每月17日（含）之後才開放查閱，17日前該月選項直接隱藏（過去月份不受影響）
+const PAYSLIP_UNLOCK_DAY = 17;
+function isPayslipMonthUnlocked(month) {
+  if (String(month) !== getCurrentMonthROC()) return true;
+  return new Date().getDate() >= PAYSLIP_UNLOCK_DAY;
+}
+
 function populateMonth() {
   const myEid = currentEmp['員工編號'];
   const months = [...new Set((DATA.salary || [])
     .filter(s => s['員工編號'] === myEid)
-    .map(s => String(s['月份'])))].sort().reverse();
+    .map(s => String(s['月份'])))]
+    .filter(isPayslipMonthUnlocked)
+    .sort().reverse();
   const sel = $('monthSel');
   if (!months.length) {
-    sel.innerHTML = '<option>—</option>';
+    sel.innerHTML = `<option value="">尚無可查閱的薪資（本月薪資將於每月${PAYSLIP_UNLOCK_DAY}日開放查閱）</option>`;
   } else {
     sel.innerHTML = months.map(m => `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`).join('');
   }
@@ -244,6 +260,10 @@ function findSalary(eid, month) {
 function renderPayslip() {
   const emp = currentEmp;
   const month = $('monthSel').value;
+  if (!month) {
+    $('payslip').innerHTML = `<div class="loading"><div>尚無可查閱的薪資（本月薪資將於每月${PAYSLIP_UNLOCK_DAY}日開放查閱）</div></div>`;
+    return;
+  }
   const sal = findSalary(emp['員工編號'], month) || {};
   const noLL = (Number(sal['請假時數'])||0)===0 && (Number(sal['遲到次數'])||0)===0;
   const attBonus = noLL ? (Number(emp['全勤獎金'])||0) : 0;
