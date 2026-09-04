@@ -1340,6 +1340,8 @@
   .form-section.leave h3 .badge { background: #14B8A6; }
   .form-section.notes  { border-left-color: #6366F1; }
   .form-section.notes h3 .badge { background: #6366F1; }
+  .form-section.monthly { border-left-color: #F59E0B; background: #FFFBEB; }
+  .form-section.monthly h3 .badge { background: #F59E0B; }
   .form-section.notes textarea:focus {
     outline: none;
     border-color: #6366F1 !important;
@@ -3650,6 +3652,19 @@
       if (e['留班比率']  == null) e['留班比率']  = 0;  // legacy 百分比
       if (e['留班獎金']  == null) e['留班獎金']  = 0;
       if (e['考試獎金']  == null) e['考試獎金']  = 0;
+      // 新增欄位：特殊項目（自訂逐項津貼，用法同「其他津貼」）
+      if (e['特殊項目']  == null) e['特殊項目']  = 0;
+      if (!Array.isArray(e['其他津貼明細'])) e['其他津貼明細'] = [];
+      if (!Array.isArray(e['特殊項目明細'])) e['特殊項目明細'] = [];
+      // 自動修正：若「其他津貼／特殊項目」有逐項明細，合計欄位必須等於明細加總
+      // （避免合計欄位與明細不同步，導致薪資條「非固定支出」漏加其他津貼／特殊項目金額）
+      [['其他津貼', '其他津貼明細'], ['特殊項目', '特殊項目明細']].forEach(([sumKey, listKey]) => {
+        const items = e[listKey];
+        if (items && items.length) {
+          const itemTotal = items.reduce((s, it) => s + (Number(it && it.amount) || 0), 0);
+          if (Number(e[sumKey]) !== itemTotal) e[sumKey] = itemTotal;
+        }
+      });
       // 美語輔導津貼 — fixed 3000/month if not set yet
       if (e['美語輔導津貼'] == null || Number(e['美語輔導津貼']) === 0) {
         // Don't auto-fill old data with non-zero value to avoid surprise; just ensure key exists
@@ -4847,7 +4862,7 @@
 
     const allowKeys = ['年資津貼','主管津貼',
                        '美語津貼','美語輔導津貼','數學班津貼',
-                       '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼',
+                       '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼','特殊項目',
                        '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
     const allowSum = allowKeys.reduce((s, k) => s + (Number(emp[k]) || 0), 0);
 
@@ -5007,10 +5022,11 @@
       ['數學班津貼 Math', emp['數學班津貼']],
       ['帶班人數津貼 Class Size', emp['帶班人數津貼']],
       ['混班津貼 Mixed Class', emp['混班津貼']],
-      ['數學津貼 Math', emp['數學津貼']],
+      ['數學津貼(手動) Math (Manual)', emp['數學津貼']],
       ['留班獎金 Retention Bonus', emp['留班獎金']],
       ['考試獎金 Exam Bonus', emp['考試獎金']],
       ['其他津貼 Others', emp['其他津貼']],
+      ['特殊項目 Special', emp['特殊項目']],
       ['補貼公會投保勞保 Guild Labor Ins Subsidy', emp['補貼公會投保勞保']],
       ['補貼公會健保自付 Guild Health Ins Subsidy', emp['補貼公會健保自付']],
       ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']],
@@ -5129,18 +5145,22 @@
       })()}
 
       ${(() => {
-        // 其他津貼明細 — 顯示每項說明（如有）
-        const items = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'] : [];
-        const withNotes = items.filter(it => it && (it.note || '').toString().trim());
-        if (!withNotes.length) return '';
+        // 其他津貼／特殊項目明細 — 顯示每項說明（如有填寫「說明」）
         const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        const rows = withNotes.map(it =>
-          `<div class="ps-other-row"><span class="ps-other-name">${esc(it.name)}</span><span class="ps-other-amt">NT$ ${fmtNT(it.amount||0)}</span><span class="ps-other-note">${esc(it.note)}</span></div>`
-        ).join('');
-        return `<div class="ps-other-notes">
-          <div class="ps-other-h">📋 其他津貼明細說明 Others Detail</div>
-          ${rows}
-        </div>`;
+        const blocks = [['其他津貼明細', '📋 其他津貼明細說明 Others Detail'], ['特殊項目明細', '📋 特殊項目明細說明 Special Detail']]
+          .map(([listKey, title]) => {
+            const items = Array.isArray(emp[listKey]) ? emp[listKey] : [];
+            const withNotes = items.filter(it => it && (it.note || '').toString().trim());
+            if (!withNotes.length) return '';
+            const rows = withNotes.map(it =>
+              `<div class="ps-other-row"><span class="ps-other-name">${esc(it.name)}</span><span class="ps-other-amt">NT$ ${fmtNT(it.amount||0)}</span><span class="ps-other-note">${esc(it.note)}</span></div>`
+            ).join('');
+            return `<div class="ps-other-notes">
+              <div class="ps-other-h">${title}</div>
+              ${rows}
+            </div>`;
+          }).join('');
+        return blocks;
       })()}
 
       ${(() => {
@@ -5258,10 +5278,11 @@
       ['數學班津貼',    emp['數學班津貼']],
       ['帶班人數津貼',  emp['帶班人數津貼']],
       ['混班津貼',      emp['混班津貼']],
-      ['數學津貼',      emp['數學津貼']],
+      ['數學津貼(手動)', emp['數學津貼']],
       ['留班獎金',      emp['留班獎金']],
       ['考試獎金',      emp['考試獎金']],
       ['其他津貼',      emp['其他津貼']],
+      ['特殊項目',      emp['特殊項目']],
       ['補貼公會投保勞保', emp['補貼公會投保勞保']],
       ['補貼公會健保自付', emp['補貼公會健保自付']],
       ['補貼健保眷屬',     emp['補貼健保眷屬']],
@@ -5334,6 +5355,31 @@
     out += dline + '\n';
     out += `  餘款轉帳金額 = (A) + (B) − (C) − (D) = NT$ ${fmtNT(net)}\n`;
     out += dline + '\n';
+
+    // 其他津貼／特殊項目 — 逐項說明（若有填寫「說明」欄位）
+    [['其他津貼明細', '其他津貼明細說明 Others Detail'], ['特殊項目明細', '特殊項目明細說明 Special Detail']]
+      .forEach(([listKey, title]) => {
+        const items = Array.isArray(emp[listKey]) ? emp[listKey] : [];
+        const withNotes = items.filter(it => it && String(it.note || '').trim());
+        if (!withNotes.length) return;
+        out += '\n' + line + '\n';
+        out += `  📋 ${title}\n`;
+        out += line + '\n';
+        withNotes.forEach(it => {
+          out += `    ${pad(it.name || '', 18)} ${fmtNum(it.amount)}  ${it.note}\n`;
+        });
+      });
+
+    // 備註 Notes — 優先用本月薪資紀錄的備註 (sal['備註'])，否則 fallback 員工預設備註 (emp['備註'])
+    const salNote = String((sal && sal['備註']) || '').trim();
+    const empNote = String(emp['備註'] || '').trim();
+    const note = salNote || empNote;
+    if (note) {
+      out += '\n' + line + '\n';
+      out += `  📝 備註 Notes（來源：${salNote ? '本月 ' + month : '員工預設'}）\n`;
+      out += line + '\n';
+      note.split('\n').forEach(l => { out += `    ${l}\n`; });
+    }
     return out;
   }
 
@@ -5363,10 +5409,11 @@
         ['數學班津貼',        '數學班津貼 Math'],
         ['帶班人數津貼',      '帶班人數津貼 Class Size'],
         ['混班津貼',          '混班津貼 Mixed Class'],
-        ['數學津貼',          '數學津貼 Math'],
+        ['數學津貼',          '數學津貼(手動) Math (Manual)'],
         ['留班獎金',          '留班獎金 Retention Bonus'],
         ['考試獎金',          '考試獎金 Exam Bonus'],
         ['其他津貼',          '其他津貼 Others'],
+        ['特殊項目',          '特殊項目 Special'],
         ['補貼公會投保勞保',  '補貼公會投保勞保 Guild Labor'],
         ['補貼公會健保自付',  '補貼公會健保自付 Guild Health'],
         ['補貼退休金',        '補貼退休金 Retirement Subsidy']
@@ -6601,7 +6648,7 @@
       ['混班人數', false], ['混班津貼', true],
       ['數學人數', false], ['數學津貼', false],
       ['留班比率', false], ['留班獎金', true],
-      ['考試獎金', true], ['其他津貼', true]
+      ['考試獎金', true], ['其他津貼', true], ['特殊項目', true]
     ],
     '扣款 / 補貼': [
       ['投保級距', true],
@@ -6796,7 +6843,7 @@
                         '混班人數','混班津貼',
                         '數學人數','數學津貼',
                         '留班比率','留班獎金',
-                        '考試獎金','其他津貼',
+                        '考試獎金','其他津貼','特殊項目',
                         '勞保自付','補貼公會投保勞保',
                         '健保自付','補貼公會健保自付',
                         '健保眷屬自付','補貼健保眷屬',
@@ -6827,7 +6874,7 @@
                         '混班人數','混班津貼',
                         '數學人數','數學津貼',
                         '留班比率','留班獎金',
-                        '考試獎金','其他津貼',
+                        '考試獎金','其他津貼','特殊項目',
                         '津貼合計',
                         '獎金','扣款','特殊調整','應發薪資',
                         '勞保自付','補貼公會投保勞保',
@@ -6837,7 +6884,7 @@
                         '應扣總額','現金給付','實發薪資','備註'];
     const allowKeys = ['年資津貼','主管津貼',
                        '美語津貼','美語輔導津貼','數學班津貼',
-                       '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼',
+                       '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼','特殊項目',
                        '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
     const salRows = [salHeaders];
     filteredSals.slice()
@@ -6870,7 +6917,7 @@
           Number(emp['混班人數']) || 0, Number(emp['混班津貼']) || 0,
           Number(emp['數學人數']) || 0, Number(emp['數學津貼']) || 0,
           Number(emp['留班比率']) || 0, Number(emp['留班獎金']) || 0,
-          Number(emp['考試獎金']) || 0, Number(emp['其他津貼']) || 0,
+          Number(emp['考試獎金']) || 0, Number(emp['其他津貼']) || 0, Number(emp['特殊項目']) || 0,
           allowSumLocal,
           Number(s['獎金']) || 0, Number(s['扣款']) || 0, Number(s['特殊調整']) || 0,
           r.gross,
@@ -7023,10 +7070,11 @@
         { key: '帶班人數津貼', type: 'money' },   // 自動 = computeClassSizeAllowance(帶班人數, 月份)
         { key: '混班校數',     type: 'money' },   // 從舊「混班人數」改名
         { key: '混班津貼',     type: 'money' },   // = 混班校數 × 500
-        { key: '數學津貼',     type: 'money' },   // 已移除自動計算，可手動編輯
+        { key: '數學津貼',     type: 'money', label: '數學津貼（手動加項，非數學班津貼）' },   // 已移除自動計算，可手動編輯；改標籤避免與上方「數學班津貼」看混
         { key: '留班獎金',     type: 'money' },   // 已移除自動計算，自由輸入
         { key: '考試獎金',     type: 'money' },
-        { key: '其他津貼',     type: 'money' }
+        { key: '其他津貼',     type: 'money' },
+        { key: '特殊項目',     type: 'money' }   // 自訂特殊項目：名目/金額/說明皆可自行輸入，逐項加總（見下方 itemizer）
       ]
     },
     {
@@ -7152,7 +7200,7 @@
   function allowSum(emp) {
     const keys = ['年資津貼','主管津貼',
                   '美語津貼','美語輔導津貼','數學班津貼',
-                  '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼',
+                  '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼','特殊項目',
                   '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
     return keys.reduce((s, k) => s + (Number(emp[k]) || 0), 0);
   }
@@ -7221,17 +7269,26 @@
   }
 
   // -------- Edit drawer --------
+  // ── 通用「逐項加總」欄位設定（自訂名目/金額/說明，自動加總）── 目前用於：其他津貼、特殊項目
+  const ITEMIZER_META = {
+    '其他津貼': { detailKey: '其他津貼明細', slug: 'other',   title: '📝 其他津貼明細 — 輸入名目、金額、說明逐項加入，會自動加總' },
+    '特殊項目': { detailKey: '特殊項目明細', slug: 'special', title: '📝 特殊項目明細 — 輸入名目、金額、說明逐項加入，會自動加總' }
+  };
   let _editingEid = null;
-  let _otherItems = [];   // staged 其他津貼明細 for the current drawer session
+  let _itemizerStaged = {};   // { '其他津貼': [...items], '特殊項目': [...items] } — staged for the current drawer session
   let _drawerMonth = null;  // currently-viewed month inside the drawer (for 預估月薪)
   let _drawerEditMode = false;  // false = view, true = edit (toggle via ✏ 編輯內容 button)
   function openEditEmployee(eid) {
     const emp = findEmployee(eid);
     if (!emp) { toast('找不到員工', 'error'); return; }
     _editingEid = eid;
-    _otherItems = Array.isArray(emp['其他津貼明細'])
-      ? emp['其他津貼明細'].map(x => ({ name: x.name || '', amount: Number(x.amount) || 0, note: x.note || '' }))
-      : [];
+    _itemizerStaged = {};
+    Object.keys(ITEMIZER_META).forEach(k => {
+      const dk = ITEMIZER_META[k].detailKey;
+      _itemizerStaged[k] = Array.isArray(emp[dk])
+        ? emp[dk].map(x => ({ name: x.name || '', amount: Number(x.amount) || 0, note: x.note || '' }))
+        : [];
+    });
     // Drawer always opens in read-only "view" mode for safety.
     // Owner / Manager can click ✏ 編輯內容 button to enter edit mode.
     // Employees can never edit.
@@ -7251,7 +7308,7 @@
     }
     updateDrawerMonthLabel();
     renderDrawerForm(emp, false);
-    wireOtherItemizer();
+    wireAllItemizers();
     // Open in view mode; user must click ✏ 編輯內容 to enter edit mode
     applyDrawerEditMode();
     $('drawerOverlay').classList.add('show');
@@ -7296,6 +7353,7 @@
     if (next >= months.length) next = 0;
     _drawerMonth = months[next];
     updateDrawerMonthLabel();
+    refreshDrawerMonthlySection();
     updateNetPreview();
     toast('月份切換為 ' + _drawerMonth, 'success');
   }
@@ -7328,6 +7386,7 @@
       user: currentUser.fullName,
       text: `[抽屜] 複製 ${empName} (${_editingEid}) ${prevMonth} → ${_drawerMonth}`
     });
+    refreshDrawerMonthlySection();
     updateNetPreview();
     // Also refresh manager table if it's showing this month
     if (typeof renderManagerTable === 'function' && $('mgrMonth') && $('mgrMonth').value === _drawerMonth) {
@@ -7394,7 +7453,7 @@
     const emp = findEmployee(_editingEid);
     if (emp) {
       renderDrawerForm(emp, false);
-      wireOtherItemizer();
+      wireAllItemizers();
     }
     applyDrawerEditMode();
     setTimeout(updateNetPreview, 30);
@@ -7481,11 +7540,12 @@
       '登入帳號': next.toLowerCase(), '登入密碼': next.toLowerCase()
     };
     _editingEid = null;
-    _otherItems = [];
+    _itemizerStaged = {};
+    Object.keys(ITEMIZER_META).forEach(k => { _itemizerStaged[k] = []; });
     $('drawerTitle').textContent = '新增員工 New Employee';
     $('drawerSub').textContent = `預設員工編號：${next}`;
     renderDrawerForm(draft, true);
-    wireOtherItemizer();
+    wireAllItemizers();
     $('drawerOverlay').classList.add('show');
     $('drawer').classList.add('show');
     setTimeout(updateNetPreview, 50);
@@ -7628,12 +7688,12 @@
         <div class="other-itemizer">
           <div class="title">📝 其他津貼明細 — 輸入名目、金額、說明逐項加入，會自動加總</div>
           <div class="add-row" style="display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:6px;">
-            <input type="text" class="name" id="otherItemName" placeholder="名目 (例：活動費)">
-            <input type="number" class="amount" id="otherItemAmt" placeholder="數目" min="0" step="1">
-            <input type="text" class="note" id="otherItemNote" placeholder="說明 (選填，會顯示在薪資條)">
-            <button type="button" class="add-btn" id="otherItemAddBtn">＋ 加入</button>
+            <input type="text" class="name" id="oi_other_name" placeholder="名目 (例：活動費)">
+            <input type="number" class="amount" id="oi_other_amt" placeholder="數目" min="0" step="1">
+            <input type="text" class="note" id="oi_other_note" placeholder="說明 (選填，會顯示在薪資條)">
+            <button type="button" class="add-btn" id="oi_other_add">＋ 加入</button>
           </div>
-          <div class="chips" id="otherItemChips">${chipsHtml}</div>
+          <div class="chips" id="oi_other_chips">${chipsHtml}</div>
         </div>
       </div>
       <div class="field-cell">
@@ -7761,10 +7821,11 @@
               <button type="button" class="qf-btn qf-clear" data-target="現金給付" data-val="0">清除</button>
             </div>`;
         }
-        // Itemizer UI above 其他津貼 input
+        // Itemizer UI above 其他津貼／特殊項目 input (generic — see ITEMIZER_META)
         let itemizerHtml = '';
-        if (f.key === '其他津貼') {
-          const items = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'] : [];
+        const itemizerMeta = ITEMIZER_META[f.key];
+        if (itemizerMeta) {
+          const items = Array.isArray(emp[itemizerMeta.detailKey]) ? emp[itemizerMeta.detailKey] : [];
           const chipsHtml = items.length
             ? items.map((it, i) => {
                 const noteHtml = it.note
@@ -7774,20 +7835,21 @@
                 `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`;
               }).join('')
             : '<div class="empty-hint">尚無分項紀錄，可在上方加入</div>';
+          const s = itemizerMeta.slug;
           itemizerHtml = `
             <div class="other-itemizer">
-              <div class="title">📝 其他津貼明細 — 輸入名目、金額、說明逐項加入，會自動加總</div>
+              <div class="title">${itemizerMeta.title}</div>
               <div class="add-row" style="display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:6px;">
-                <input type="text" class="name" id="otherItemName" placeholder="名目 (例：活動費)">
-                <input type="number" class="amount" id="otherItemAmt" placeholder="數目" min="0" step="1">
-                <input type="text" class="note" id="otherItemNote" placeholder="說明 (選填，會顯示在薪資條)">
-                <button type="button" class="add-btn" id="otherItemAddBtn">＋ 加入</button>
+                <input type="text" class="name" id="oi_${s}_name" placeholder="名目 (例：活動費)">
+                <input type="number" class="amount" id="oi_${s}_amt" placeholder="數目" min="0" step="1">
+                <input type="text" class="note" id="oi_${s}_note" placeholder="說明 (選填，會顯示在薪資條)">
+                <button type="button" class="add-btn" id="oi_${s}_add">＋ 加入</button>
               </div>
-              <div class="chips" id="otherItemChips">${chipsHtml}</div>
+              <div class="chips" id="oi_${s}_chips">${chipsHtml}</div>
             </div>`;
         }
         return itemizerHtml + `<div class="field-cell${wide}">
-          <label>${f.key}</label>
+          <label>${f.label || f.key}</label>
           ${inputHtml}
           ${quickFillHtml}
         </div>`;
@@ -7798,85 +7860,211 @@
       </div>`;
     }).join('');
 
-    $('drawerBody').innerHTML = html + `
+    $('drawerBody').innerHTML = html + renderDrawerMonthlySection() + `
       <div class="net-preview">
         <div class="lbl">預估月薪（用本月基準資料估算）</div>
         <div class="val" id="drawerNet">—</div>
       </div>`;
   }
 
-  // -------- 其他津貼 itemizer wiring --------
-  function renderOtherItemChips() {
-    const chipsEl = $('otherItemChips');
+  // ── 本月薪資 Monthly — 加班/請假/遲到/獎金/扣款/特殊調整/本月備註（寫入當月薪資紀錄 sal，非員工基本資料 emp）──
+  // 欄位用 data-sal-key（不是 data-key），所以不會被 readDrawerForm()／saveEmployee() 誤收進員工表單；
+  // 改動即時寫入 DATA.salary（debounce 儲存），不需按下方「儲存」鍵。
+  const DRAWER_MONTHLY_FIELDS = [
+    { key: '加班時數', label: '加班時數 OT Hours',      min: 0,       max: 200,    step: 0.5 },
+    { key: '請假時數', label: '請假時數 Leave Hours',    min: 0,       max: 200,    step: 0.5 },
+    { key: '遲到次數', label: '遲到次數 Late Count',     min: 0,       max: 50,     step: 1 },
+    { key: '獎金',     label: '獎金 Bonus',              min: 0,       max: 999999, step: 1 },
+    { key: '扣款',     label: '扣款 Deduction',          min: 0,       max: 999999, step: 1 },
+    { key: '特殊調整', label: '特殊調整 Adjust',          min: -999999, max: 999999, step: 1 }
+  ];
+  function renderDrawerMonthlySectionInner() {
+    if (!_editingEid || !_drawerMonth) return '';
+    if (currentUser && currentUser.role === 'employee') return '';
+    const sal = ensureSalaryRecord(_editingEid, _drawerMonth);
+    const emp = findEmployee(_editingEid);
+    if (emp) computeRow(emp, sal);   // refresh sal['加班費'] 等自動計算欄位
+    const otPay = Number(sal['加班費']) || 0;
+    const fieldsHtml = DRAWER_MONTHLY_FIELDS.map(f => {
+      const v = sal[f.key] == null ? 0 : sal[f.key];
+      return `<div class="field-cell">
+        <label>${f.label}</label>
+        <input type="number" data-sal-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${v}">
+      </div>`;
+    }).join('');
+    const noteVal = String(sal['備註'] == null ? '' : sal['備註']).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    return `
+      ${fieldsHtml}
+      <div class="field-cell">
+        <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數×時薪×1.34)</small></label>
+        <input type="number" id="drawerOtPayDisplay" value="${otPay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
+      </div>
+      <div class="field-cell wide">
+        <label>本月備註 Monthly Note <small style="font-weight:normal;color:#94a3b8;">（僅本月薪資條顯示；留空則沿用下方「備註」欄的員工預設備註）</small></label>
+        <textarea data-sal-key="備註" rows="3" placeholder="僅套用於 ${_drawerMonth} 這個月份的薪資條" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;background:#fff;">${noteVal}</textarea>
+      </div>`;
+  }
+  function renderDrawerMonthlySection() {
+    const inner = renderDrawerMonthlySectionInner();
+    if (!inner) return '';
+    return `<div class="form-section monthly" id="drawerMonthlySection">
+        <h3><span class="badge">📅</span> 本月薪資 Monthly (${_drawerMonth})</h3>
+        <div class="field-grid">${inner}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:6px;">💡 此區塊直接對應「${_drawerMonth}」月份的薪資紀錄，異動會即時儲存（不需按下方「儲存」鍵）。切換月份請用上方月份導覽列。</div>
+      </div>`;
+  }
+  // 月份切換 / 複製上月資料後，重新畫出本區塊（不必整個抽屜重繪）
+  function refreshDrawerMonthlySection() {
+    const el = $('drawerMonthlySection');
+    if (!el) return;
+    const inner = renderDrawerMonthlySectionInner();
+    if (!inner) { el.remove(); return; }
+    el.querySelector('.field-grid').innerHTML = inner;
+    el.querySelector('h3').innerHTML = `<span class="badge">📅</span> 本月薪資 Monthly (${_drawerMonth})`;
+    applyDrawerEditMode();
+  }
+  // 本月薪資欄位變更 → 直接寫入 DATA.salary（debounce 儲存 + log）
+  let _drawerMonthlyTimer = null;
+  function handleDrawerMonthlyEdit(e) {
+    const inp = e.target;
+    if (!inp || !inp.dataset || !inp.dataset.salKey) return;
+    if (!_editingEid || !_drawerMonth) return;
+    const field = inp.dataset.salKey;
+    const sal = ensureSalaryRecord(_editingEid, _drawerMonth);
+    if (inp.tagName === 'TEXTAREA') {
+      sal[field] = inp.value;
+    } else {
+      const raw = inp.value;
+      const num = raw === '' ? 0 : Number(raw);
+      if (isNaN(num)) { inp.classList.add('invalid'); return; }
+      const min = inp.min !== '' ? Number(inp.min) : null;
+      const max = inp.max !== '' ? Number(inp.max) : null;
+      if (min !== null && num < min) { inp.classList.add('invalid'); return; }
+      if (max !== null && num > max) { inp.classList.add('invalid'); return; }
+      inp.classList.remove('invalid');
+      sal[field] = num;
+    }
+    const emp = findEmployee(_editingEid);
+    if (emp) {
+      computeRow(emp, sal);   // 重新計算 加班費／請假扣款／遲到扣款
+      const otDisp = $('drawerOtPayDisplay');
+      if (otDisp) otDisp.value = Number(sal['加班費']) || 0;
+    }
+    updateNetPreview();
+    clearTimeout(_drawerMonthlyTimer);
+    const monthAtEdit = _drawerMonth, eidAtEdit = _editingEid;
+    _drawerMonthlyTimer = setTimeout(() => {
+      persistData();
+      appendLog({
+        time: nowTimestamp(),
+        user: currentUser ? currentUser.fullName : '系統',
+        text: `[抽屜] ${monthAtEdit} · ${emp ? emp['員工姓名'] : eidAtEdit} (${eidAtEdit}) · ${field} → ${inp.value}`
+      });
+      if (typeof renderManagerTable === 'function' && $('mgrMonth') && $('mgrMonth').value === monthAtEdit) {
+        renderManagerTable();
+      }
+      if ($('psEmp') && $('psEmp').value === eidAtEdit && $('psMonth') && $('psMonth').value === monthAtEdit) {
+        renderPayslip();
+      }
+      if ($('dashMonth') && $('dashMonth').value === monthAtEdit) {
+        renderDashboard();
+      }
+    }, 350);
+  }
+  // Bind once to the stable drawerBody container (innerHTML is replaced on re-render, but the
+  // container element itself persists, so this delegated listener keeps working).
+  (function wireDrawerMonthlyEditing() {
+    const body = $('drawerBody');
+    if (!body) return;
+    body.addEventListener('input', handleDrawerMonthlyEdit);
+    body.addEventListener('change', handleDrawerMonthlyEdit);
+  })();
+
+  // -------- 其他津貼／特殊項目 itemizer wiring (generic — see ITEMIZER_META) --------
+  function renderItemChips(fieldKey) {
+    const meta = ITEMIZER_META[fieldKey];
+    if (!meta) return;
+    const chipsEl = $(`oi_${meta.slug}_chips`);
     if (!chipsEl) return;
-    if (!_otherItems.length) {
+    const items = _itemizerStaged[fieldKey] || [];
+    if (!items.length) {
       chipsEl.innerHTML = '<div class="empty-hint">尚無分項紀錄，可在上方加入</div>';
       return;
     }
-    chipsEl.innerHTML = _otherItems.map((it, i) => {
+    chipsEl.innerHTML = items.map((it, i) => {
       const noteHtml = it.note
         ? `<span class="note" style="color:#0F766E;font-size:11px;font-style:italic;margin-left:4px;">📝${String(it.note).replace(/</g,'&lt;')}</span>`
         : '';
       return `<span class="chip-item"><span>${(it.name||'').replace(/</g,'&lt;')}</span>` +
       `<span class="amt">+$${fmtNT(it.amount||0)}</span>${noteHtml}` +
-      `<button type="button" class="rm-btn" data-rm-idx="${i}" title="移除">✕</button></span>`;
+      `<button type="button" class="rm-btn" data-rm-idx="${i}" data-rm-field="${fieldKey}" title="移除">✕</button></span>`;
     }).join('');
   }
 
-  function syncOtherTotal() {
-    // 其他津貼 input value = sum of all items
-    const input = $('drawerBody').querySelector('[data-key="其他津貼"]');
+  function syncItemTotal(fieldKey) {
+    // <fieldKey> 合計 input value = sum of all staged items for that field
+    const input = $('drawerBody').querySelector(`[data-key="${fieldKey}"]`);
     if (!input) return;
-    const total = _otherItems.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    const items = _itemizerStaged[fieldKey] || [];
+    const total = items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
     input.value = total;
     input.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
-  function wireOtherItemizer() {
-    const addBtn = $('otherItemAddBtn');
+  function wireItemizer(fieldKey) {
+    const meta = ITEMIZER_META[fieldKey];
+    if (!meta) return;
+    const s = meta.slug;
+    const addBtn = $(`oi_${s}_add`);
     if (!addBtn) return;
+    if (!_itemizerStaged[fieldKey]) _itemizerStaged[fieldKey] = [];
     addBtn.addEventListener('click', () => {
-      const nameEl = $('otherItemName');
-      const amtEl  = $('otherItemAmt');
-      const noteEl = $('otherItemNote');
+      const nameEl = $(`oi_${s}_name`);
+      const amtEl  = $(`oi_${s}_amt`);
+      const noteEl = $(`oi_${s}_note`);
       const name = (nameEl.value || '').trim();
       const amt  = Number(amtEl.value);
       const note = noteEl ? (noteEl.value || '').trim() : '';
       if (!name) { nameEl.focus(); toast('請輸入名目', 'error'); return; }
       if (!amt || isNaN(amt) || amt <= 0) { amtEl.focus(); toast('請輸入大於 0 的金額', 'error'); return; }
-      _otherItems.push({ name, amount: amt, note });
+      _itemizerStaged[fieldKey].push({ name, amount: amt, note });
       nameEl.value = '';
       amtEl.value = '';
       if (noteEl) noteEl.value = '';
-      renderOtherItemChips();
-      syncOtherTotal();
+      renderItemChips(fieldKey);
+      syncItemTotal(fieldKey);
       nameEl.focus();
     });
     // Pressing Enter: name → amount → note → 加入
-    $('otherItemName').addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); $('otherItemAmt').focus(); }
+    $(`oi_${s}_name`).addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); $(`oi_${s}_amt`).focus(); }
     });
-    $('otherItemAmt').addEventListener('keydown', e => {
+    $(`oi_${s}_amt`).addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault();
-        const ne = $('otherItemNote'); if (ne) ne.focus(); else addBtn.click();
+        const ne = $(`oi_${s}_note`); if (ne) ne.focus(); else addBtn.click();
       }
     });
-    const noteEl = $('otherItemNote');
+    const noteEl = $(`oi_${s}_note`);
     if (noteEl) {
       noteEl.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
       });
     }
     // Remove chip
-    $('otherItemChips').addEventListener('click', e => {
+    $(`oi_${s}_chips`).addEventListener('click', e => {
       const rm = e.target.closest('.rm-btn');
       if (!rm) return;
+      const items = _itemizerStaged[fieldKey] || [];
       const idx = parseInt(rm.dataset.rmIdx);
-      if (isNaN(idx) || idx < 0 || idx >= _otherItems.length) return;
-      _otherItems.splice(idx, 1);
-      renderOtherItemChips();
-      syncOtherTotal();
+      if (isNaN(idx) || idx < 0 || idx >= items.length) return;
+      items.splice(idx, 1);
+      renderItemChips(fieldKey);
+      syncItemTotal(fieldKey);
     });
+  }
+
+  function wireAllItemizers() {
+    Object.keys(ITEMIZER_META).forEach(wireItemizer);
   }
 
   function readDrawerForm() {
@@ -8174,8 +8362,10 @@
 
   function saveEmployee() {
     const form = readDrawerForm();
-    // Attach 其他津貼明細 (item list) from drawer-staged array
-    form['其他津貼明細'] = _otherItems.slice();
+    // Attach 其他津貼明細／特殊項目明細 (item lists) from drawer-staged arrays
+    Object.keys(ITEMIZER_META).forEach(k => {
+      form[ITEMIZER_META[k].detailKey] = (_itemizerStaged[k] || []).slice();
+    });
     // Validate required
     if (!form['員工編號']) { toast('員工編號為必填', 'error'); return; }
     if (!form['員工姓名']) { toast('員工姓名為必填', 'error'); return; }
@@ -8310,7 +8500,7 @@
                      '混班人數','混班津貼',
                      '數學人數','數學津貼',
                      '留班比率','留班獎金',
-                     '考試獎金','其他津貼',
+                     '考試獎金','其他津貼','特殊項目',
                      '勞保自付','補貼公會投保勞保',
                      '健保自付','補貼公會健保自付',
                      '健保眷屬自付','補貼健保眷屬',
@@ -8487,7 +8677,7 @@
                      '混班人數','混班津貼',
                      '數學人數','數學津貼',
                      '留班比率','留班獎金',
-                     '考試獎金','其他津貼',
+                     '考試獎金','其他津貼','特殊項目',
                      '津貼合計',
                      '獎金','扣款','特殊調整','應發薪資',
                      '勞保自付','補貼公會投保勞保',
@@ -8497,7 +8687,7 @@
                      '應扣總額','現金給付','實發薪資','備註'];
     const allowKeys = ['年資津貼','主管津貼',
                        '美語津貼','美語輔導津貼','數學班津貼',
-                       '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼',
+                       '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼','特殊項目',
                        '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
 
     const rows = [headers];
@@ -8531,7 +8721,7 @@
         Number(emp['混班人數']) || 0, Number(emp['混班津貼']) || 0,
         Number(emp['數學人數']) || 0, Number(emp['數學津貼']) || 0,
         Number(emp['留班比率']) || 0, Number(emp['留班獎金']) || 0,
-        Number(emp['考試獎金']) || 0, Number(emp['其他津貼']) || 0,
+        Number(emp['考試獎金']) || 0, Number(emp['其他津貼']) || 0, Number(emp['特殊項目']) || 0,
         allowSum,
         Number(sal['獎金']) || 0, Number(sal['扣款']) || 0, Number(sal['特殊調整']) || 0,
         r.gross,
