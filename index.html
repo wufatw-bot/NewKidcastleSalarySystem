@@ -4848,9 +4848,10 @@
   // -------- Compute helpers (mirror Excel formulas) --------
   function computeRow(emp, sal) {
     const base = Number(emp['底薪']) || 0;
-    const hourly = base / 240;
+    const OT_RATE = 180;   // 加班費率：固定 180 元/小時（不再用底薪÷240×1.34）
+    const hourly = OT_RATE;
     const otHours = Number(sal['加班時數']) || 0;
-    const otPay = Math.round(otHours * hourly * 1.34);
+    const otPay = Math.round(otHours * OT_RATE);
     const leaveH = Number(sal['請假時數']) || 0;
     const LEAVE_RATE = 180;   // 請假扣款 = 請假時數 × 180元/小時 (固定費率)
     const leaveD = Math.round(leaveH * LEAVE_RATE);
@@ -7896,7 +7897,7 @@
     return `
       ${fieldsHtml}
       <div class="field-cell">
-        <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數×時薪×1.34)</small></label>
+        <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數 × 180元/小時)</small></label>
         <input type="number" id="drawerOtPayDisplay" value="${otPay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
       </div>
       <div class="field-cell wide">

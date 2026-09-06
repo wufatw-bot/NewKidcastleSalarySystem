@@ -268,9 +268,11 @@ function renderPayslip() {
   const noLL = (Number(sal['請假時數'])||0)===0 && (Number(sal['遲到次數'])||0)===0;
   const attBonus = noLL ? (Number(emp['全勤獎金'])||0) : 0;
   // OT pay
-  const base = Number(emp['底薪'])||0, hourly = base/240;
+  const base = Number(emp['底薪'])||0;
+  const OT_RATE = 180; // 加班費率：固定 180 元/小時
+  const hourly = OT_RATE;
   const otH = Number(sal['加班時數'])||0;
-  const otPay = Math.round(otH * hourly * 1.34);
+  const otPay = Math.round(otH * OT_RATE);
   const leaveH = Number(sal['請假時數'])||0;
   const leaveD = Math.round(leaveH * 180);
   const lateCnt = Number(sal['遲到次數'])||0;
