@@ -5038,9 +5038,12 @@
       ['帶班人數 Class Size (人)', emp['帶班人數']],   // 資訊欄，不列入 B
       ['混班校數 Mixed Class (校)', emp['混班校數']]   // 資訊欄，不列入 B
     ];
-    // exclude OT hours / 人數 / 校數 from sum (they're counts, not money)
+    // exclude OT hours / 人數 / 校數 (count-only info rows) from sum — they're counts, not money.
+    // NOTE: must match the exact label, not a prefix — '帶班人數津貼 Class Size' (real money row)
+    // also starts with '帶班人數', so a startsWith() check here was wrongly stripping that
+    // allowance out of the total too.
     const subB = variable.filter(([k]) =>
-      !k.startsWith('加班時數') && !k.startsWith('帶班人數') && !k.startsWith('混班校數')
+      k !== '加班時數 OT Hours' && k !== '帶班人數 Class Size (人)' && k !== '混班校數 Mixed Class (校)'
     ).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
     const deductions = [
