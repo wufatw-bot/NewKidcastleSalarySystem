@@ -295,6 +295,7 @@ function renderPayslip() {
 
   const variable = [
     ['加班費 OT Pay', otPay],
+    ['支薪金額 Paid Hours Pay (×180/hr)', Math.round((Number(sal['支薪時數'])||0) * 180)],
     ['獎金 Bonus', sal['獎金']],
     ['特殊調整 Adjust', sal['特殊調整']]
   ];

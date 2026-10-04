@@ -2092,7 +2092,7 @@
 <body>
 
 <!-- 右下角版本 / 編輯日期 — 每次修改請更新 EDIT_STAMP -->
-<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261004V1</div>
+<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261004V2</div>
 
 <!-- Floating zoom control -->
 <div id="zoomControl" class="no-print" title="調整字體與頁面大小">
@@ -2671,6 +2671,7 @@
             <th style="text-align:left;padding-left:12px;">員工</th>
             <th>校區</th>
             <th data-col="加班時數">加班時數</th>
+            <th data-col="支薪時數" title="支薪金額 = 支薪時數 × 180 元">支薪時數</th>
             <th data-col="請假時數">請假時數</th>
             <th data-col="遲到次數">遲到次數</th>
             <th data-col="獎金">獎金</th>
@@ -4869,7 +4870,7 @@
         o['員工編號'] === s['員工編號'] && String(o['月份']) === String(s['月份'])
       );
       if (!orig) { n++; return; }
-      const fields = ['上班時數','加班時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
+      const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
       for (const k of fields) {
         const a = s[k] == null ? (k === '備註' ? '' : 0) : s[k];
         const b = orig[k] == null ? (k === '備註' ? '' : 0) : orig[k];
@@ -4893,6 +4894,7 @@
     s = {
       '月份': month, '員工編號': eid,
       '上班時數': 184, '加班時數': 0, '加班費': 0,
+      '支薪時數': 0, '支薪金額': 0,
       '請假時數': 0, '請假扣款': 0,
       '遲到次數': 0, '遲到扣款': 0,
       '獎金': 0, '扣款': 0, '特殊調整': 0,
@@ -4909,6 +4911,10 @@
     const hourly = OT_RATE;
     const otHours = Number(sal['加班時數']) || 0;
     const otPay = Math.round(otHours * OT_RATE);
+    // 支薪金額 = 支薪時數 × 180 元/小時
+    const PAY_RATE = 180;
+    const payHours = Number(sal['支薪時數']) || 0;
+    const payAmt = Math.round(payHours * PAY_RATE);
     const leaveH = Number(sal['請假時數']) || 0;
     const LEAVE_RATE = 180;   // 請假扣款 = 請假時數 × 180元/小時 (固定費率)
     const leaveD = Math.round(leaveH * LEAVE_RATE);
@@ -4928,7 +4934,7 @@
     const deduct = Number(sal['扣款']) || 0;
     const adjust = Number(sal['特殊調整']) || 0;
 
-    const gross = base + attBonus + allowSum + otPay + bonus + adjust - leaveD - lateD - deduct;
+    const gross = base + attBonus + allowSum + otPay + payAmt + bonus + adjust - leaveD - lateD - deduct;
     const labor = Number(emp['勞保自付']) || 0;
     const health = Number(emp['健保自付']) || 0;
     const healthDep = Number(emp['健保眷屬自付']) || 0;  // 健保眷屬扣款 (扣薪 mode)
@@ -4939,10 +4945,11 @@
 
     // Cache computed fields back into the record so Excel & UI stay in sync
     sal['加班費'] = otPay;
+    sal['支薪金額'] = payAmt;
     sal['請假扣款'] = leaveD;
     sal['遲到扣款'] = lateD;
 
-    return { hourly, otPay, leaveD, lateD, attBonus, allowSum, gross, totalDeduct, cashPay, net };
+    return { hourly, otPay, payAmt, leaveD, lateD, attBonus, allowSum, gross, totalDeduct, cashPay, net };
   }
 
   // Helper: convert "同安校區" → "同安" so we can compare with employee 校區 field
@@ -5090,6 +5097,8 @@
       ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']],
       ['加班費 OT Pay', sal['加班費']],
       ['加班時數 OT Hours', sal['加班時數']],
+      ['支薪金額 Paid Hours Pay (×180/hr)', Math.round((Number(sal['支薪時數'])||0) * 180)],
+      ['支薪時數 Paid Hours', sal['支薪時數']],
       ['獎金 Bonus', sal['獎金']],
       ['特殊調整 Adjust', sal['特殊調整']],
       ['帶班人數 Class Size (人)', emp['帶班人數']],   // 資訊欄，不列入 B
@@ -5100,7 +5109,7 @@
     // also starts with '帶班人數', so a startsWith() check here was wrongly stripping that
     // allowance out of the total too.
     const subB = variable.filter(([k]) =>
-      k !== '加班時數 OT Hours' && k !== '帶班人數 Class Size (人)' && k !== '混班校數 Mixed Class (校)'
+      k !== '加班時數 OT Hours' && k !== '支薪時數 Paid Hours' && k !== '帶班人數 Class Size (人)' && k !== '混班校數 Mixed Class (校)'
     ).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
     const deductions = [
@@ -5348,12 +5357,14 @@
       ['補貼公會健保自付', emp['補貼公會健保自付']],
       ['補貼健保眷屬',     emp['補貼健保眷屬']],
       ['加班費',     sal['加班費']],
+      ['支薪金額 (×180/時)', Math.round((Number(sal['支薪時數'])||0) * 180)],
+      ['支薪時數',   sal['支薪時數']],
       ['獎金',       sal['獎金']],
       ['特殊調整',   sal['特殊調整']],
       ['帶班人數 (人)', emp['帶班人數']],   // 資訊欄
       ['混班校數 (校)', emp['混班校數']]    // 資訊欄
     ];
-    const subB = variable.filter(([k]) => k !== '帶班人數 (人)' && k !== '混班校數 (校)').reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const subB = variable.filter(([k]) => k !== '支薪時數' && k !== '帶班人數 (人)' && k !== '混班校數 (校)').reduce((s, [_, v]) => s + (Number(v) || 0), 0);
     const deductions = [
       ['勞保自付',     emp['勞保自付']],
       ['健保自付',     emp['健保自付']],
@@ -5485,6 +5496,8 @@
       items: [
         ['加班費',     '加班費 OT Pay'],
         ['加班時數',   '加班時數 OT Hours'],
+        ['支薪金額',   '支薪金額 Paid Hours Pay'],
+        ['支薪時數',   '支薪時數 Paid Hours'],
         ['獎金',       '獎金 Bonus'],
         ['特殊調整',   '特殊調整 Adjust']
       ]
@@ -5751,6 +5764,7 @@
   // ==========================================================================
   const MGR_FIELDS = [
     { key: '加班時數', type: 'num', min: 0, max: 200, step: 0.5 },
+    { key: '支薪時數', type: 'num', min: 0, max: 400, step: 0.5 },
     { key: '請假時數', type: 'num', min: 0, max: 200, step: 0.5 },
     { key: '遲到次數', type: 'num', min: 0, max: 50,  step: 1 },
     { key: '獎金',     type: 'num', min: 0, max: 999999, step: 1 },
@@ -5856,8 +5870,9 @@
       // Show 加扣薪小計 (gross) — sub-total of base + allowances + variable - deductions,
       // BEFORE labor/health insurance and cash payment.
       // 加扣薪小計 = 只統計「主管能編輯的月度欄位」(不含底薪/各種津貼)
-      // 公式：加班費 + 獎金 + 特殊調整 - 請假扣款 - 遲到扣款 - 扣款
+      // 公式：加班費 + 支薪金額 + 獎金 + 特殊調整 - 請假扣款 - 遲到扣款 - 扣款
       const subTotal = (Number(sal['加班費'])||0)
+                     + (Number(sal['支薪金額'])||0)
                      + (Number(sal['獎金'])||0)
                      + (Number(sal['特殊調整'])||0)
                      - (Number(sal['請假扣款'])||0)
@@ -5922,6 +5937,7 @@
       if (netSpan) {
         // Manager 加扣薪小計 = 只統計月度主管欄位（與初次 render 一致）
         const subTotal = (Number(sal['加班費'])||0)
+                     + (Number(sal['支薪金額'])||0)
                        + (Number(sal['獎金'])||0)
                        + (Number(sal['特殊調整'])||0)
                        - (Number(sal['請假扣款'])||0)
@@ -6733,7 +6749,7 @@
       ['備註', false]
     ],
     '月度薪資': [
-      ['月份', true], ['上班時數', false], ['加班時數', true], ['加班費', true],
+      ['月份', true], ['上班時數', false], ['加班時數', true], ['加班費', true], ['支薪時數', true], ['支薪金額', true],
       ['請假時數', true], ['請假扣款', true], ['遲到次數', true], ['遲到扣款', true],
       ['獎金', true], ['扣款', true], ['特殊調整', true]
     ]
@@ -6932,7 +6948,7 @@
 
     // Sheet 3: 薪資資料 (含計算結果) — 詳細逐欄展開
     const salHeaders = ['月份','員工編號','員工姓名','校區','職位',
-                        '上班時數','加班時數','時薪','加班費',
+                        '上班時數','加班時數','時薪','加班費','支薪時數','支薪金額',
                         '請假時數','請假扣款','遲到次數','遲到扣款',
                         '底薪','全勤獎金',
                         '年資津貼','主管津貼',
@@ -6975,6 +6991,7 @@
           Number(s['加班時數']) || 0,
           Math.round(r.hourly * 100) / 100,
           r.otPay,
+          Number(s['支薪時數']) || 0, r.payAmt,
           Number(s['請假時數']) || 0, r.leaveD,
           Number(s['遲到次數']) || 0, r.lateD,
           Number(emp['底薪']) || 0, r.attBonus,
@@ -7447,7 +7464,7 @@
     const empName = emp ? emp['員工姓名'] : _editingEid;
     if (!confirm(`將 ${empName} 的 ${prevMonth} 月資料複製到 ${_drawerMonth} 月？\n（會覆蓋目前 ${_drawerMonth} 的工時/獎金/扣款等）`)) return;
     const dst = ensureSalaryRecord(_editingEid, _drawerMonth);
-    const fields = ['上班時數','加班時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
+    const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
     fields.forEach(f => { dst[f] = src[f]; });
     persistData();
     appendLog({
@@ -7481,13 +7498,13 @@
     { title: '④ 員工登入帳號 Login', keys: ['登入帳號','登入密碼','Email'] },
     { title: '⑤ 特休管理 Annual Leave', keys: ['特休資訊','可休日數_手動','已休日數'] },
     { title: '⑥ 備註 Notes', keys: ['備註'] },
-    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款','mgr:特殊調整','mgr:備註'] }
+    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款','mgr:特殊調整','mgr:備註'] }
   ];
   const MGR_PERM_LABELS = {
     '全勤獎金': '全勤狀態 (全勤/非全勤)', '特休資訊': '特休資訊卡 (只能看)',
     '勞保自付額': '勞保自付額 / 補貼', '健保自付額': '健保自付額 / 補貼',
     '健保眷屬扣款': '健保眷屬扣款 / 補貼', '退休金': '退休金提撥 / 補貼',
-    'mgr:備註': '本月備註'
+    'mgr:備註': '本月備註', 'mgr:支薪時數': '支薪時數 / 支薪金額 (×180元)'
   };
   const VIEW_ONLY_KEYS = ['特休資訊'];   // 沒有可編輯的內容，只有「看 / 隱藏」
   // 預設值 = 原本系統寫死的主管權限，升級後行為不變
@@ -7496,6 +7513,7 @@
     MGR_PERM_GROUPS.forEach(g => g.keys.forEach(k => { d[k] = 'edit'; }));
     d['員工編號'] = 'view';
     d['特休資訊'] = 'view';
+    d['mgr:支薪時數'] = 'view';   // 支薪時數預設只有老闆能改，可在權限設定開放給主管
     ['底薪','年資津貼','主管津貼'].forEach(k => d[k] = 'hidden');
     MGR_PERM_GROUPS[2].keys.forEach(k => d[k] = 'hidden');
     MGR_PERM_GROUPS[3].keys.forEach(k => d[k] = 'hidden');
@@ -8081,6 +8099,7 @@
   // 改動即時寫入 DATA.salary（debounce 儲存），不需按下方「儲存」鍵。
   const DRAWER_MONTHLY_FIELDS = [
     { key: '加班時數', label: '加班時數 OT Hours',      min: 0,       max: 200,    step: 0.5 },
+    { key: '支薪時數', label: '支薪時數 Paid Hours',    min: 0,       max: 400,    step: 0.5 },
     { key: '請假時數', label: '請假時數 Leave Hours',    min: 0,       max: 200,    step: 0.5 },
     { key: '遲到次數', label: '遲到次數 Late Count',     min: 0,       max: 50,     step: 1 },
     { key: '獎金',     label: '獎金 Bonus',              min: 0,       max: 999999, step: 1 },
@@ -8107,6 +8126,10 @@
       <div class="field-cell" data-mcol="加班時數">
         <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數 × 180元/小時)</small></label>
         <input type="number" id="drawerOtPayDisplay" value="${otPay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
+      </div>
+      <div class="field-cell" data-mcol="支薪時數">
+        <label>支薪金額 <small style="font-weight:normal;color:#94a3b8;">(自動＝支薪時數 × 180元/小時)</small></label>
+        <input type="number" id="drawerPayAmtDisplay" value="${Number(sal['支薪金額']) || 0}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
       </div>
       <div class="field-cell wide" data-mcol="備註">
         <label>本月備註 Monthly Note <small style="font-weight:normal;color:#94a3b8;">（僅本月薪資條顯示；留空則沿用下方「備註」欄的員工預設備註）</small></label>
@@ -8158,6 +8181,8 @@
       computeRow(emp, sal);   // 重新計算 加班費／請假扣款／遲到扣款
       const otDisp = $('drawerOtPayDisplay');
       if (otDisp) otDisp.value = Number(sal['加班費']) || 0;
+      const payDisp = $('drawerPayAmtDisplay');
+      if (payDisp) payDisp.value = Number(sal['支薪金額']) || 0;
     }
     updateNetPreview();
     clearTimeout(_drawerMonthlyTimer);
@@ -8822,7 +8847,7 @@
       `不影響：員工資料 / 底薪 / 津貼設定 / 勞健保`
     )) return;
 
-    const fields = ['上班時數','加班時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
+    const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
     let copied = 0;
     emps.forEach(emp => {
       const src = DATA.salary.find(s =>
@@ -8875,7 +8900,7 @@
     }
     // Build rows matching Salary Data.xlsx schema — detailed column expansion
     const headers = ['月份','員工編號','員工姓名','校區','職位',
-                     '上班時數','加班時數','時薪','加班費',
+                     '上班時數','加班時數','時薪','加班費','支薪時數','支薪金額',
                      '請假時數','請假扣款','遲到次數','遲到扣款',
                      '底薪','全勤獎金',
                      '年資津貼','主管津貼',
@@ -8919,6 +8944,7 @@
         Number(sal['加班時數']) || 0,
         Math.round(r.hourly * 100) / 100,
         r.otPay,
+        Number(sal['支薪時數']) || 0, r.payAmt,
         Number(sal['請假時數']) || 0, r.leaveD,
         Number(sal['遲到次數']) || 0, r.lateD,
         Number(emp['底薪']) || 0, r.attBonus,
