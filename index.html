@@ -2092,7 +2092,7 @@
 <body>
 
 <!-- 右下角版本 / 編輯日期 — 每次修改請更新 EDIT_STAMP -->
-<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261004V2</div>
+<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261004V3</div>
 
 <!-- Floating zoom control -->
 <div id="zoomControl" class="no-print" title="調整字體與頁面大小">
@@ -4855,6 +4855,14 @@
     _toastTimer = setTimeout(() => t.className = 'toast', 2200);
   }
 
+  // 其他津貼／特殊項目：有逐項明細時，薪資條改成每個津貼名稱各佔一行（例：其他津貼・戶外教學 3,000）
+  function itemizedPayslipRows(label, total, items) {
+    const list = Array.isArray(items) ? items.filter(it => it && (it.name || Number(it.amount))) : [];
+    const sum = list.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    if (!list.length || sum !== (Number(total) || 0)) return [[label, total]];
+    const base = label.split(' ')[0];
+    return list.map(it => [`${base}・${String(it.name || '未命名').replace(/</g, '&lt;')}`, Number(it.amount) || 0]);
+  }
   function fmtNT(n) {
     if (n == null || isNaN(n)) return '0';
     return Number(n).toLocaleString('en-US');
@@ -5090,8 +5098,8 @@
       ['數學津貼(手動) Math (Manual)', emp['數學津貼']],
       ['留班獎金 Retention Bonus', emp['留班獎金']],
       ['考試獎金 Exam Bonus', emp['考試獎金']],
-      ['其他津貼 Others', emp['其他津貼']],
-      ['特殊項目 Special', emp['特殊項目']],
+      ...itemizedPayslipRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細']),
+      ...itemizedPayslipRows('特殊項目 Special', emp['特殊項目'], emp['特殊項目明細']),
       ['補貼公會投保勞保 Guild Labor Ins Subsidy', emp['補貼公會投保勞保']],
       ['補貼公會健保自付 Guild Health Ins Subsidy', emp['補貼公會健保自付']],
       ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']],
@@ -5351,8 +5359,8 @@
       ['數學津貼(手動)', emp['數學津貼']],
       ['留班獎金',      emp['留班獎金']],
       ['考試獎金',      emp['考試獎金']],
-      ['其他津貼',      emp['其他津貼']],
-      ['特殊項目',      emp['特殊項目']],
+      ...itemizedPayslipRows('其他津貼', emp['其他津貼'], emp['其他津貼明細']),
+      ...itemizedPayslipRows('特殊項目', emp['特殊項目'], emp['特殊項目明細']),
       ['補貼公會投保勞保', emp['補貼公會投保勞保']],
       ['補貼公會健保自付', emp['補貼公會健保自付']],
       ['補貼健保眷屬',     emp['補貼健保眷屬']],

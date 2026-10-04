@@ -251,6 +251,15 @@ function populateMonth() {
   }
 }
 
+// 其他津貼有逐項明細時，每個津貼名稱各佔一行
+function itemizedRows(label, total, items) {
+  const list = Array.isArray(items) ? items.filter(it => it && (it.name || Number(it.amount))) : [];
+  const sum = list.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+  if (!list.length || sum !== (Number(total) || 0)) return [[label, total]];
+  const base = label.split(' ')[0];
+  return list.map(it => [`${base}・${String(it.name || '未命名').replace(/</g, '&lt;')}`, Number(it.amount) || 0]);
+}
+
 function fmtNT(n) { return (Number(n)||0).toLocaleString('en-US'); }
 
 function findSalary(eid, month) {
@@ -289,7 +298,7 @@ function renderPayslip() {
     ['數學班津貼 Math', emp['數學班津貼']],
     ['混班/混校津貼 Mixed', emp['混班/混校津貼']],
     ['帶班人數津貼 Class', emp['帶班人數津貼']],
-    ['其他津貼 Others', emp['其他津貼']]
+    ...itemizedRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細'])
   ];
   const subA = fixed.reduce((s,[,v])=>s+(Number(v)||0), 0);
 
