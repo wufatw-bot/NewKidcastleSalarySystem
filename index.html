@@ -2059,6 +2059,24 @@
     margin-top: 2px;
   }
   .change-pwd-link:hover { text-decoration: underline; }
+
+  /* 🛡 主管權限設定 */
+  .mp-group { margin-bottom:12px; border:1px solid #e9e5ff; border-radius:10px; overflow:hidden; }
+  .mp-group-h { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;
+    padding:8px 12px; background:#F5F3FF; color:#5B21B6; font-size:13px; }
+  .mp-bulk { font-size:11px; color:#6D28D9; display:flex; gap:4px; align-items:center; flex-wrap:wrap; }
+  .mp-bulk button { border:1px solid #C4B5FD; background:#fff; color:#5B21B6; border-radius:6px;
+    padding:3px 8px; font-size:11px; cursor:pointer; font-family:inherit; }
+  .mp-bulk button:hover { background:#EDE9FE; }
+  .mp-row { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:6px 12px; border-top:1px dashed #f1f5f9; font-size:13px; }
+  .mp-lbl { color:#1e293b; font-weight:600; }
+  .mp-seg { display:flex; gap:4px; background:#f1f5f9; padding:3px; border-radius:9px; }
+  .mp-opt { cursor:pointer; }
+  .mp-opt input { display:none; }
+  .mp-opt span { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; color:#64748b; font-weight:600; }
+  .mp-opt input:checked + span { background:var(--c); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+  .mp-opt input:disabled + span { opacity:.35; cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -2639,13 +2657,13 @@
           <tr>
             <th style="text-align:left;padding-left:12px;">員工</th>
             <th>校區</th>
-            <th>加班時數</th>
-            <th>請假時數</th>
-            <th>遲到次數</th>
-            <th>獎金</th>
-            <th>扣款</th>
-            <th>特殊調整</th>
-            <th>備註</th>
+            <th data-col="加班時數">加班時數</th>
+            <th data-col="請假時數">請假時數</th>
+            <th data-col="遲到次數">遲到次數</th>
+            <th data-col="獎金">獎金</th>
+            <th data-col="扣款">扣款</th>
+            <th data-col="特殊調整">特殊調整</th>
+            <th data-col="備註">備註</th>
             <th>加扣薪小計</th>
           </tr>
         </thead>
@@ -2686,6 +2704,7 @@
         <button class="btn-mini secondary" onclick="reloadFromStorage()" title="從本機儲存同步最新資料（如有其他人/視窗修改）">🔄 重新整理</button>
         <button class="btn-mini secondary" onclick="copyPrevMonthForOwner()" title="把上個月的工時/獎金等複製到最新月份">📋 複製上個月的資料</button>
         <button class="btn-mini secondary" onclick="addEmployee()">➕ 新增員工</button>
+        <button class="btn-mini primary" onclick="openMgrPerms()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);" title="設定主管可以看到 / 編輯哪些欄位">🛡 主管權限設定</button>
         <button class="btn-mini primary" onclick="exportEmployees()">⬇ 匯出 Employee Data.xlsx</button>
         <button class="btn-mini danger" onclick="resetData()" title="清除所有本機編輯">↺ 還原</button>
       </div>
@@ -3006,6 +3025,29 @@
     <div class="foot">
       <button class="btn-mini secondary" onclick="closeMigratePwd()">取消</button>
       <button class="btn-mini primary" onclick="validateMigratePwd()" style="background:linear-gradient(135deg,#DC2626,#991B1B);">🔓 解鎖</button>
+    </div>
+  </div>
+</div>
+
+<!-- 🛡 主管權限設定 modal (owner only) -->
+<div class="small-modal-overlay" id="mgrPermsOverlay" onclick="closeMgrPerms(event)">
+  <div class="small-modal" style="max-width:720px;" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);">
+      <div class="icon-l">🛡</div>
+      <h2>主管權限設定 — 主管可看到 / 可編輯的項目</h2>
+      <button class="close" onclick="closeMgrPerms()">✕</button>
+    </div>
+    <div class="body">
+      <p style="margin:0 0 12px;color:#475569;font-size:13px;line-height:1.7;">
+        針對每個項目選擇主管的權限：<b style="color:#059669;">✏ 可編輯</b>、<b style="color:#2563EB;">👁 只能看</b>、<b style="color:#64748b;">🚫 隱藏</b>。<br>
+        <small style="color:#94a3b8;">套用到兩校所有「主管」帳號的員工資料視窗與「主管輸入」頁；老闆本身不受影響。設定會同步到雲端。</small>
+      </p>
+      <div id="mgrPermsBody" style="max-height:56vh;overflow:auto;"></div>
+    </div>
+    <div class="foot">
+      <button class="btn-mini secondary" onclick="resetMgrPerms()">↺ 恢復預設</button>
+      <button class="btn-mini secondary" onclick="closeMgrPerms()">取消</button>
+      <button class="btn-mini primary" onclick="saveMgrPerms()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);">💾 儲存</button>
     </div>
   </div>
 </div>
@@ -5755,9 +5797,16 @@
 
     $('mgrCount').textContent = emps.length;
 
+    // 主管看到的欄位由老闆的「🛡 主管權限設定」決定（老闆自己永遠全部可編輯）
+    const colPerm = k => isOwner ? 'edit' : getMgrPerm('mgr:' + k);
+    document.querySelectorAll('#mgrTable thead th[data-col]').forEach(th => {
+      th.style.display = colPerm(th.dataset.col) === 'hidden' ? 'none' : '';
+    });
+    const visibleFields = MGR_FIELDS.filter(f => colPerm(f.key) !== 'hidden');
+
     const tbody = $('mgrTbody');
     if (!emps.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="empty">沒有符合條件的員工</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="${visibleFields.length + 3}" class="empty">沒有符合條件的員工</td></tr>`;
       return;
     }
 
@@ -5769,7 +5818,8 @@
       const r = computeRow(emp, sal);
       const campusClass = emp['校區'] === '同安' ? 'ta' : 'zj';
 
-      const inputs = MGR_FIELDS.map(f => {
+      const inputs = visibleFields.map(f => {
+        const ro = colPerm(f.key) === 'view' ? ' disabled title="老闆設定為「只能看」" style="cursor:not-allowed;opacity:.75;"' : '';
         const v = sal[f.key];
         const origV = orig[f.key];
         const changed = ((v == null ? '' : v) !== (origV == null ? '' : origV)) ? ' changed' : '';
@@ -5778,13 +5828,13 @@
           return `<td><input type="number" class="num${changed}"
             data-eid="${emp['員工編號']}" data-field="${f.key}"
             min="${f.min}" max="${f.max}" step="${f.step}"
-            value="${num}"></td>`;
+            value="${num}"${ro}></td>`;
         } else {
           const text = v == null ? '' : String(v).replace(/"/g, '&quot;');
           return `<td><input type="text" class="notes${changed}"
             data-eid="${emp['員工編號']}" data-field="${f.key}"
             placeholder="—"
-            value="${text}"></td>`;
+            value="${text}"${ro}></td>`;
         }
       }).join('');
 
@@ -7402,6 +7452,151 @@
   const MANAGER_LOCKED_FIELDS = ['員工編號', '底薪', '勞保自付', '健保自付', '退休金提撥', '登入帳號', '登入密碼'];
   // Manager-only drawer: hide these structural fields entirely
   const MANAGER_HIDDEN_FIELDS = ['底薪', '年資津貼', '主管津貼'];
+
+  // ==========================================================================
+  // 🛡 主管權限設定 — 老闆決定「主管」看得到哪些欄位、哪些可以編輯
+  // 每個欄位三種狀態：edit = 可編輯、view = 只能看、hidden = 隱藏
+  // 設定存在 DATA.managerPerms（跟著雲端資料同步，所有主管立即套用）
+  // 'mgr:' 開頭 = 「主管輸入」頁表格欄位（也套用到抽屜裡的「本月薪資」區塊）
+  // ==========================================================================
+  const MGR_PERM_GROUPS = [
+    { title: '① 基本資料 Basic', keys: ['員工編號','在職狀態','員工姓名','英文姓名','身份證字號','校區','職位','到職日','離職日'] },
+    { title: '② 薪資組成 Salary', keys: ['底薪','年資津貼','主管津貼','全勤獎金','美語津貼','美語輔導津貼','數學班津貼','帶班人數津貼','混班津貼','留班獎金','其他津貼','考試獎金'] },
+    { title: '③ 扣款 / 提撥 Deductions', keys: ['投保級距','勞保自付額','健保自付額','健保眷屬扣款','退休金','現金給付','請假類別','結構性請假時數'] },
+    { title: '④ 員工登入帳號 Login', keys: ['登入帳號','登入密碼','Email'] },
+    { title: '⑤ 特休管理 Annual Leave', keys: ['特休資訊','可休日數_手動','已休日數'] },
+    { title: '⑥ 備註 Notes', keys: ['備註'] },
+    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款','mgr:特殊調整','mgr:備註'] }
+  ];
+  const MGR_PERM_LABELS = {
+    '全勤獎金': '全勤狀態 (全勤/非全勤)', '特休資訊': '特休資訊卡 (只能看)',
+    '勞保自付額': '勞保自付額 / 補貼', '健保自付額': '健保自付額 / 補貼',
+    '健保眷屬扣款': '健保眷屬扣款 / 補貼', '退休金': '退休金提撥 / 補貼',
+    'mgr:備註': '本月備註'
+  };
+  const VIEW_ONLY_KEYS = ['特休資訊'];   // 沒有可編輯的內容，只有「看 / 隱藏」
+  // 預設值 = 原本系統寫死的主管權限，升級後行為不變
+  const DEFAULT_MGR_PERMS = (() => {
+    const d = {};
+    MGR_PERM_GROUPS.forEach(g => g.keys.forEach(k => { d[k] = 'edit'; }));
+    d['員工編號'] = 'view';
+    d['特休資訊'] = 'view';
+    ['底薪','年資津貼','主管津貼'].forEach(k => d[k] = 'hidden');
+    MGR_PERM_GROUPS[2].keys.forEach(k => d[k] = 'hidden');
+    MGR_PERM_GROUPS[3].keys.forEach(k => d[k] = 'hidden');
+    return d;
+  })();
+  // 存在員工資料上的實際欄位 → 權限 key（加扣薪成對欄位對應到同一個權限）
+  const PERM_KEY_ALIASES = {
+    '勞保自付': '勞保自付額', '補貼公會投保勞保': '勞保自付額',
+    '健保自付': '健保自付額', '補貼公會健保自付': '健保自付額',
+    '健保眷屬自付': '健保眷屬扣款', '補貼健保眷屬': '健保眷屬扣款',
+    '退休金提撥': '退休金', '補貼退休金': '退休金',
+    '美語人數': '美語津貼', '數學班人數': '數學班津貼', '帶班人數': '帶班人數津貼', '混班校數': '混班津貼',
+    '其他津貼明細': '其他津貼'
+  };
+  function getMgrPerm(key) {
+    const k = PERM_KEY_ALIASES[key] || key;
+    const saved = DATA && DATA.managerPerms && DATA.managerPerms[k];
+    const v = saved || DEFAULT_MGR_PERMS[k] || 'edit';
+    return (VIEW_ONLY_KEYS.includes(k) && v === 'edit') ? 'view' : v;
+  }
+  // 套用到抽屜：隱藏 / 鎖定 / 開放
+  function applyManagerPerms(body, editing) {
+    body.querySelectorAll('[data-field-cell]').forEach(cell => {
+      const perm = getMgrPerm(cell.dataset.fieldCell);
+      cell.style.display = perm === 'hidden' ? 'none' : '';
+      if (perm !== 'edit' || !editing) {
+        cell.querySelectorAll('input, select, textarea, button').forEach(el => {
+          el.setAttribute('disabled', 'disabled');
+          if (editing) { el.title = '此欄位老闆設定為「只能看」'; el.style.cursor = 'not-allowed'; }
+        });
+        if (editing && perm === 'view') cell.style.opacity = '0.75';
+      } else {
+        cell.style.opacity = '';
+      }
+    });
+    body.querySelectorAll('[data-mcol]').forEach(cell => {
+      const perm = getMgrPerm('mgr:' + cell.dataset.mcol);
+      cell.style.display = perm === 'hidden' ? 'none' : '';
+      if (perm !== 'edit') cell.querySelectorAll('input, textarea').forEach(el => el.setAttribute('disabled', 'disabled'));
+    });
+    // 整區都被隱藏時，連同區塊標題一起收起來
+    body.querySelectorAll('.form-section').forEach(sec => {
+      const cells = sec.querySelectorAll('[data-field-cell], [data-mcol]');
+      if (!cells.length) return;
+      const anyVisible = Array.from(cells).some(c => c.style.display !== 'none');
+      sec.style.display = anyVisible ? '' : 'none';
+    });
+  }
+
+  // -------- 設定視窗（老闆專用）--------
+  function openMgrPerms() {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可使用此功能', 'error'); return; }
+    const modeBtn = (key, mode, txt, color) => {
+      const cur = getMgrPerm(key);
+      const dis = (mode === 'edit' && VIEW_ONLY_KEYS.includes(key)) ? 'disabled' : '';
+      return `<label class="mp-opt" style="--c:${color};">
+        <input type="radio" name="mp_${key}" value="${mode}" ${cur === mode ? 'checked' : ''} ${dis}><span>${txt}</span></label>`;
+    };
+    let html = '';
+    MGR_PERM_GROUPS.forEach((g, gi) => {
+      html += `<div class="mp-group">
+        <div class="mp-group-h"><b>${g.title}</b>
+          <span class="mp-bulk">全部設為：
+            <button type="button" onclick="mgrPermsBulk(${gi},'edit')">✏ 可編輯</button>
+            <button type="button" onclick="mgrPermsBulk(${gi},'view')">👁 只能看</button>
+            <button type="button" onclick="mgrPermsBulk(${gi},'hidden')">🚫 隱藏</button>
+          </span></div>`;
+      g.keys.forEach(k => {
+        const label = MGR_PERM_LABELS[k] || k.replace(/^mgr:/, '');
+        html += `<div class="mp-row"><span class="mp-lbl">${label}</span><span class="mp-seg">
+          ${modeBtn(k,'edit','✏ 可編輯','#10B981')}${modeBtn(k,'view','👁 只能看','#3B82F6')}${modeBtn(k,'hidden','🚫 隱藏','#94a3b8')}
+        </span></div>`;
+      });
+      html += '</div>';
+    });
+    $('mgrPermsBody').innerHTML = html;
+    $('mgrPermsOverlay').classList.add('show');
+  }
+  function closeMgrPerms(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('mgrPermsOverlay').classList.remove('show');
+  }
+  function mgrPermsBulk(gi, mode) {
+    MGR_PERM_GROUPS[gi].keys.forEach(k => {
+      const m = (mode === 'edit' && VIEW_ONLY_KEYS.includes(k)) ? 'view' : mode;
+      const r = document.querySelector(`#mgrPermsBody input[name="mp_${k}"][value="${m}"]`);
+      if (r) r.checked = true;
+    });
+  }
+  function resetMgrPerms() {
+    MGR_PERM_GROUPS.forEach(g => g.keys.forEach(k => {
+      const r = document.querySelector(`#mgrPermsBody input[name="mp_${k}"][value="${DEFAULT_MGR_PERMS[k]}"]`);
+      if (r) r.checked = true;
+    }));
+    toast('已恢復預設（尚未儲存）', 'success');
+  }
+  function saveMgrPerms() {
+    const perms = {};
+    let nEdit = 0, nView = 0, nHidden = 0;
+    MGR_PERM_GROUPS.forEach(g => g.keys.forEach(k => {
+      const r = document.querySelector(`#mgrPermsBody input[name="mp_${k}"]:checked`);
+      const v = r ? r.value : DEFAULT_MGR_PERMS[k];
+      perms[k] = v;
+      if (v === 'edit') nEdit++; else if (v === 'view') nView++; else nHidden++;
+    }));
+    DATA.managerPerms = perms;
+    persistData();
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser.fullName,
+      text: `更新主管權限設定：可編輯 ${nEdit} 項、只能看 ${nView} 項、隱藏 ${nHidden} 項`
+    });
+    closeMgrPerms();
+    try { renderManagerTable(); } catch(_) {}
+    toast('✓ 主管權限已儲存，主管下次開啟頁面即套用', 'success');
+  }
   // Manager-only drawer: 7 個津貼欄位，每個有不同的算法
   // type='linear' : 津貼 = 人數 × rate
   // type='fixed'  : 固定金額（無人數欄位）
@@ -7484,18 +7679,8 @@
       else b.setAttribute('disabled', 'disabled');
     });
 
-    // Managers: re-lock structural fields
-    if (isManager) {
-      MANAGER_LOCKED_FIELDS.forEach(k => {
-        const fld = body.querySelector(`[data-key="${k}"]`);
-        if (fld) {
-          fld.setAttribute('disabled', 'disabled');
-          fld.title = '此欄位僅老闆可修改';
-          fld.style.background = '#fef3c7';
-          fld.style.cursor = 'not-allowed';
-        }
-      });
-    }
+    // Managers: show / lock / hide each field according to the boss's 主管權限設定
+    if (currentUser && currentUser.role === 'manager') applyManagerPerms(body, editing);
 
     // Title + foot button updates
     if (isEmployee) {
@@ -7585,7 +7770,7 @@
     const ATT_DEFAULT = 500;   // 全勤時的預設獎金額
     // Toggle (radio) for attendance bonus
     const attHtml = `
-      <div class="field-cell wide" style="background:#FEF9C3;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;">
+      <div class="field-cell wide" data-field-cell="全勤獎金" style="background:#FEF9C3;border:1px solid #FCD34D;border-radius:8px;padding:10px 14px;">
         <label style="display:block;margin-bottom:6px;color:#92400E;">全勤狀態</label>
         <div style="display:flex;gap:18px;font-size:14px;">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
@@ -7609,7 +7794,7 @@
       if (spec.type === 'fixed') {
         const hasAllowance = mVal > 0;
         return `
-        <div class="field-cell wide">
+        <div class="field-cell wide" data-field-cell="${moneyKey}">
           <label>${spec.labelMoney}</label>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:6px 12px;border:2px solid ${hasAllowance ? '#10B981' : '#cbd5e1'};border-radius:8px;background:${hasAllowance ? '#ECFDF5' : '#fff'};">
@@ -7628,7 +7813,7 @@
       // ── 自由輸入類：留班獎金 ──
       if (spec.type === 'manual') {
         return `
-        <div class="field-cell wide">
+        <div class="field-cell wide" data-field-cell="${moneyKey}">
           <label>${spec.labelMoney}</label>
           <input type="number" data-key="${moneyKey}" min="0" step="1" value="${mVal}" placeholder="主管自由輸入金額">
         </div>`;
@@ -7648,12 +7833,12 @@
           : '平時：< 16人 = 0；16~20人 × 500；超 20 人後續 × 1000';
         if (mVal !== computed) emp[moneyKey] = computed;
         return `
-        <div class="field-cell">
+        <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelHc} <small style="color:#94a3b8;font-weight:normal;">分段</small></label>
           <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-formula="classSize" min="0" step="1" value="${hcVal}">
           <small style="color:#94a3b8;font-size:11px;display:block;margin-top:4px;line-height:1.4;">${hint}</small>
         </div>
-        <div class="field-cell">
+        <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelMoney}</label>
           <input type="number" class="head-money-display" data-key="${moneyKey}" min="0" step="1" value="${computed}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
         </div>`;
@@ -7665,11 +7850,11 @@
       const rate = spec.rate;
       const hcVal = Number(emp[hcKey]) || 0;
       return `
-        <div class="field-cell">
+        <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelHc} <small style="color:#94a3b8;font-weight:normal;">× ${rate}元</small></label>
           <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-rate="${rate}" min="0" step="1" value="${hcVal}">
         </div>
-        <div class="field-cell">
+        <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelMoney}</label>
           <input type="number" class="head-money-display" data-key="${moneyKey}" min="0" step="1" value="${mVal}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
         </div>`;
@@ -7687,8 +7872,13 @@
         }).join('')
       : '<div class="empty-hint">尚無分項紀錄，可在上方加入</div>';
     const otherTotal = Number(emp['其他津貼']) || 0;
+    const structHtml = ['底薪','年資津貼','主管津貼'].map(k => `
+      <div class="field-cell" data-field-cell="${k}">
+        <label>${k} (元)</label>
+        <input type="number" data-key="${k}" min="0" step="1" value="${Number(emp[k])||0}">
+      </div>`).join('');
     const otherHtml = `
-      <div class="field-cell wide">
+      <div class="field-cell wide" data-field-cell="其他津貼">
         <div class="other-itemizer">
           <div class="title">📝 其他津貼明細 — 輸入名目、金額、說明逐項加入，會自動加總</div>
           <div class="add-row" style="display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:6px;">
@@ -7700,18 +7890,19 @@
           <div class="chips" id="oi_other_chips">${chipsHtml}</div>
         </div>
       </div>
-      <div class="field-cell">
+      <div class="field-cell" data-field-cell="其他津貼">
         <label>其他津貼合計 (元)</label>
         <input type="number" data-key="其他津貼" min="0" step="1" value="${otherTotal}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
       </div>
-      <div class="field-cell wide">
+      <div class="field-cell wide" data-field-cell="考試獎金">
         <label>📝 考試獎金 (元)</label>
         <input type="number" data-key="考試獎金" min="0" step="1" value="${Number(emp['考試獎金'])||0}" placeholder="0">
       </div>`;
 
     return `<div class="form-section salary">
-      <h3><span class="badge">②</span> 薪資組成 Salary <small style="color:#10B981;font-weight:normal;font-size:11px;">(主管視圖 — 部分欄位僅老闆可見)</small></h3>
+      <h3><span class="badge">②</span> 薪資組成 Salary <small style="color:#10B981;font-weight:normal;font-size:11px;">(主管視圖 — 顯示/編輯項目由老闆在「🛡 主管權限設定」決定)</small></h3>
       <div class="field-grid">
+        ${structHtml}
         ${attHtml}
         ${allowanceHtml}
         ${otherHtml}
@@ -7727,9 +7918,7 @@
     const html = OWN_SECTIONS.map(sec => {
       // Manager view: hide structural sections (deductions / bank / login / notes)
       // Manager view: hide deduct/bank/login sections; 備註 (notes) is allowed
-      if (isMgr && (sec.cls === 'deduct' || sec.cls === 'bank' || sec.cls === 'login')) {
-        return '';
-      }
+      // (主管可看到哪些欄位，改由老闆在「🛡 主管權限設定」決定 — 見 applyManagerPerms)
       // Manager view: section 2 (薪資組成) gets entirely custom render
       if (isMgr && sec.cls === 'salary') {
         return renderManagerSalarySection(emp);
@@ -7737,7 +7926,7 @@
       const fields = sec.fields.map(f => {
         // Hide structural fields (底薪/年資/主管津貼) for everyone except OWNER in EDIT mode
         const isOwnerEditing = currentUser && currentUser.role === 'owner' && _drawerEditMode;
-        if (MANAGER_HIDDEN_FIELDS.indexOf(f.key) >= 0 && !isOwnerEditing) return '';
+        if (!isMgr && MANAGER_HIDDEN_FIELDS.indexOf(f.key) >= 0 && !isOwnerEditing) return '';
         const v = emp[f.key];
         const origV = orig[f.key];
         const changed = !isNew && (v == null ? '' : v) !== (origV == null ? '' : origV);
@@ -7852,7 +8041,8 @@
               <div class="chips" id="oi_${s}_chips">${chipsHtml}</div>
             </div>`;
         }
-        return itemizerHtml + `<div class="field-cell${wide}">
+        if (itemizerHtml) itemizerHtml = itemizerHtml.replace('<div class="other-itemizer">', `<div class="other-itemizer" data-field-cell="${f.key}">`);
+        return itemizerHtml + `<div class="field-cell${wide}" data-field-cell="${f.key}">
           <label>${f.label || f.key}</label>
           ${inputHtml}
           ${quickFillHtml}
@@ -7891,7 +8081,7 @@
     const otPay = Number(sal['加班費']) || 0;
     const fieldsHtml = DRAWER_MONTHLY_FIELDS.map(f => {
       const v = sal[f.key] == null ? 0 : sal[f.key];
-      return `<div class="field-cell">
+      return `<div class="field-cell" data-mcol="${f.key}">
         <label>${f.label}</label>
         <input type="number" data-sal-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${v}">
       </div>`;
@@ -7899,11 +8089,11 @@
     const noteVal = String(sal['備註'] == null ? '' : sal['備註']).replace(/</g, '&lt;').replace(/"/g, '&quot;');
     return `
       ${fieldsHtml}
-      <div class="field-cell">
+      <div class="field-cell" data-mcol="加班時數">
         <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數 × 180元/小時)</small></label>
         <input type="number" id="drawerOtPayDisplay" value="${otPay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
       </div>
-      <div class="field-cell wide">
+      <div class="field-cell wide" data-mcol="備註">
         <label>本月備註 Monthly Note <small style="font-weight:normal;color:#94a3b8;">（僅本月薪資條顯示；留空則沿用下方「備註」欄的員工預設備註）</small></label>
         <textarea data-sal-key="備註" rows="3" placeholder="僅套用於 ${_drawerMonth} 這個月份的薪資條" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;background:#fff;">${noteVal}</textarea>
       </div>`;
@@ -8379,8 +8569,8 @@
     if (currentUser && currentUser.role === 'manager' && _editingEid) {
       const orig = DATA.employees.find(e => e['員工編號'] === _editingEid);
       if (orig) {
-        MANAGER_LOCKED_FIELDS.forEach(k => {
-          form[k] = orig[k];   // force-keep original value
+        Object.keys(form).forEach(k => {
+          if (getMgrPerm(k) !== 'edit') form[k] = orig[k];   // 老闆未開放編輯 → 保留原值
         });
       }
     }
