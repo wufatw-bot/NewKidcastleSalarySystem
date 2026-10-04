@@ -2077,9 +2077,22 @@
   .mp-opt span { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; color:#64748b; font-weight:600; }
   .mp-opt input:checked + span { background:var(--c); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.15); }
   .mp-opt input:disabled + span { opacity:.35; cursor:not-allowed; }
+
+  /* 右下角：版本 / 編輯日期 */
+  #editStamp {
+    position: fixed; right: 14px; bottom: 12px; z-index: 8999;
+    font-family: "Courier New", monospace; font-size: 12px; font-weight: 700;
+    letter-spacing: 1px; color: rgba(255,255,255,0.9);
+    background: rgba(15,23,42,0.35); backdrop-filter: blur(6px);
+    padding: 4px 10px; border-radius: 999px; pointer-events: none; user-select: none;
+  }
+  body.in-dashboard #editStamp { color: #475569; background: rgba(255,255,255,0.85); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
 </style>
 </head>
 <body>
+
+<!-- 右下角版本 / 編輯日期 — 每次修改請更新 EDIT_STAMP -->
+<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261004V1</div>
 
 <!-- Floating zoom control -->
 <div id="zoomControl" class="no-print" title="調整字體與頁面大小">
@@ -3525,6 +3538,7 @@
     $('home').style.display = 'none';
     $('overlay').classList.remove('show');
     $('dashboard').style.display = 'block';
+    document.body.classList.add('in-dashboard');
     $('dbSchool').textContent = s.name + ' · ' + s.code;
     $('dbUserName').textContent = user.fullName;
     $('dbRole').textContent = user.role === 'owner' ? '老闆 Owner'
@@ -3595,6 +3609,7 @@
     if ($('acctSchool')) delete $('acctSchool').dataset.defaulted;
     document.body.classList.remove('role-owner', 'role-manager', 'role-employee');
     $('dashboard').style.display = 'none';
+    document.body.classList.remove('in-dashboard');
     $('home').style.display = 'flex';
     hideAlerts();
     currentUser = null;
