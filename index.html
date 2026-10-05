@@ -4863,6 +4863,18 @@
     const base = label.split(' ')[0];
     return list.map(it => [`${base}・${String(it.name || '未命名').replace(/</g, '&lt;')}`, Number(it.amount) || 0]);
   }
+  // 其他津貼 → 備註欄文字（每項一行：名目 NT$金額（說明））
+  function otherAllowanceNoteLines(emp) {
+    const items = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'].filter(it => it && (it.name || Number(it.amount))) : [];
+    if (items.length) {
+      return items.map(it => {
+        const n = String(it.note || '').trim();
+        return `${it.name || '未命名'} NT$ ${fmtNT(it.amount || 0)}${n ? '（' + n + '）' : ''}`;
+      });
+    }
+    const total = Number(emp['其他津貼']) || 0;
+    return total ? [`其他津貼 NT$ ${fmtNT(total)}`] : [];
+  }
   function fmtNT(n) {
     if (n == null || isNaN(n)) return '0';
     return Number(n).toLocaleString('en-US');
@@ -5225,7 +5237,8 @@
       ${(() => {
         // 其他津貼／特殊項目明細 — 顯示每項說明（如有填寫「說明」）
         const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        const blocks = [['其他津貼明細', '📋 其他津貼明細說明 Others Detail'], ['特殊項目明細', '📋 特殊項目明細說明 Special Detail']]
+        // （其他津貼明細已改為寫入下方「備註」欄，這裡只保留特殊項目明細）
+        const blocks = [['特殊項目明細', '📋 特殊項目明細說明 Special Detail']]
           .map(([listKey, title]) => {
             const items = Array.isArray(emp[listKey]) ? emp[listKey] : [];
             const withNotes = items.filter(it => it && (it.note || '').toString().trim());
@@ -5246,17 +5259,19 @@
         const salNote = String((sal && sal['備註']) || '').trim();
         const empNote = String(emp['備註'] || '').trim();
         const note = salNote || empNote;
-        if (!note) return '';
+        // 其他津貼內容一併寫入備註欄
+        const otherLines = otherAllowanceNoteLines(emp);
+        if (!note && !otherLines.length) return '';
+        const escHtml = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const otherHtml = otherLines.length
+          ? `<div style="font-weight:700;color:#854D0E;">【其他津貼】</div>` + otherLines.map(l => `<div>・${escHtml(l)}</div>`).join('')
+          : '';
         // Escape HTML and preserve line breaks
-        const safe = note
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/\n/g, '<br>');
-        const sourceLabel = salNote ? `本月 (${month})` : '員工預設';
+        const safe = note ? escHtml(note).replace(/\n/g, '<br>') : '';
+        const sourceLabel = salNote ? `本月 (${month})` : (empNote ? '員工預設' : '其他津貼');
         return `<div class="ps-notes">
           <div class="ps-notes-h">📝 備註 Notes <small style="font-weight:400;color:#92400E;opacity:.7;">· 來源：${sourceLabel}</small></div>
-          <div class="ps-notes-body">${safe}</div>
+          <div class="ps-notes-body">${otherHtml}${otherHtml && safe ? '<div style="margin-top:6px;"></div>' : ''}${safe}</div>
         </div>`;
       })()}
     `;
@@ -5437,7 +5452,7 @@
     out += dline + '\n';
 
     // 其他津貼／特殊項目 — 逐項說明（若有填寫「說明」欄位）
-    [['其他津貼明細', '其他津貼明細說明 Others Detail'], ['特殊項目明細', '特殊項目明細說明 Special Detail']]
+    [['特殊項目明細', '特殊項目明細說明 Special Detail']]
       .forEach(([listKey, title]) => {
         const items = Array.isArray(emp[listKey]) ? emp[listKey] : [];
         const withNotes = items.filter(it => it && String(it.note || '').trim());
@@ -5454,11 +5469,16 @@
     const salNote = String((sal && sal['備註']) || '').trim();
     const empNote = String(emp['備註'] || '').trim();
     const note = salNote || empNote;
-    if (note) {
+    const otherLines = otherAllowanceNoteLines(emp);
+    if (note || otherLines.length) {
       out += '\n' + line + '\n';
-      out += `  📝 備註 Notes（來源：${salNote ? '本月 ' + month : '員工預設'}）\n`;
+      out += `  📝 備註 Notes（來源：${salNote ? '本月 ' + month : (empNote ? '員工預設' : '其他津貼')}）\n`;
       out += line + '\n';
-      note.split('\n').forEach(l => { out += `    ${l}\n`; });
+      if (otherLines.length) {
+        out += '    【其他津貼】\n';
+        otherLines.forEach(l => { out += `    ・${l}\n`; });
+      }
+      if (note) note.split('\n').forEach(l => { out += `    ${l}\n`; });
     }
     return out;
   }
