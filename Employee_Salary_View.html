@@ -91,6 +91,40 @@ header .sub { font-size:14px; opacity:.9; margin-top:4px; }
 }
 .ps-net .lbl { font-size:15px; font-weight:600; }
 .ps-net .val { font-size:28px; font-weight:800; font-family:Arial; }
+  .ps-total-due {
+    margin-top: 10px;
+    padding: 11px 16px;
+    background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+    color: #1E3A8A;
+    border-radius: 8px;
+    border-left: 5px solid #3B82F6;
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 15px;
+  }
+  .ps-total-due .lbl { letter-spacing: 0.5px; }
+  .ps-total-due .val { font-family: Arial; font-size: 18px; color: #1E40AF; }
+  .ps-other-notes {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #ECFEFF, #CFFAFE);
+    border-left: 5px solid #06B6D4;
+    border-radius: 10px;
+    color: #134E4A;
+  }
+  .ps-other-h {
+    font-weight: 700; font-size: 14px; margin-bottom: 8px;
+    color: #0F766E; letter-spacing: 0.5px;
+  }
+  .ps-other-row {
+    display: grid; grid-template-columns: 1fr auto 2fr; gap: 12px;
+    padding: 4px 0; font-size: 13px; line-height: 1.6;
+    border-bottom: 1px dashed #99F6E4;
+  }
+  .ps-other-row:last-child { border-bottom: none; }
+  .ps-other-name { font-weight: 600; color: #134E4A; }
+  .ps-other-amt { color: #047857; font-weight: 700; font-family: Arial; }
+  .ps-other-note { color: #0F766E; font-style: italic; }
+
 .ps-notes { margin-top:14px; padding:12px 16px; background:linear-gradient(135deg,#FEF9C3,#FEF3C7); border-left:5px solid #EAB308; border-radius:10px; color:#422006; }
 .ps-notes-h { font-weight:700; font-size:14px; margin-bottom:6px; color:#854D0E; }
 .ps-notes-body { font-size:13px; line-height:1.7; }
@@ -162,6 +196,15 @@ const CLOUD_URL = 'https://script.google.com/macros/s/AKfycbyQpJuII2RkmYQ-3P33XM
 let DATA = null;
 let currentEmp = null;
 const $ = id => document.getElementById(id);
+// 公式參數：以雲端 DATA.formulaConfig（由 Formula_Settings.html 設定）為準，否則用預設值
+const FORMULA_DEFAULTS = { OT_RATE:180, PAY_RATE:180, LEAVE_RATE:180, LATE_FEE:100, UNLOCK_DAY:17,
+  ATT_REQUIRE_NO_LEAVE:true, ATT_REQUIRE_NO_LATE:true,
+  AL_TABLE:[[0.5,3],[1,7],[2,10],[3,14],[5,15],[10,16]], AL_STEP:1, AL_CAP:30 };
+function FC(k) {
+  const c = DATA && DATA.formulaConfig;
+  if (c && c[k] !== undefined && c[k] !== null && c[k] !== '') return c[k];
+  return FORMULA_DEFAULTS[k];
+}
 
 function showErr(msg) {
   $('errText').textContent = msg;
@@ -233,10 +276,9 @@ function getCurrentMonthROC() {
   return `${rocYear}${mm}`;
 }
 // 當月薪資須等到每月17日（含）之後才開放查閱，17日前該月選項直接隱藏（過去月份不受影響）
-const PAYSLIP_UNLOCK_DAY = 17;
 function isPayslipMonthUnlocked(month) {
   if (String(month) !== getCurrentMonthROC()) return true;
-  return new Date().getDate() >= PAYSLIP_UNLOCK_DAY;
+  return new Date().getDate() >= Number(FC('UNLOCK_DAY'));
 }
 
 function populateMonth() {
@@ -248,22 +290,84 @@ function populateMonth() {
     .sort().reverse();
   const sel = $('monthSel');
   if (!months.length) {
-    sel.innerHTML = `<option value="">尚無可查閱的薪資（本月薪資將於每月${PAYSLIP_UNLOCK_DAY}日開放查閱）</option>`;
+    sel.innerHTML = `<option value="">尚無可查閱的薪資（本月薪資將於每月${Number(FC('UNLOCK_DAY'))}日開放查閱）</option>`;
   } else {
     sel.innerHTML = months.map(m => `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`).join('');
   }
 }
 
-// 其他津貼有逐項明細時，每個津貼名稱各佔一行
-function itemizedRows(label, total, items) {
-  const list = Array.isArray(items) ? items.filter(it => it && (it.name || Number(it.amount))) : [];
-  const sum = list.reduce((s, it) => s + (Number(it.amount) || 0), 0);
-  if (!list.length || sum !== (Number(total) || 0)) return [[label, total]];
-  const base = label.split(' ')[0];
-  return list.map(it => [`${base}・${String(it.name || '未命名').replace(/</g, '&lt;')}`, Number(it.amount) || 0]);
-}
+// ===== 以下與主系統 index.html 的薪水條完全相同（請兩邊一起維護）=====
+  function itemizedPayslipRows(label, total, items) {
+    const list = Array.isArray(items) ? items.filter(it => it && (it.name || Number(it.amount))) : [];
+    const sum = list.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+    if (!list.length || sum !== (Number(total) || 0)) return [[label, total]];
+    const base = label.split(' ')[0];
+    return list.map(it => [`${base}・${String(it.name || '未命名').replace(/</g, '&lt;')}`, Number(it.amount) || 0]);
+  }
+  // 其他津貼 → 備註欄文字（每項一行：名目 NT$金額（說明））
+  function otherAllowanceNoteLines(emp) {
+    const items = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'].filter(it => it && (it.name || Number(it.amount))) : [];
+    if (items.length) {
+      return items.map(it => {
+        const n = String(it.note || '').trim();
+        return `${it.name || '未命名'} NT$ ${fmtNT(it.amount || 0)}${n ? '（' + n + '）' : ''}`;
+      });
+    }
+    const total = Number(emp['其他津貼']) || 0;
+    return total ? [`其他津貼 NT$ ${fmtNT(total)}`] : [];
+  }
+  function laborLawDays(years) {
+    // 依公式設定的「年資→天數」對照表；最後一級之後每滿1年 +AL_STEP 天，上限 AL_CAP
+    const table = (FC('AL_TABLE') || []).map(r => [Number(r[0]), Number(r[1])]).sort((a, b) => a[0] - b[0]);
+    let days = 0, lastYr = 0, lastDays = 0;
+    for (const [yr, d] of table) { if (years >= yr) { days = d; lastYr = yr; lastDays = d; } }
+    if (table.length && lastYr === table[table.length - 1][0] && lastYr >= 1) {
+      days = lastDays + (Math.floor(years) - Math.floor(lastYr)) * Number(FC('AL_STEP'));
+    }
+    return Math.min(Number(FC('AL_CAP')), days);
+  }
+  function computeAnnualLeave(emp) {
+    if (!emp || !emp['到職日']) return null;
+    const hire = new Date(emp['到職日']);
+    if (isNaN(hire.getTime())) return null;
+    const today = new Date();
+    // 滿N年 = 整數年數差
+    let yr = today.getFullYear() - hire.getFullYear();
+    const beforeAnniv = (today.getMonth() < hire.getMonth()) ||
+      (today.getMonth() === hire.getMonth() && today.getDate() < hire.getDate());
+    if (beforeAnniv) yr--;
+    if (yr < 0) yr = 0;
+    // 最近一次週年日
+    const lastAnniv = new Date(hire);
+    lastAnniv.setFullYear(hire.getFullYear() + yr);
+    if (lastAnniv > today) lastAnniv.setFullYear(lastAnniv.getFullYear() - 1);
+    const nextAnniv = new Date(lastAnniv);
+    nextAnniv.setFullYear(lastAnniv.getFullYear() + 1);
+    const yearsFloat = (today - hire) / (1000 * 60 * 60 * 24 * 365.25);
+    const daysEntitledAuto = laborLawDays(yearsFloat);
+    // 手動覆蓋值（若 > 0）
+    const daysEntitledManual = Number(emp['可休日數_手動']) || 0;
+    const daysEntitled = daysEntitledManual > 0 ? daysEntitledManual : daysEntitledAuto;
+    const daysUsed = Number(emp['已休日數']) || 0;
+    const daysRemaining = Math.max(0, daysEntitled - daysUsed);
+    const fmt = d => d.toISOString().substr(0, 10);
+    return {
+      anniversary:   yr,
+      periodStart:   fmt(lastAnniv),
+      periodEnd:     fmt(nextAnniv),
+      daysEntitled,
+      daysEntitledAuto,
+      daysUsed,
+      daysRemaining,
+      isManualOverride: daysEntitledManual > 0
+    };
+  }
 
-function fmtNT(n) { return (Number(n)||0).toLocaleString('en-US'); }
+
+function fmtNT(n) {
+  if (n == null || isNaN(n)) return '0';
+  return Number(n).toLocaleString('en-US');
+}
 
 function findSalary(eid, month) {
   return (DATA.salary || []).find(s => s['員工編號'] === eid && String(s['月份']) === String(month));
@@ -273,126 +377,205 @@ function renderPayslip() {
   const emp = currentEmp;
   const month = $('monthSel').value;
   if (!month) {
-    $('payslip').innerHTML = `<div class="loading"><div>尚無可查閱的薪資（本月薪資將於每月${PAYSLIP_UNLOCK_DAY}日開放查閱）</div></div>`;
+    $('payslip').innerHTML = `<div class="loading"><div>尚無可查閱的薪資（本月薪資將於每月${Number(FC('UNLOCK_DAY'))}日開放查閱）</div></div>`;
     return;
   }
-  const sal = findSalary(emp['員工編號'], month) || {};
-  const noLL = (Number(sal['請假時數'])||0)===0 && (Number(sal['遲到次數'])||0)===0;
-  const attBonus = noLL ? (Number(emp['全勤獎金'])||0) : 0;
-  // OT pay
-  const base = Number(emp['底薪'])||0;
-  const OT_RATE = 180; // 加班費率：固定 180 元/小時
-  const hourly = OT_RATE;
-  const otH = Number(sal['加班時數'])||0;
-  const otPay = Math.round(otH * OT_RATE);
-  const leaveH = Number(sal['請假時數'])||0;
-  const leaveD = Math.round(leaveH * 180);
-  const lateCnt = Number(sal['遲到次數'])||0;
-  const lateD = lateCnt * 100;
+  // 依目前公式設定重新計算加班費／請假扣款／遲到扣款（與主系統 computeRow 相同）
+  const sal = Object.assign({}, findSalary(emp['員工編號'], month) || {});
+  sal['加班費']   = Math.round((Number(sal['加班時數']) || 0) * Number(FC('OT_RATE')));
+  sal['支薪金額'] = Math.round((Number(sal['支薪時數']) || 0) * Number(FC('PAY_RATE')));
+  sal['請假扣款'] = Math.round((Number(sal['請假時數']) || 0) * Number(FC('LEAVE_RATE')));
+  sal['遲到扣款'] = (Number(sal['遲到次數']) || 0) * Number(FC('LATE_FEE'));
+
+  // Compute attendance bonus (only if no leave & no late)
+  const noLeaveLate = (!FC('ATT_REQUIRE_NO_LEAVE') || (Number(sal['請假時數']) || 0) === 0) && (!FC('ATT_REQUIRE_NO_LATE') || (Number(sal['遲到次數']) || 0) === 0);
+  const attBonus = noLeaveLate ? (Number(emp['全勤獎金']) || 0) : 0;
 
   const fixed = [
     ['底薪 Base', emp['底薪']],
     ['全勤獎金 Attendance', attBonus],
     ['年資津貼 Seniority', emp['年資津貼']],
-    ['主管津貼 Manager', emp['主管津貼']],
-    ['分校人數超額獎金 Excess', emp['分校人數超額獎金']],
-    ['美語津貼 English', emp['美語津貼']],
-    ['英文輔導津貼 Tutoring', emp['英文輔導津貼']],
-    ['數學班津貼 Math', emp['數學班津貼']],
-    ['混班/混校津貼 Mixed', emp['混班/混校津貼']],
-    ['帶班人數津貼 Class', emp['帶班人數津貼']],
-    ...itemizedRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細'])
+    ['投保薪資級距 Salary Tier', emp['投保級距']]   // 資訊欄，不列入 A 加總
   ];
-  const subA = fixed.reduce((s,[,v])=>s+(Number(v)||0), 0);
+  // 投保薪資級距僅作顯示，不計入 A 加總
+  const subA = fixed.filter(([k]) => !k.startsWith('投保薪資級距')).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
   const variable = [
-    ['加班費 OT Pay', otPay],
-    ['支薪金額 Paid Hours Pay (×180/hr)', Math.round((Number(sal['支薪時數'])||0) * 180)],
+    ['主管津貼 Manager', emp['主管津貼']],
+    ['美語津貼 English', emp['美語津貼']],
+    ['美語輔導津貼 Tutoring', emp['美語輔導津貼']],
+    ['數學班津貼 Math', emp['數學班津貼']],
+    ['帶班人數津貼 Class Size', emp['帶班人數津貼']],
+    ['混班津貼 Mixed Class', emp['混班津貼']],
+    ['數學津貼(手動) Math (Manual)', emp['數學津貼']],
+    ['留班獎金 Retention Bonus', emp['留班獎金']],
+    ['考試獎金 Exam Bonus', emp['考試獎金']],
+    ...itemizedPayslipRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細']),
+    ...itemizedPayslipRows('特殊項目 Special', emp['特殊項目'], emp['特殊項目明細']),
+    ['補貼公會投保勞保 Guild Labor Ins Subsidy', emp['補貼公會投保勞保']],
+    ['補貼公會健保自付 Guild Health Ins Subsidy', emp['補貼公會健保自付']],
+    ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']],
+    ['補貼退休金 Retirement Subsidy', emp['補貼退休金']],
+    ['加班費 OT Pay', sal['加班費']],
+    ['加班時數 OT Hours', sal['加班時數']],
+    [`支薪金額 Paid Hours Pay (×${FC('PAY_RATE')}/hr)`, Math.round((Number(sal['支薪時數'])||0) * Number(FC('PAY_RATE')))],
+    ['支薪時數 Paid Hours', sal['支薪時數']],
     ['獎金 Bonus', sal['獎金']],
-    ['特殊調整 Adjust', sal['特殊調整']]
+    ['特殊調整 Adjust', sal['特殊調整']],
+    ['帶班人數 Class Size (人)', emp['帶班人數']],   // 資訊欄，不列入 B
+    ['混班校數 Mixed Class (校)', emp['混班校數']]   // 資訊欄，不列入 B
   ];
-  const subB = variable.reduce((s,[,v])=>s+(Number(v)||0), 0);
+  // exclude OT hours / 人數 / 校數 (count-only info rows) from sum — they're counts, not money.
+  // NOTE: must match the exact label, not a prefix — '帶班人數津貼 Class Size' (real money row)
+  // also starts with '帶班人數', so a startsWith() check here was wrongly stripping that
+  // allowance out of the total too.
+  const subB = variable.filter(([k]) =>
+    k !== '加班時數 OT Hours' && k !== '支薪時數 Paid Hours' && k !== '帶班人數 Class Size (人)' && k !== '混班校數 Mixed Class (校)'
+  ).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
   const deductions = [
     ['勞保自付 Labor Ins', emp['勞保自付']],
     ['健保自付 Health Ins', emp['健保自付']],
-    ['請假時數 Leave Hours', leaveH],
-    ['請假扣款 Leave Deduct', leaveD],
-    ['遲到扣款 Late', lateD],
+    ['健保眷屬扣款 Health Dep', emp['健保眷屬自付']],
+    ['退休金提撥 Retirement', emp['退休金提撥']],
+    ['請假時數 Leave Hours', sal['請假時數']],
+    [`請假扣款 Leave Deduct (×${FC('LEAVE_RATE')}/hr)`, sal['請假扣款']],
+    ['遲到扣款 Late', sal['遲到扣款']],
     ['扣款 Deduction', sal['扣款']]
   ];
-  const subC = deductions.filter(([k])=>!k.startsWith('請假時數'))
-    .reduce((s,[,v])=>s+(Number(v)||0), 0);
-  const subD = Number(emp['現金給付'])||0;
-  const net = subA + subB - subC - subD;
-  const today = new Date().toISOString().substr(0,10);
+  // Exclude 請假時數 from sum (it's hours, not money) — only the 請假扣款 (money) counts
+  const subC = deductions
+    .filter(([k]) => !k.startsWith('請假時數'))
+    .reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
-  const renderRows = items => items.map(([k,v]) => {
-    const num = Number(v)||0;
-    return `<div class="ps-row${num===0?' zero':''}"><span class="lbl">${k}</span><span class="val">${fmtNT(num)}</span></div>`;
+  // D — 現金給付 (Cash already paid; subtracted from final net)
+  const subD = Number(emp['現金給付']) || 0;
+
+  const net = subA + subB - subC - subD;
+  const today = new Date().toISOString().substr(0, 10);
+
+  // Force-show overrides: items whose key prefix matches displayOverrides should NOT be hidden even if 0
+  const forceShow = (DATA && Array.isArray(DATA.displayOverrides)) ? DATA.displayOverrides : [];
+  function isForceShown(label) {
+    // label is e.g. "底薪 Base"; check if any forceShow key matches the leading Chinese token
+    return forceShow.some(fs => label === fs || label.startsWith(fs + ' ') || label.startsWith(fs + '（') || label.startsWith(fs + '/') || label.startsWith(fs));
+  }
+  const renderRows = (items) => items.map(([k, v]) => {
+    const num = Number(v) || 0;
+    const cls = (num === 0 && !isForceShown(k)) ? ' zero' : '';
+    return `<div class="ps-row${cls}"><span class="lbl">${k}</span><span class="val">${fmtNT(num)}</span></div>`;
   }).join('');
 
-  const isFixedZero = fixed.every(([,v])=>(Number(v)||0)===0);
-  const isVarZero   = variable.every(([,v])=>(Number(v)||0)===0);
-  const isDedZero   = deductions.every(([,v])=>(Number(v)||0)===0);
-  const cashClass   = subD===0 ? ' all-zero' : '';
+  // For employee view: detect whether each section is all-zero (so we can hide column entirely)
+  // Section is "all-zero" only if every item is 0 AND not force-shown
+  const isFixedZero    = fixed.every(([k, v]) => (Number(v) || 0) === 0 && !isForceShown(k));
+  const isVariableZero = variable.every(([k, v]) => (Number(v) || 0) === 0 && !isForceShown(k));
+  const isDeductZero   = deductions.every(([k, v]) => (Number(v) || 0) === 0 && !isForceShown(k));
+  const cashRowClass   = (subD === 0) ? ' all-zero' : '';
 
   $('payslip').innerHTML = `
     <div class="ps-header">
       <h2>Kidcastle ${emp['校區']}校區 — 薪資條</h2>
-      <div class="sub">Salary Payslip · ${month} (民國${month.slice(0,3)}年${month.slice(3,5)}月) · 查詢日期 ${today}</div>
+      <div class="sub">Salary Payslip · ${month} 月份 (民國${month.slice(0,3)}年${month.slice(3,5)}月) · 列印日期 ${today}</div>
     </div>
+
     <div class="ps-info">
-      <div class="it"><div class="k">員工姓名</div><div class="v">${emp['員工姓名']||''}${emp['英文姓名']?' ('+emp['英文姓名']+')':''}</div></div>
-      <div class="it"><div class="k">員工編號</div><div class="v">${emp['員工編號']}</div></div>
-      <div class="it"><div class="k">職位</div><div class="v">${emp['職位']||'—'}</div></div>
-      <div class="it"><div class="k">校區</div><div class="v">${emp['校區']}</div></div>
-      <div class="it"><div class="k">到職日</div><div class="v">${emp['到職日']||'-'}</div></div>
-      <div class="it"><div class="k">在職狀態</div><div class="v">${emp['在職狀態']}</div></div>
+      <div class="it"><div class="k">員工姓名 Name</div><div class="v">${emp['員工姓名'] || ''}${emp['英文姓名'] ? ' (' + emp['英文姓名'] + ')' : ''}</div></div>
+      <div class="it"><div class="k">員工編號 ID</div><div class="v">${emp['員工編號']}</div></div>
+      <div class="it"><div class="k">職位 Position</div><div class="v">${emp['職位']}</div></div>
+      <div class="it"><div class="k">校區 Campus</div><div class="v">${emp['校區']}</div></div>
+      <div class="it"><div class="k">到職日 Hire Date</div><div class="v">${emp['到職日'] || '-'}</div></div>
+      <div class="it"><div class="k">在職狀態 Status</div><div class="v">${emp['在職狀態']}</div></div>
     </div>
+
     <div class="ps-section-h">
-      <div class="${isFixedZero?'all-zero':''}">① 約定薪資結構 Fixed</div>
-      <div class="${isVarZero?'all-zero':''}">② 非固定支付 Variable</div>
-      <div class="deduct ${isDedZero?'all-zero':''}">③ 應代扣項目 Deductions</div>
+      <div class="${isFixedZero    ? 'all-zero' : ''}">① 約定薪資結構 Fixed</div>
+      <div class="${isVariableZero ? 'all-zero' : ''}">② 非固定支付 Variable</div>
+      <div class="deduct ${isDeductZero ? 'all-zero' : ''}">③ 應代扣項目 Deductions</div>
     </div>
     <div class="ps-rows">
-      <div class="ps-col${isFixedZero?' all-zero':''}">${renderRows(fixed)}</div>
-      <div class="ps-col${isVarZero?' all-zero':''}">${renderRows(variable)}</div>
-      <div class="ps-col deduct${isDedZero?' all-zero':''}">${renderRows(deductions)}</div>
+      <div class="ps-col${isFixedZero    ? ' all-zero' : ''}">${renderRows(fixed)}</div>
+      <div class="ps-col${isVariableZero ? ' all-zero' : ''}">${renderRows(variable)}</div>
+      <div class="ps-col deduct${isDeductZero ? ' all-zero' : ''}">${renderRows(deductions)}</div>
     </div>
+
     <div class="ps-subtotal">
-      <div class="${isFixedZero?'all-zero':''}"><span>小計 (A)</span><span class="val">${fmtNT(subA)}</span></div>
-      <div class="${isVarZero?'all-zero':''}"><span>小計 (B)</span><span class="val">${fmtNT(subB)}</span></div>
-      <div class="deduct ${isDedZero?'all-zero':''}"><span>小計 (C)</span><span class="val">${fmtNT(subC)}</span></div>
+      <div class="${isFixedZero    ? 'all-zero' : ''}"><span>小計 (A)</span><span class="val">${fmtNT(subA)}</span></div>
+      <div class="${isVariableZero ? 'all-zero' : ''}"><span>小計 (B)</span><span class="val">${fmtNT(subB)}</span></div>
+      <div class="deduct ${isDeductZero ? 'all-zero' : ''}"><span>小計 (C)</span><span class="val">${fmtNT(subC)}</span></div>
     </div>
-    <div class="ps-cash-row${cashClass}">
-      <div class="lbl">小計 (D) · 現金給付 Cash Payment</div>
+
+    <div class="ps-total-due">
+      <div class="lbl">💰 本月應得總金額 Monthly Gross Pay  =  (A) + (B) − (C)</div>
+      <div class="val">NT$ ${fmtNT(subA + subB - subC)}</div>
+    </div>
+
+    <div class="ps-cash-row${cashRowClass}">
+      <div class="lbl">小計 (D) · 現金給付 Cash Payment（已現金支付，從實領再扣）</div>
       <div class="val">NT$ ${fmtNT(subD)}</div>
     </div>
+
     <div class="ps-net">
-      <div class="lbl">實領金額 Net Salary</div>
+      <div class="lbl">餘款轉帳金額 Net Transfer  =  (A) + (B) − (C) − (D)</div>
       <div class="val">NT$ ${fmtNT(net)}</div>
     </div>
-    ${renderNotes(emp, sal)}
-  `;
-}
 
-// 備註欄：其他津貼內容 + 本月/員工備註
-function renderNotes(emp, sal) {
-  const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const items = Array.isArray(emp['其他津貼明細']) ? emp['其他津貼明細'].filter(it => it && (it.name || Number(it.amount))) : [];
-  let otherLines = items.map(it => {
-    const n = String(it.note || '').trim();
-    return `${it.name || '未命名'} NT$ ${fmtNT(it.amount || 0)}${n ? '（' + n + '）' : ''}`;
-  });
-  if (!otherLines.length && Number(emp['其他津貼'])) otherLines = [`其他津貼 NT$ ${fmtNT(emp['其他津貼'])}`];
-  const note = String((sal && sal['備註']) || '').trim() || String(emp['備註'] || '').trim();
-  if (!note && !otherLines.length) return '';
-  const otherHtml = otherLines.length
-    ? `<div style="font-weight:700;color:#854D0E;">【其他津貼】</div>` + otherLines.map(l => `<div>・${esc(l)}</div>`).join('')
-    : '';
-  const noteHtml = note ? `<div${otherHtml ? ' style="margin-top:6px;"' : ''}>${esc(note).replace(/\n/g,'<br>')}</div>` : '';
-  return `<div class="ps-notes"><div class="ps-notes-h">📝 備註 Notes</div><div class="ps-notes-body">${otherHtml}${noteHtml}</div></div>`;
+    ${(() => {
+      const al = computeAnnualLeave(emp);
+      if (!al) return '';
+      return `<div style="margin-top:12px;padding:12px 16px;background:linear-gradient(135deg,#ECFEFF,#CFFAFE);border:1.5px solid #67E8F9;border-radius:10px;">
+        <div style="font-weight:700;color:#0F766E;margin-bottom:8px;font-size:14px;">🏖 特休資訊 Annual Leave</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:13px;">
+          <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">📅 最近滿N年</span><span style="font-weight:700;color:#134E4A;">滿 ${al.anniversary} 年</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">📆 可請假期間</span><span style="font-weight:700;color:#134E4A;font-size:11px;">${al.periodStart} ~ ${al.periodEnd}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">🎯 可休日數</span><span style="font-weight:700;color:#134E4A;">${al.daysEntitled} 天</span></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">✅ 已休日數</span><span style="font-weight:700;color:#134E4A;">${al.daysUsed} 天</span></div>
+          <div style="grid-column:1/-1;display:flex;justify-content:space-between;padding:8px 12px;background:#14B8A6;color:#fff;border-radius:8px;margin-top:4px;"><span style="font-weight:600;">🟢 未休日數 Remaining</span><span style="font-weight:800;font-size:16px;">${al.daysRemaining} 天</span></div>
+        </div>
+      </div>`;
+    })()}
+
+    ${(() => {
+      // 其他津貼／特殊項目明細 — 顯示每項說明（如有填寫「說明」）
+      const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      // （其他津貼明細已改為寫入下方「備註」欄，這裡只保留特殊項目明細）
+      const blocks = [['特殊項目明細', '📋 特殊項目明細說明 Special Detail']]
+        .map(([listKey, title]) => {
+          const items = Array.isArray(emp[listKey]) ? emp[listKey] : [];
+          const withNotes = items.filter(it => it && (it.note || '').toString().trim());
+          if (!withNotes.length) return '';
+          const rows = withNotes.map(it =>
+            `<div class="ps-other-row"><span class="ps-other-name">${esc(it.name)}</span><span class="ps-other-amt">NT$ ${fmtNT(it.amount||0)}</span><span class="ps-other-note">${esc(it.note)}</span></div>`
+          ).join('');
+          return `<div class="ps-other-notes">
+            <div class="ps-other-h">${title}</div>
+            ${rows}
+          </div>`;
+        }).join('');
+      return blocks;
+    })()}
+
+    ${(() => {
+      // 優先用本月薪資紀錄的備註 (sal['備註'])，否則 fallback 員工層級的 emp['備註']
+      const salNote = String((sal && sal['備註']) || '').trim();
+      const empNote = String(emp['備註'] || '').trim();
+      const note = salNote || empNote;
+      // 其他津貼內容一併寫入備註欄
+      const otherLines = otherAllowanceNoteLines(emp);
+      if (!note && !otherLines.length) return '';
+      const escHtml = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const otherHtml = otherLines.length
+        ? `<div style="font-weight:700;color:#854D0E;">【其他津貼】</div>` + otherLines.map(l => `<div>・${escHtml(l)}</div>`).join('')
+        : '';
+      // Escape HTML and preserve line breaks
+      const safe = note ? escHtml(note).replace(/\n/g, '<br>') : '';
+      const sourceLabel = salNote ? `本月 (${month})` : (empNote ? '員工預設' : '其他津貼');
+      return `<div class="ps-notes">
+        <div class="ps-notes-h">📝 備註 Notes <small style="font-weight:400;color:#92400E;opacity:.7;">· 來源：${sourceLabel}</small></div>
+        <div class="ps-notes-body">${otherHtml}${otherHtml && safe ? '<div style="margin-top:6px;"></div>' : ''}${safe}</div>
+      </div>`;
+    })()}
+  `;
 }
 
 document.addEventListener('keydown', e => {
