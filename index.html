@@ -2092,7 +2092,7 @@
 <body>
 
 <!-- 右下角版本 / 編輯日期 — 每次修改請更新 EDIT_STAMP -->
-<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261006V1</div>
+<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261006V2</div>
 
 <!-- Floating zoom control -->
 <div id="zoomControl" class="no-print" title="調整字體與頁面大小">
@@ -2680,6 +2680,18 @@
             <th data-col="獎金">獎金</th>
             <th data-col="扣款">扣款</th>
             <th data-col="特殊調整">特殊調整</th>
+            <th data-col="全勤" title="自動 = 依公式設定的全勤條件；可手動指定">全勤</th>
+            <th data-col="安親人數">安親人數</th>
+            <th data-col="考試津貼">考試津貼</th>
+            <th data-col="預繳津貼">預繳津貼</th>
+            <th data-col="混班數">混班數</th>
+            <th data-col="協助S校+莊敬校">協助S校＋莊敬校</th>
+            <th data-col="J校安親本月人數">J校安親本月人數</th>
+            <th data-col="S校安親人數">S校安親人數</th>
+            <th data-col="S校美語人數">S校美語人數</th>
+            <th data-col="同安美語總人數">同安美語總人數</th>
+            <th data-col="莊敬美語總人數">莊敬美語總人數</th>
+            <th data-col="莊敬安親本月人數">莊敬安親本月人數</th>
             <th data-col="備註">備註</th>
             <th>加扣薪小計</th>
           </tr>
@@ -3641,7 +3653,7 @@
   // 這裡是預設值；雲端有設定時以雲端為準
   // ==========================================================================
   const FORMULA_DEFAULTS = {
-    OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 180, LATE_FEE: 100,
+    OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
     ATT_REQUIRE_NO_LEAVE: true, ATT_REQUIRE_NO_LATE: true,
     ENG_RATE: 100, MATH_RATE: 100, MIX_RATE: 500, TUTOR_FIXED: 3000,
     CS_BASE: 15, CS_TIER: 20, CS_N1: 500, CS_N2: 1000, CS_S1: 1000, CS_S2: 1500, CS_SUMMER: '7,8',
@@ -4919,10 +4931,11 @@
         o['員工編號'] === s['員工編號'] && String(o['月份']) === String(s['月份'])
       );
       if (!orig) { n++; return; }
-      const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
+      const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註', ...monthlyExtraKeys()];
       for (const k of fields) {
-        const a = s[k] == null ? (k === '備註' ? '' : 0) : s[k];
-        const b = orig[k] == null ? (k === '備註' ? '' : 0) : orig[k];
+        const blank = (k === '備註' || k === '全勤') ? '' : 0;
+        const a = s[k] == null ? blank : s[k];
+        const b = orig[k] == null ? blank : orig[k];
         if (a !== b) { n++; break; }
       }
     });
@@ -4949,8 +4962,44 @@
       '獎金': 0, '扣款': 0, '特殊調整': 0,
       '備註': null
     };
+    s['全勤'] = '';
+    monthlyExtraFields().forEach(f => { s[f.key] = 0; });
     DATA.salary.push(s);
     return s;
+  }
+
+  // -------- 主管/老闆 本月輸入新增欄位（存於當月薪資紀錄 sal）--------
+  // kind: 'money' = 金額，列入 (B) 非固定支付並計入實領；'count' = 人數/數量，只做資訊顯示、不計入金額
+  function monthlyExtraFields() {
+    return [
+      { key: '安親人數',         label: '安親人數',          en: 'After-school (人)', kind: 'count' },
+      { key: '考試津貼',         label: '考試津貼',          en: 'Exam Allowance',    kind: 'money' },
+      { key: '預繳津貼',         label: '預繳津貼',          en: 'Prepay Allowance',  kind: 'money' },
+      { key: '混班數',           label: '混班數',            en: 'Mixed Classes',     kind: 'count' },
+      { key: '協助S校+莊敬校',   label: '協助S校＋莊敬校',   en: 'Assist S+ZJ',       kind: 'count' },
+      { key: 'J校安親本月人數',  label: 'J校安親本月人數',   en: 'J After-school',    kind: 'count' },
+      { key: 'S校安親人數',      label: 'S校安親人數',       en: 'S After-school',    kind: 'count' },
+      { key: 'S校美語人數',      label: 'S校美語人數',       en: 'S English',         kind: 'count' },
+      { key: '同安美語總人數',   label: '同安美語總人數',    en: 'TA English Total',  kind: 'count' },
+      { key: '莊敬美語總人數',   label: '莊敬美語總人數',    en: 'ZJ English Total',  kind: 'count' },
+      { key: '莊敬安親本月人數', label: '莊敬安親本月人數',  en: 'ZJ After-school',   kind: 'count' }
+    ];
+  }
+  function monthlyExtraKeys() { return ['全勤', ...monthlyExtraFields().map(f => f.key)]; }
+  // 本月新增金額合計（考試津貼 + 預繳津貼）
+  function monthlyExtraMoney(sal) {
+    return monthlyExtraFields().filter(f => f.kind === 'money')
+      .reduce((t, f) => t + (Number(sal && sal[f.key]) || 0), 0);
+  }
+  // 全勤：本月可手動指定「全勤 / 非全勤」；留空 = 自動（依公式設定頁的全勤條件）
+  function attendanceBonus(emp, sal) {
+    const amt = Number(emp['全勤獎金']) || 0;
+    const ov = String((sal && sal['全勤']) || '');
+    if (ov === '全勤') return amt;
+    if (ov === '非全勤') return 0;
+    const leaveH = Number(sal && sal['請假時數']) || 0, lateCnt = Number(sal && sal['遲到次數']) || 0;
+    const ok = (!FC('ATT_REQUIRE_NO_LEAVE') || leaveH === 0) && (!FC('ATT_REQUIRE_NO_LATE') || lateCnt === 0);
+    return ok ? amt : 0;
   }
 
   // -------- Compute helpers (mirror Excel formulas) --------
@@ -4970,8 +5019,8 @@
     const lateCnt = Number(sal['遲到次數']) || 0;
     const lateD = lateCnt * Number(FC('LATE_FEE'));
 
-    const noLeaveLate = (!FC('ATT_REQUIRE_NO_LEAVE') || leaveH === 0) && (!FC('ATT_REQUIRE_NO_LATE') || lateCnt === 0);
-    const attBonus = noLeaveLate ? (Number(emp['全勤獎金']) || 0) : 0;
+    const attBonus = attendanceBonus(emp, sal);
+    const extraMoney = monthlyExtraMoney(sal);   // 考試津貼 + 預繳津貼（本月輸入）
 
     const allowKeys = ['年資津貼','主管津貼',
                        '美語津貼','美語輔導津貼','數學班津貼',
@@ -4983,7 +5032,7 @@
     const deduct = Number(sal['扣款']) || 0;
     const adjust = Number(sal['特殊調整']) || 0;
 
-    const gross = base + attBonus + allowSum + otPay + payAmt + bonus + adjust - leaveD - lateD - deduct;
+    const gross = base + attBonus + allowSum + otPay + payAmt + extraMoney + bonus + adjust - leaveD - lateD - deduct;
     const labor = Number(emp['勞保自付']) || 0;
     const health = Number(emp['健保自付']) || 0;
     const healthDep = Number(emp['健保眷屬自付']) || 0;  // 健保眷屬扣款 (扣薪 mode)
@@ -4998,7 +5047,7 @@
     sal['請假扣款'] = leaveD;
     sal['遲到扣款'] = lateD;
 
-    return { hourly, otPay, payAmt, leaveD, lateD, attBonus, allowSum, gross, totalDeduct, cashPay, net };
+    return { hourly, otPay, payAmt, leaveD, lateD, attBonus, extraMoney, allowSum, gross, totalDeduct, cashPay, net };
   }
 
   // Helper: convert "同安校區" → "同安" so we can compare with employee 校區 field
@@ -5119,8 +5168,11 @@
     if (sal['員工編號']) computeRow(emp, sal);
 
     // Compute attendance bonus (only if no leave & no late)
-    const noLeaveLate = (!FC('ATT_REQUIRE_NO_LEAVE') || (Number(sal['請假時數']) || 0) === 0) && (!FC('ATT_REQUIRE_NO_LATE') || (Number(sal['遲到次數']) || 0) === 0);
-    const attBonus = noLeaveLate ? (Number(emp['全勤獎金']) || 0) : 0;
+    const attBonus = attendanceBonus(emp, sal);
+    const extraFields = monthlyExtraFields();
+    const extraMoneyRows = extraFields.filter(f => f.kind === 'money').map(f => [`${f.label} ${f.en}`, sal[f.key]]);
+    const extraCountRows = extraFields.filter(f => f.kind === 'count').map(f => [`${f.label} ${f.en}`, sal[f.key]]);
+    const extraCountLabels = extraCountRows.map(([k]) => k);
 
     const fixed = [
       ['底薪 Base', emp['底薪']],
@@ -5151,17 +5203,20 @@
       ['加班時數 OT Hours', sal['加班時數']],
       [`支薪金額 Paid Hours Pay (×${FC('PAY_RATE')}/hr)`, Math.round((Number(sal['支薪時數'])||0) * Number(FC('PAY_RATE')))],
       ['支薪時數 Paid Hours', sal['支薪時數']],
+      ...extraMoneyRows,                                // 考試津貼／預繳津貼（本月輸入）
       ['獎金 Bonus', sal['獎金']],
       ['特殊調整 Adjust', sal['特殊調整']],
       ['帶班人數 Class Size (人)', emp['帶班人數']],   // 資訊欄，不列入 B
-      ['混班校數 Mixed Class (校)', emp['混班校數']]   // 資訊欄，不列入 B
+      ['混班校數 Mixed Class (校)', emp['混班校數']],  // 資訊欄，不列入 B
+      ...extraCountRows                                 // 本月人數資訊欄，不列入 B
     ];
     // exclude OT hours / 人數 / 校數 (count-only info rows) from sum — they're counts, not money.
     // NOTE: must match the exact label, not a prefix — '帶班人數津貼 Class Size' (real money row)
     // also starts with '帶班人數', so a startsWith() check here was wrongly stripping that
     // allowance out of the total too.
     const subB = variable.filter(([k]) =>
-      k !== '加班時數 OT Hours' && k !== '支薪時數 Paid Hours' && k !== '帶班人數 Class Size (人)' && k !== '混班校數 Mixed Class (校)'
+      k !== '加班時數 OT Hours' && k !== '支薪時數 Paid Hours' && k !== '帶班人數 Class Size (人)' && k !== '混班校數 Mixed Class (校)' &&
+      !extraCountLabels.includes(k)
     ).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
     const deductions = [
@@ -5387,8 +5442,9 @@
     const sal = findSalary(eid, month) || {};
     if (!emp) return null;
     if (sal['員工編號']) computeRow(emp, sal);
-    const noLeaveLate = (!FC('ATT_REQUIRE_NO_LEAVE') || (Number(sal['請假時數']) || 0) === 0) && (!FC('ATT_REQUIRE_NO_LATE') || (Number(sal['遲到次數']) || 0) === 0);
-    const attBonus = noLeaveLate ? (Number(emp['全勤獎金']) || 0) : 0;
+    const attBonus = attendanceBonus(emp, sal);
+    const extraFieldsT = monthlyExtraFields();
+    const extraCountLabelsT = extraFieldsT.filter(f => f.kind === 'count').map(f => f.label);
 
     const fixed = [
       ['底薪',          emp['底薪']],
@@ -5416,12 +5472,14 @@
       ['加班費',     sal['加班費']],
       [`支薪金額 (×${FC('PAY_RATE')}/時)`, Math.round((Number(sal['支薪時數'])||0) * Number(FC('PAY_RATE')))],
       ['支薪時數',   sal['支薪時數']],
+      ...extraFieldsT.filter(f => f.kind === 'money').map(f => [f.label, sal[f.key]]),
       ['獎金',       sal['獎金']],
       ['特殊調整',   sal['特殊調整']],
       ['帶班人數 (人)', emp['帶班人數']],   // 資訊欄
-      ['混班校數 (校)', emp['混班校數']]    // 資訊欄
+      ['混班校數 (校)', emp['混班校數']],   // 資訊欄
+      ...extraFieldsT.filter(f => f.kind === 'count').map(f => [f.label, sal[f.key]])   // 資訊欄
     ];
-    const subB = variable.filter(([k]) => k !== '支薪時數' && k !== '帶班人數 (人)' && k !== '混班校數 (校)').reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    const subB = variable.filter(([k]) => k !== '支薪時數' && k !== '帶班人數 (人)' && k !== '混班校數 (校)' && !extraCountLabelsT.includes(k)).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
     const deductions = [
       ['勞保自付',     emp['勞保自付']],
       ['健保自付',     emp['健保自付']],
@@ -5560,8 +5618,19 @@
         ['加班時數',   '加班時數 OT Hours'],
         ['支薪金額',   '支薪金額 Paid Hours Pay'],
         ['支薪時數',   '支薪時數 Paid Hours'],
+        ['考試津貼',   '考試津貼 Exam Allowance'],
+        ['預繳津貼',   '預繳津貼 Prepay Allowance'],
         ['獎金',       '獎金 Bonus'],
-        ['特殊調整',   '特殊調整 Adjust']
+        ['特殊調整',   '特殊調整 Adjust'],
+        ['安親人數',         '安親人數'],
+        ['混班數',           '混班數'],
+        ['協助S校＋莊敬校',  '協助S校＋莊敬校'],
+        ['J校安親本月人數',  'J校安親本月人數'],
+        ['S校安親人數',      'S校安親人數'],
+        ['S校美語人數',      'S校美語人數'],
+        ['同安美語總人數',   '同安美語總人數'],
+        ['莊敬美語總人數',   '莊敬美語總人數'],
+        ['莊敬安親本月人數', '莊敬安親本月人數']
       ]
     },
     'deduct': {
@@ -5832,6 +5901,10 @@
     { key: '獎金',     type: 'num', min: 0, max: 999999, step: 1 },
     { key: '扣款',     type: 'num', min: 0, max: 999999, step: 1 },
     { key: '特殊調整', type: 'num', min: -999999, max: 999999, step: 1 },
+    { key: '全勤',     type: 'att' },
+    ...monthlyExtraFields().map(f => f.kind === 'money'
+      ? { key: f.key, type: 'num', min: 0, max: 999999, step: 1 }
+      : { key: f.key, type: 'num', min: 0, max: 9999,   step: 1 }),
     { key: '備註',     type: 'text' }
   ];
 
@@ -5914,6 +5987,14 @@
         const v = sal[f.key];
         const origV = orig[f.key];
         const changed = ((v == null ? '' : v) !== (origV == null ? '' : origV)) ? ' changed' : '';
+        if (f.type === 'att') {
+          const cur = v == null ? '' : String(v);
+          const opt = (val, txt) => `<option value="${val}"${cur === val ? ' selected' : ''}>${txt}</option>`;
+          return `<td><select class="att-sel${changed}" data-eid="${emp['員工編號']}" data-field="${f.key}"${ro}
+            style="padding:5px 6px;border:1.5px solid #cbd5e1;border-radius:6px;font-family:inherit;font-size:12px;background:#fff;">
+            ${opt('', '自動')}${opt('全勤', '✓ 全勤')}${opt('非全勤', '✗ 非全勤')}
+          </select></td>`;
+        }
         if (f.type === 'num') {
           const num = v == null ? 0 : v;
           return `<td><input type="number" class="num${changed}"
@@ -5932,9 +6013,10 @@
       // Show 加扣薪小計 (gross) — sub-total of base + allowances + variable - deductions,
       // BEFORE labor/health insurance and cash payment.
       // 加扣薪小計 = 只統計「主管能編輯的月度欄位」(不含底薪/各種津貼)
-      // 公式：加班費 + 支薪金額 + 獎金 + 特殊調整 - 請假扣款 - 遲到扣款 - 扣款
+      // 公式：加班費 + 支薪金額 + 考試津貼 + 預繳津貼 + 獎金 + 特殊調整 - 請假扣款 - 遲到扣款 - 扣款
       const subTotal = (Number(sal['加班費'])||0)
                      + (Number(sal['支薪金額'])||0)
+                     + monthlyExtraMoney(sal)
                      + (Number(sal['獎金'])||0)
                      + (Number(sal['特殊調整'])||0)
                      - (Number(sal['請假扣款'])||0)
@@ -5964,7 +6046,7 @@
 
   function handleMgrEdit(e) {
     const inp = e.target;
-    if (!inp || inp.tagName !== 'INPUT') return;
+    if (!inp || (inp.tagName !== 'INPUT' && inp.tagName !== 'SELECT')) return;
     if (!inp.dataset || !inp.dataset.eid || !inp.dataset.field) return;
 
     const eid = inp.dataset.eid;
@@ -6000,6 +6082,7 @@
         // Manager 加扣薪小計 = 只統計月度主管欄位（與初次 render 一致）
         const subTotal = (Number(sal['加班費'])||0)
                      + (Number(sal['支薪金額'])||0)
+                       + monthlyExtraMoney(sal)
                        + (Number(sal['獎金'])||0)
                        + (Number(sal['特殊調整'])||0)
                        - (Number(sal['請假扣款'])||0)
@@ -6016,8 +6099,9 @@
     const orig = DEFAULT_DATA.salary.find(o =>
       o['員工編號'] === eid && String(o['月份']) === String(month)
     ) || {};
-    const v  = sal[field]  == null ? (field === '備註' ? '' : 0) : sal[field];
-    const ov = orig[field] == null ? (field === '備註' ? '' : 0) : orig[field];
+    const blankV = (field === '備註' || field === '全勤') ? '' : 0;
+    const v  = sal[field]  == null ? blankV : sal[field];
+    const ov = orig[field] == null ? blankV : orig[field];
     inp.classList.toggle('changed', v !== ov);
 
     // Debounced save + log
@@ -7023,7 +7107,7 @@
                         '留班比率','留班獎金',
                         '考試獎金','其他津貼','特殊項目',
                         '津貼合計',
-                        '獎金','扣款','特殊調整','應發薪資',
+                        '獎金','扣款','特殊調整', ...monthlyExtraKeys(), '應發薪資',
                         '勞保自付','補貼公會投保勞保',
                         '健保自付','補貼公會健保自付',
                         '健保眷屬自付','補貼健保眷屬',
@@ -7068,6 +7152,7 @@
           Number(emp['考試獎金']) || 0, Number(emp['其他津貼']) || 0, Number(emp['特殊項目']) || 0,
           allowSumLocal,
           Number(s['獎金']) || 0, Number(s['扣款']) || 0, Number(s['特殊調整']) || 0,
+          ...monthlyExtraKeys().map(k => k === '全勤' ? (s[k] || '自動') : (Number(s[k]) || 0)),
           r.gross,
           labor, Number(emp['補貼公會投保勞保']) || 0,
           health, Number(emp['補貼公會健保自付']) || 0,
@@ -7525,7 +7610,7 @@
     const empName = emp ? emp['員工姓名'] : _editingEid;
     if (!confirm(`將 ${empName} 的 ${prevMonth} 月資料複製到 ${_drawerMonth} 月？\n（會覆蓋目前 ${_drawerMonth} 的工時/獎金/扣款等）`)) return;
     const dst = ensureSalaryRecord(_editingEid, _drawerMonth);
-    const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
+    const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註', ...monthlyExtraKeys()];
     fields.forEach(f => { dst[f] = src[f]; });
     persistData();
     appendLog({
@@ -7559,13 +7644,14 @@
     { title: '④ 員工登入帳號 Login', keys: ['登入帳號','登入密碼','Email'] },
     { title: '⑤ 特休管理 Annual Leave', keys: ['特休資訊','可休日數_手動','已休日數'] },
     { title: '⑥ 備註 Notes', keys: ['備註'] },
-    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款','mgr:特殊調整','mgr:備註'] }
+    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款','mgr:特殊調整', ...monthlyExtraKeys().map(k => 'mgr:' + k), 'mgr:備註'] }
   ];
   const MGR_PERM_LABELS = {
     '全勤獎金': '全勤狀態 (全勤/非全勤)', '特休資訊': '特休資訊卡 (只能看)',
     '勞保自付額': '勞保自付額 / 補貼', '健保自付額': '健保自付額 / 補貼',
     '健保眷屬扣款': '健保眷屬扣款 / 補貼', '退休金': '退休金提撥 / 補貼',
-    'mgr:備註': '本月備註', 'mgr:支薪時數': '支薪時數 / 支薪金額 (×180元)'
+    'mgr:備註': '本月備註', 'mgr:支薪時數': '支薪時數 / 支薪金額',
+    'mgr:全勤': '本月全勤 (自動/全勤/非全勤)', 'mgr:協助S校+莊敬校': '協助S校＋莊敬校'
   };
   const VIEW_ONLY_KEYS = ['特休資訊'];   // 沒有可編輯的內容，只有「看 / 隱藏」
   // 預設值 = 原本系統寫死的主管權限，升級後行為不變
@@ -8164,7 +8250,11 @@
     { key: '遲到次數', label: '遲到次數 Late Count',     min: 0,       max: 50,     step: 1 },
     { key: '獎金',     label: '獎金 Bonus',              min: 0,       max: 999999, step: 1 },
     { key: '扣款',     label: '扣款 Deduction',          min: 0,       max: 999999, step: 1 },
-    { key: '特殊調整', label: '特殊調整 Adjust',          min: -999999, max: 999999, step: 1 }
+    { key: '特殊調整', label: '特殊調整 Adjust',          min: -999999, max: 999999, step: 1 },
+    ...monthlyExtraFields().map(f => ({
+      key: f.key, label: `${f.label} ${f.en}`,
+      min: 0, max: f.kind === 'money' ? 999999 : 9999, step: 1
+    }))
   ];
   function renderDrawerMonthlySectionInner() {
     if (!_editingEid || !_drawerMonth) return '';
@@ -8181,8 +8271,15 @@
       </div>`;
     }).join('');
     const noteVal = String(sal['備註'] == null ? '' : sal['備註']).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const attCur = String(sal['全勤'] || '');
+    const attOpt = (val, txt) => `<option value="${val}"${attCur === val ? ' selected' : ''}>${txt}</option>`;
+    const attHtml = `<div class="field-cell" data-mcol="全勤">
+        <label>全勤 Attendance <small style="font-weight:normal;color:#94a3b8;">(自動＝依公式設定的全勤條件)</small></label>
+        <select data-sal-key="全勤">${attOpt('', '自動')}${attOpt('全勤', '✓ 全勤')}${attOpt('非全勤', '✗ 非全勤')}</select>
+      </div>`;
     return `
       ${fieldsHtml}
+      ${attHtml}
       <div class="field-cell" data-mcol="加班時數">
         <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數 × ${FC('OT_RATE')}元/小時)</small></label>
         <input type="number" id="drawerOtPayDisplay" value="${otPay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
@@ -8223,7 +8320,7 @@
     if (!_editingEid || !_drawerMonth) return;
     const field = inp.dataset.salKey;
     const sal = ensureSalaryRecord(_editingEid, _drawerMonth);
-    if (inp.tagName === 'TEXTAREA') {
+    if (inp.tagName === 'TEXTAREA' || inp.tagName === 'SELECT') {
       sal[field] = inp.value;
     } else {
       const raw = inp.value;
@@ -8907,7 +9004,7 @@
       `不影響：員工資料 / 底薪 / 津貼設定 / 勞健保`
     )) return;
 
-    const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註'];
+    const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','特殊調整','備註', ...monthlyExtraKeys()];
     let copied = 0;
     emps.forEach(emp => {
       const src = DATA.salary.find(s =>
@@ -8973,7 +9070,7 @@
                      '留班比率','留班獎金',
                      '考試獎金','其他津貼','特殊項目',
                      '津貼合計',
-                     '獎金','扣款','特殊調整','應發薪資',
+                     '獎金','扣款','特殊調整', ...monthlyExtraKeys(), '應發薪資',
                      '勞保自付','補貼公會投保勞保',
                      '健保自付','補貼公會健保自付',
                      '健保眷屬自付','補貼健保眷屬',
@@ -9019,6 +9116,7 @@
         Number(emp['考試獎金']) || 0, Number(emp['其他津貼']) || 0, Number(emp['特殊項目']) || 0,
         allowSum,
         Number(sal['獎金']) || 0, Number(sal['扣款']) || 0, Number(sal['特殊調整']) || 0,
+        ...monthlyExtraKeys().map(k => k === '全勤' ? (sal[k] || '自動') : (Number(sal[k]) || 0)),
         r.gross,
         labor, Number(emp['補貼公會投保勞保']) || 0,
         health, Number(emp['補貼公會健保自付']) || 0,

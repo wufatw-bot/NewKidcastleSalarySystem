@@ -195,7 +195,7 @@ function cloudUrl() { try { return localStorage.getItem('kc_cloud_url_v1') || CL
 
 // 預設值必須與 index.html 的 FORMULA_DEFAULTS 一致
 const DEFAULTS = {
-  OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 180, LATE_FEE: 100,
+  OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
   ATT_REQUIRE_NO_LEAVE: true, ATT_REQUIRE_NO_LATE: true,
   ENG_RATE: 100, MATH_RATE: 100, MIX_RATE: 500, TUTOR_FIXED: 3000,
   CS_BASE: 15, CS_TIER: 20, CS_N1: 500, CS_N2: 1000, CS_S1: 1000, CS_S2: 1500, CS_SUMMER: '7,8',
@@ -288,7 +288,8 @@ function render() {
       <div class="name">全勤獎金 <small>① 約定薪資</small></div>
       <div class="expr">符合以下條件才發 ${V('員工的全勤獎金')}，否則 ${O('=')} 0</div>
       <div class="expr" style="margin-top:4px;">${CHK('ATT_REQUIRE_NO_LEAVE','本月請假時數 = 0')} ${CHK('ATT_REQUIRE_NO_LATE','本月遲到次數 = 0')}</div>
-      <div class="note">兩個都取消勾選 = 一律發放。</div>
+      <div class="note">兩個都取消勾選 = 一律發放。<br>
+        主管輸入頁 / 員工抽屜的「全勤」欄可逐月手動指定：<b>自動</b>（依上面條件）、<b>✓ 全勤</b>（一律發）、<b>✗ 非全勤</b>（一律不發）。</div>
     </div>
   </div>
 
@@ -347,7 +348,7 @@ function render() {
     <div class="desc">項目歸屬與加總方式，對應「📄 薪水條」頁面。</div>
     <div class="struct">
       <div class="sbox a"><h4>(A) 約定薪資結構</h4>底薪 + 全勤獎金 + 年資津貼</div>
-      <div class="sbox b"><h4>(B) 非固定支付</h4>主管 + 美語 + 美語輔導 + 數學班 + 帶班人數 + 混班 + 數學(手動) + 留班 + 考試 + 其他 + 特殊項目 + 補貼公會勞保 + 補貼公會健保 + 補貼健保眷屬 + 補貼退休金 + 加班費 + 支薪金額 + 獎金 + 特殊調整</div>
+      <div class="sbox b"><h4>(B) 非固定支付</h4>主管 + 美語 + 美語輔導 + 數學班 + 帶班人數 + 混班 + 數學(手動) + 留班 + 考試 + 其他 + 特殊項目 + 補貼公會勞保 + 補貼公會健保 + 補貼健保眷屬 + 補貼退休金 + 加班費 + 支薪金額 + <b>考試津貼</b> + <b>預繳津貼</b> + 獎金 + 特殊調整</div>
       <div class="sbox c"><h4>(C) 應代扣項目</h4>勞保自付 + 健保自付 + 健保眷屬扣款 + 退休金提撥 + 請假扣款 + 遲到扣款 + 扣款</div>
       <div class="sbox d"><h4>(D) 現金給付</h4>已用現金支付的部分</div>
     </div>
@@ -358,9 +359,11 @@ function render() {
     <div class="f" style="--c:#2E5984;margin-top:10px;">
       <div class="name">其他相關公式</div>
       <div class="note">
-        • 主管輸入頁「加扣薪小計」= 加班費 + 支薪金額 + 獎金 + 特殊調整 − 請假扣款 − 遲到扣款 − 扣款<br>
+        • 主管輸入頁「加扣薪小計」= 加班費 + 支薪金額 + 考試津貼 + 預繳津貼 + 獎金 + 特殊調整 − 請假扣款 − 遲到扣款 − 扣款<br>
         • 薪資條匯總：總薪資 = (A)+(B)−(C)；匯款金額 = 總薪資 − 現金給付<br>
-        • 投保級距、加班時數、帶班人數、混班校數為資訊欄位，不計入加總
+        • 投保級距、加班時數、帶班人數、混班校數為資訊欄位，不計入加總<br>
+        • 考試津貼、預繳津貼由主管／老闆每月輸入，直接以金額計入 (B)<br>
+        • 本月人數欄位只顯示、不計入加總：安親人數、混班數、協助S校＋莊敬校、J校安親本月人數、S校安親人數、S校美語人數、同安美語總人數、莊敬美語總人數、莊敬安親本月人數
       </div>
     </div>
   </div>
