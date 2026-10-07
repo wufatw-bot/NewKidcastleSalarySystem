@@ -2677,16 +2677,7 @@
             <th>校區</th>
             <th data-col="加班時數">加班時數</th>
             <th data-col="支薪時數" title="支薪金額 = 支薪時數 × 180 元">支薪時數</th>
-            <th data-col="請假時數">請假時數</th>
             <th data-col="遲到次數">遲到次數</th>
-            <th data-col="獎金">獎金</th>
-            <th data-col="扣款">扣款</th>
-            <th data-col="特殊調整">特殊調整</th>
-            <th data-col="全勤" title="自動 = 依公式設定的全勤條件；可手動指定">全勤</th>
-            <th data-col="安親人數">安親人數</th>
-            <th data-col="考試津貼">考試津貼</th>
-            <th data-col="預繳津貼">預繳津貼</th>
-            <th data-col="混班數">混班數</th>
             <th data-col="備註">備註</th>
             <th>加扣薪小計</th>
           </tr>
@@ -4970,6 +4961,9 @@
     return s;
   }
 
+  // 已從「主管輸入」與「老闆輸入」移除的本月欄位（舊資料仍保留在雲端，薪水條照常計算顯示）
+  const REMOVED_INPUT_KEYS = ['請假時數','獎金','扣款','特殊調整','全勤','安親人數','考試津貼','預繳津貼','混班數'];
+
   // -------- 主管/老闆 本月輸入新增欄位（存於當月薪資紀錄 sal）--------
   // kind: 'money' = 金額，列入 (B) 非固定支付並計入實領；'count' = 人數/數量，只做資訊顯示、不計入金額
   function monthlyExtraFields() {
@@ -5883,7 +5877,7 @@
       ? { key: f.key, type: 'num', min: 0, max: 999999, step: 1 }
       : { key: f.key, type: 'num', min: 0, max: 9999,   step: 1 }),
     { key: '備註',     type: 'text' }
-  ];
+  ].filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
 
   function getMgrMonth() { return $('mgrMonth').value; }
   function getMgrCampus() { return $('mgrCampus').value; }
@@ -7627,7 +7621,7 @@
     { title: '④ 員工登入帳號 Login', keys: ['登入帳號','登入密碼','Email'] },
     { title: '⑤ 特休管理 Annual Leave', keys: ['特休資訊','可休日數_手動','已休日數'] },
     { title: '⑥ 備註 Notes', keys: ['備註'] },
-    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款','mgr:特殊調整', ...monthlyExtraKeys().map(k => 'mgr:' + k), 'mgr:備註'] }
+    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款','mgr:特殊調整', ...monthlyExtraKeys().map(k => 'mgr:' + k), 'mgr:備註'].filter(k => !REMOVED_INPUT_KEYS.includes(k.slice(4))) }
   ];
   const MGR_PERM_LABELS = {
     '全勤獎金': '全勤狀態 (全勤/非全勤)', '特休資訊': '特休資訊卡 (只能看)',
@@ -8235,7 +8229,7 @@
       key: f.key, label: `${f.label} ${f.en}`,
       min: 0, max: f.kind === 'money' ? 999999 : 9999, step: 1
     }))
-  ];
+  ].filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
   function renderDrawerMonthlySectionInner() {
     if (!_editingEid || !_drawerMonth) return '';
     if (currentUser && currentUser.role === 'employee') return '';
@@ -8259,7 +8253,6 @@
       </div>`;
     return `
       ${fieldsHtml}
-      ${attHtml}
       <div class="field-cell" data-mcol="加班時數">
         <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數 × ${FC('OT_RATE')}元/小時)</small></label>
         <input type="number" id="drawerOtPayDisplay" value="${otPay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
