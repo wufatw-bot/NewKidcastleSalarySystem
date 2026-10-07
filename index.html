@@ -623,6 +623,7 @@
   .payslip.size-b5     { max-width: 680px; padding: 24px 28px; }
 
   /* Preview mode: dark background, paper-like card with realistic shadow */
+  body.role-manager #tab-payslip { display: none !important; }   /* 主管不可瀏覽「薪水條」 */
   #tab-payslip.preview {
     background: linear-gradient(to bottom, #475569 0%, #334155 100%);
     border-radius: 14px;
@@ -873,6 +874,7 @@
     #home, #welcome, .topbar, .tabs, .payslip-controls, .no-print { display: none !important; }
     .tab-pane { display: none !important; }
     .tab-pane#tab-payslip { display: block !important; }
+    body.role-manager .tab-pane#tab-payslip { display: none !important; }
     .tab-pane#tab-payslip.preview { background: #fff !important; padding: 0 !important; }
     .tab-pane#tab-payslip.preview .payslip::before { display: none !important; }
     #dashboard { display: block !important; padding: 0 !important; background: #fff !important; }
@@ -2685,13 +2687,6 @@
             <th data-col="考試津貼">考試津貼</th>
             <th data-col="預繳津貼">預繳津貼</th>
             <th data-col="混班數">混班數</th>
-            <th data-col="協助S校+莊敬校">協助S校＋莊敬校</th>
-            <th data-col="J校安親本月人數">J校安親本月人數</th>
-            <th data-col="S校安親人數">S校安親人數</th>
-            <th data-col="S校美語人數">S校美語人數</th>
-            <th data-col="同安美語總人數">同安美語總人數</th>
-            <th data-col="莊敬美語總人數">莊敬美語總人數</th>
-            <th data-col="莊敬安親本月人數">莊敬安親本月人數</th>
             <th data-col="備註">備註</th>
             <th>加扣薪小計</th>
           </tr>
@@ -3577,6 +3572,11 @@
       document.querySelectorAll('.tab.owner-only').forEach(t => {
         t.classList.toggle('hidden', user.role !== 'owner');
       });
+      // 主管不可瀏覽「薪水條」
+      if (user.role === 'manager') {
+        const ps = document.querySelector('.tab[data-tab="payslip"]');
+        if (ps) ps.classList.add('hidden');
+      }
     }
 
     // Default tab by role
@@ -3633,6 +3633,8 @@
 
   // ---------- Tab switching ----------
   function activateTab(name) {
+    // 主管不可瀏覽「薪水條」
+    if (name === 'payslip' && currentUser && currentUser.role === 'manager') name = 'manager';
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
     const btn = document.querySelector(`.tab[data-tab="${name}"]`);
@@ -4975,14 +4977,7 @@
       { key: '安親人數',         label: '安親人數',          en: 'After-school (人)', kind: 'count' },
       { key: '考試津貼',         label: '考試津貼',          en: 'Exam Allowance',    kind: 'money' },
       { key: '預繳津貼',         label: '預繳津貼',          en: 'Prepay Allowance',  kind: 'money' },
-      { key: '混班數',           label: '混班數',            en: 'Mixed Classes',     kind: 'count' },
-      { key: '協助S校+莊敬校',   label: '協助S校＋莊敬校',   en: 'Assist S+ZJ',       kind: 'count' },
-      { key: 'J校安親本月人數',  label: 'J校安親本月人數',   en: 'J After-school',    kind: 'count' },
-      { key: 'S校安親人數',      label: 'S校安親人數',       en: 'S After-school',    kind: 'count' },
-      { key: 'S校美語人數',      label: 'S校美語人數',       en: 'S English',         kind: 'count' },
-      { key: '同安美語總人數',   label: '同安美語總人數',    en: 'TA English Total',  kind: 'count' },
-      { key: '莊敬美語總人數',   label: '莊敬美語總人數',    en: 'ZJ English Total',  kind: 'count' },
-      { key: '莊敬安親本月人數', label: '莊敬安親本月人數',  en: 'ZJ After-school',   kind: 'count' }
+      { key: '混班數',           label: '混班數',            en: 'Mixed Classes',     kind: 'count' }
     ];
   }
   function monthlyExtraKeys() { return ['全勤', ...monthlyExtraFields().map(f => f.key)]; }
@@ -5151,6 +5146,8 @@
   }
 
   function renderPayslip() {
+    // 主管不可瀏覽「薪水條」
+    if (currentUser && currentUser.role === 'manager') { $('payslip').innerHTML = ''; return; }
     const eid = $('psEmp').value;
     const month = $('psMonth').value;
     if (!eid || !month) {
@@ -5307,21 +5304,6 @@
       </div>
 
       ${(() => {
-        const al = computeAnnualLeave(emp);
-        if (!al) return '';
-        return `<div style="margin-top:12px;padding:12px 16px;background:linear-gradient(135deg,#ECFEFF,#CFFAFE);border:1.5px solid #67E8F9;border-radius:10px;">
-          <div style="font-weight:700;color:#0F766E;margin-bottom:8px;font-size:14px;">🏖 特休資訊 Annual Leave</div>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:13px;">
-            <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">📅 最近滿N年</span><span style="font-weight:700;color:#134E4A;">滿 ${al.anniversary} 年</span></div>
-            <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">📆 可請假期間</span><span style="font-weight:700;color:#134E4A;font-size:11px;">${al.periodStart} ~ ${al.periodEnd}</span></div>
-            <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">🎯 可休日數</span><span style="font-weight:700;color:#134E4A;">${al.daysEntitled} 天</span></div>
-            <div style="display:flex;justify-content:space-between;padding:3px 6px;"><span style="color:#0F766E;">✅ 已休日數</span><span style="font-weight:700;color:#134E4A;">${al.daysUsed} 天</span></div>
-            <div style="grid-column:1/-1;display:flex;justify-content:space-between;padding:8px 12px;background:#14B8A6;color:#fff;border-radius:8px;margin-top:4px;"><span style="font-weight:600;">🟢 未休日數 Remaining</span><span style="font-weight:800;font-size:16px;">${al.daysRemaining} 天</span></div>
-          </div>
-        </div>`;
-      })()}
-
-      ${(() => {
         // 其他津貼／特殊項目明細 — 顯示每項說明（如有填寫「說明」）
         const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         // （其他津貼明細已改為寫入下方「備註」欄，這裡只保留特殊項目明細）
@@ -5435,6 +5417,7 @@
   }
 
   function payslipToText() {
+    if (currentUser && currentUser.role === 'manager') return null;   // 主管不可瀏覽「薪水條」
     const eid = $('psEmp').value;
     const month = $('psMonth').value;
     if (!eid || !month) return null;
@@ -5623,14 +5606,7 @@
         ['獎金',       '獎金 Bonus'],
         ['特殊調整',   '特殊調整 Adjust'],
         ['安親人數',         '安親人數'],
-        ['混班數',           '混班數'],
-        ['協助S校＋莊敬校',  '協助S校＋莊敬校'],
-        ['J校安親本月人數',  'J校安親本月人數'],
-        ['S校安親人數',      'S校安親人數'],
-        ['S校美語人數',      'S校美語人數'],
-        ['同安美語總人數',   '同安美語總人數'],
-        ['莊敬美語總人數',   '莊敬美語總人數'],
-        ['莊敬安親本月人數', '莊敬安親本月人數']
+        ['混班數',           '混班數']
       ]
     },
     'deduct': {
@@ -7355,27 +7331,6 @@
     }
   ];
 
-  // ── 罐頭文字（備註欄位快速插入）──
-  // 可依需要新增 / 修改項目
-  const CANNED_NOTES = [
-    '🐉 端午節快樂',
-    '🐉 端午節津貼 NT$ 1,000',
-    '🌕 中秋節快樂',
-    '🌕 中秋節津貼 NT$ 1,000',
-    '🎊 新年快樂',
-    '🧧 春節獎金',
-    '🎂 生日快樂！',
-    '🎂 生日禮金 NT$ 500',
-    '🏆 表現優異獎金',
-    '🌟 感謝您的辛勞與付出',
-    '👶 兒童節快樂',
-    '🍎 教師節快樂',
-    '💐 母親節快樂',
-    '🎁 公司年終獎金',
-    '☂ 補貼公會勞健保',
-    '⚠ 本月請假/遲到，全勤獎金未發',
-    '📅 試用期通過 — 正式聘僱'
-  ];
 
   // =========================================================================
   // 特休 (Annual Leave) — auto-calculated from 到職日 per Taiwan Labor Law
@@ -7499,6 +7454,33 @@
       </tr>`;
     }).join('');
   }
+
+  // ── 其他津貼 罐頭項目（點一下自動帶入「名目」，再輸入金額）──
+  const OTHER_ALLOWANCE_PRESETS = [
+    '協助S校＋莊敬校 Assist S+ZJ',
+    'J校安親本月人數 J After-school',
+    'S校安親人數 S After-school',
+    'S校美語人數 S English',
+    '同安美語總人數 TA English Total',
+    '莊敬美語總人數 ZJ English Total',
+    '莊敬安親本月人數 ZJ After-school'
+  ];
+  function otherPresetHtml(slug) {
+    if (slug !== 'other') return '';
+    return `<div class="oi-presets no-print" data-slug="${slug}" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px;">
+      <span style="width:100%;font-size:11px;color:#92400E;font-weight:600;">🍡 罐頭項目（點擊帶入名目，再輸入金額）</span>
+      ${OTHER_ALLOWANCE_PRESETS.map(n => `<button type="button" class="oi-preset" data-name="${n.replace(/"/g,'&quot;')}" style="padding:4px 10px;background:#fff;border:1px solid #F59E0B;color:#92400E;border-radius:999px;font-size:12px;cursor:pointer;font-family:inherit;">${n}</button>`).join('')}
+    </div>`;
+  }
+  document.addEventListener('click', e => {
+    const b = e.target && e.target.closest && e.target.closest('.oi-preset');
+    if (!b) return;
+    const slug = b.closest('.oi-presets').dataset.slug;
+    const nameEl = $(`oi_${slug}_name`), amtEl = $(`oi_${slug}_amt`);
+    if (!nameEl || nameEl.disabled || nameEl.readOnly) return;
+    nameEl.value = b.dataset.name;
+    if (amtEl) amtEl.focus();
+  });
 
   // -------- Edit drawer --------
   // ── 通用「逐項加總」欄位設定（自訂名目/金額/說明，自動加總）── 目前用於：其他津貼、特殊項目
@@ -7651,7 +7633,7 @@
     '勞保自付額': '勞保自付額 / 補貼', '健保自付額': '健保自付額 / 補貼',
     '健保眷屬扣款': '健保眷屬扣款 / 補貼', '退休金': '退休金提撥 / 補貼',
     'mgr:備註': '本月備註', 'mgr:支薪時數': '支薪時數 / 支薪金額',
-    'mgr:全勤': '本月全勤 (自動/全勤/非全勤)', 'mgr:協助S校+莊敬校': '協助S校＋莊敬校'
+    'mgr:全勤': '本月全勤 (自動/全勤/非全勤)'
   };
   const VIEW_ONLY_KEYS = ['特休資訊'];   // 沒有可編輯的內容，只有「看 / 隱藏」
   // 預設值 = 原本系統寫死的主管權限，升級後行為不變
@@ -8066,6 +8048,7 @@
             <input type="text" class="note" id="oi_other_note" placeholder="說明 (選填，會顯示在薪資條)">
             <button type="button" class="add-btn" id="oi_other_add">＋ 加入</button>
           </div>
+          ${otherPresetHtml('other')}
           <div class="chips" id="oi_other_chips">${chipsHtml}</div>
         </div>
       </div>
@@ -8136,14 +8119,9 @@
                 <button type="button" class="bulk-note-btn" data-scope="next-month" style="padding:5px 12px;background:#fff;border:1.5px solid #14B8A6;color:#0F766E;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📅 複製到下個月份</button>
                 <button type="button" class="bulk-note-btn" data-scope="year" style="padding:5px 12px;background:#fff;border:1.5px solid #06B6D4;color:#155E75;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🗓 複製到整年份</button>
               </div>` : '';
-            cannedHtml = `
-              <div class="canned-chips no-print" data-target-key="備註" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;padding:8px 10px;background:#FFFBEB;border:1px dashed #FBBF24;border-radius:8px;">
-                <div style="width:100%;font-size:11px;color:#92400E;font-weight:600;margin-bottom:2px;">🍡 快速插入罐頭文字（點擊加入）</div>
-                ${CANNED_NOTES.map(c => `<button type="button" class="canned-chip" data-text="${c.replace(/"/g,'&quot;')}" style="padding:4px 10px;background:#fff;border:1px solid #F59E0B;color:#92400E;border-radius:999px;font-size:12px;cursor:pointer;font-family:inherit;">${c}</button>`).join('')}
-                <button type="button" class="canned-clear" style="margin-left:auto;padding:4px 10px;background:#FEE2E2;border:1px solid #DC2626;color:#991B1B;border-radius:999px;font-size:11px;cursor:pointer;font-family:inherit;">🗑 清空備註</button>
-              </div>` + bulkHtml;
+            cannedHtml = bulkHtml;   // 罐頭文字已移除，僅保留老闆的「複製備註」按鈕
           }
-          inputHtml = cannedHtml + `<textarea class="${cls}" data-key="${f.key}" rows="4" placeholder="可輸入多行備註，或點上方按鈕插入罐頭文字…" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;background:#fff;">${safe}</textarea>`;
+          inputHtml = cannedHtml + `<textarea class="${cls}" data-key="${f.key}" rows="4" placeholder="可輸入多行備註…" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;line-height:1.6;background:#fff;">${safe}</textarea>`;
         } else if (f.type === 'leave_info') {
           // Read-only annual leave summary card (computed from 到職日)
           const al = computeAnnualLeave(emp);
@@ -8217,6 +8195,7 @@
                 <input type="text" class="note" id="oi_${s}_note" placeholder="說明 (選填，會顯示在薪資條)">
                 <button type="button" class="add-btn" id="oi_${s}_add">＋ 加入</button>
               </div>
+              ${otherPresetHtml(s)}
               <div class="chips" id="oi_${s}_chips">${chipsHtml}</div>
             </div>`;
         }
