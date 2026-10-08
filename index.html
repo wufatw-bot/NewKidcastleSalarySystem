@@ -2080,6 +2080,35 @@
   .mp-opt input:checked + span { background:var(--c); color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.15); }
   .mp-opt input:disabled + span { opacity:.35; cursor:not-allowed; }
 
+
+  /* ✉ 寄送薪資條 */
+  body:not(.role-owner) .mail-owner-only { display: none !important; }
+  .small-modal.mail-modal { max-width: 980px; }
+  .mail-ctrls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; font-size:13px; color:#475569; }
+  .mail-ctrls select { padding:6px 8px; border:1.5px solid #e2e8f0; border-radius:8px; font-family:inherit; font-size:13px; margin-left:4px; }
+  .mail-ctrls .mail-pdf { margin-left:auto; display:flex; align-items:center; gap:5px; cursor:pointer; }
+  .mail-grid { display:grid; grid-template-columns: 1fr 1.1fr; gap:12px; }
+  .mail-list { max-height:52vh; overflow:auto; border:1.5px solid #e2e8f0; border-radius:10px; }
+  .mail-row { display:grid; grid-template-columns: 22px 1fr auto; gap:8px; align-items:center; padding:7px 10px; border-bottom:1px solid #f1f5f9; font-size:13px; }
+  .mail-row:last-child { border-bottom:none; }
+  .mail-row.active { background:#E0F2FE; }
+  .mail-row .who b { color:#1a202c; }
+  .mail-row .who small { display:block; color:#64748b; font-size:11px; word-break:break-all; }
+  .mail-row .who small.warn { color:#B45309; }
+  .mail-row .st { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap; }
+  .mail-row .st.sent { background:#DCFCE7; color:#166534; }
+  .mail-row .st.fail { background:#FEE2E2; color:#991B1B; }
+  .mail-row .st.busy { background:#FEF3C7; color:#92400E; }
+  .mail-row .pv { border:none; background:#f1f5f9; color:#0369A1; border-radius:6px; padding:3px 8px; font-size:11px; cursor:pointer; font-family:inherit; margin-left:4px; }
+  .mail-preview { border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; min-height:52vh; }
+  .mail-preview-h { padding:8px 12px; background:#f8fafc; font-size:12px; color:#475569; border-bottom:1px solid #e2e8f0; }
+  .mail-preview iframe { flex:1; width:100%; border:none; background:#f1f5f9; min-height:46vh; }
+  .mail-progress { margin-top:10px; }
+  .mail-progress .bar { height:8px; background:#e2e8f0; border-radius:999px; overflow:hidden; }
+  .mail-progress .bar > div { height:100%; width:0; background:linear-gradient(90deg,#0EA5E9,#0369A1); transition:width .3s; }
+  .mail-progress #mailProgressTxt { font-size:12px; color:#475569; margin-top:4px; }
+  @media (max-width: 760px) { .mail-grid { grid-template-columns: 1fr; } .mail-preview { min-height:40vh; } }
+
   /* 右下角：版本 / 編輯日期 */
   #editStamp {
     position: fixed; right: 14px; bottom: 12px; z-index: 8999;
@@ -2094,7 +2123,7 @@
 <body>
 
 <!-- 右下角版本 / 編輯日期 — 每次修改請更新 EDIT_STAMP -->
-<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261006V2</div>
+<div id="editStamp" class="no-print" title="最後編輯日期 / 版本">20261008V2</div>
 
 <!-- Floating zoom control -->
 <div id="zoomControl" class="no-print" title="調整字體與頁面大小">
@@ -2677,6 +2706,7 @@
             <th>校區</th>
             <th data-col="加班時數">加班時數</th>
             <th data-col="支薪時數" title="支薪金額 = 支薪時數 × 180 元">支薪時數</th>
+            <th data-col="請假時數" title="請假扣款 = (結構性請假時數 + 當月請假時數) × 133 元">當月請假時數</th>
             <th data-col="遲到次數">遲到次數</th>
             <th data-col="備註">備註</th>
             <th>加扣薪小計</th>
@@ -2788,6 +2818,8 @@
           <button class="btn-mini secondary" onclick="togglePsPreview()" id="psPreviewBtn">👁 預覽模式</button>
           <button class="btn-mini secondary" onclick="copyPayslip()">📋 複製</button>
           <button class="btn-action" onclick="printPayslip()">🖨 列印 / 存 PDF</button>
+          <button class="btn-mini primary mail-owner-only" onclick="openMailModal('single')" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">✉ 寄送此薪資條</button>
+          <button class="btn-mini primary mail-owner-only" onclick="openMailModal('batch')" style="background:linear-gradient(135deg,#0284C7,#075985);">📨 批次寄送</button>
           <button class="btn-mini primary" onclick="openPayslipSummary()" style="background:linear-gradient(135deg,#10B981,#047857);">📊 薪資條匯總</button>
          <button class="btn-mini primary" onclick="openResignCert()" style="background:linear-gradient(135deg,#DC2626,#991B1B);">📜 離職證明書</button>
         </div>
@@ -3206,6 +3238,48 @@
     </div>
     <div class="foot">
       <button class="btn-mini secondary" onclick="closePayslipSummary()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ✉ 寄送薪資條 modal（老闆專用） -->
+<div class="small-modal-overlay" id="mailOverlay" onclick="closeMailModal(event)">
+  <div class="small-modal mail-modal" onclick="event.stopPropagation()">
+    <div class="head" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">
+      <div class="icon-l">✉</div>
+      <div style="min-width:0;">
+        <h2>寄送薪資條 Email Payslips</h2>
+        <div style="font-size:12px;opacity:.9;">寄件人：<b id="mailSenderLbl">—</b></div>
+      </div>
+      <button class="close" onclick="closeMailModal()">✕</button>
+    </div>
+    <div class="body">
+      <div class="mail-ctrls">
+        <label>月份 <select id="mailMonth"></select></label>
+        <label>校區 <select id="mailCampus">
+          <option value="all">全部</option><option value="同安">同安</option><option value="莊敬">莊敬</option>
+        </select></label>
+        <button type="button" class="btn-mini secondary" onclick="mailSelect('unsent')">✓ 選未寄出</button>
+        <button type="button" class="btn-mini secondary" onclick="mailSelect('all')">✓ 全選</button>
+        <button type="button" class="btn-mini secondary" onclick="mailSelect('none')">✕ 清除</button>
+        <label class="mail-pdf"><input type="checkbox" id="mailAttachPdf" checked> 附加 PDF</label>
+      </div>
+      <div class="mail-grid">
+        <div class="mail-list" id="mailList"></div>
+        <div class="mail-preview">
+          <div class="mail-preview-h" id="mailPreviewH">點左側「預覽」查看信件內容</div>
+          <iframe id="mailPreviewFrame" title="薪資條信件預覽"></iframe>
+        </div>
+      </div>
+      <div class="mail-progress" id="mailProgress" style="display:none;">
+        <div class="bar"><div id="mailProgressBar"></div></div>
+        <div id="mailProgressTxt">—</div>
+      </div>
+    </div>
+    <div class="foot" style="flex-wrap:wrap;align-items:center;">
+      <span style="flex:1;font-size:12px;color:#64748b;" id="mailSummary">—</span>
+      <button class="btn-mini secondary" onclick="closeMailModal()" id="mailCancelBtn">關閉</button>
+      <button class="btn-mini primary" onclick="sendSelectedPayslips()" id="mailSendBtn" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">✉ 確認寄出</button>
     </div>
   </div>
 </div>
@@ -4962,7 +5036,7 @@
   }
 
   // 已從「主管輸入」與「老闆輸入」移除的本月欄位（舊資料仍保留在雲端，薪水條照常計算顯示）
-  const REMOVED_INPUT_KEYS = ['請假時數','獎金','扣款','特殊調整','全勤','安親人數','考試津貼','預繳津貼','混班數'];
+  const REMOVED_INPUT_KEYS = ['獎金','扣款','特殊調整','全勤','安親人數','考試津貼','預繳津貼','混班數'];
 
   // -------- 主管/老闆 本月輸入新增欄位（存於當月薪資紀錄 sal）--------
   // kind: 'money' = 金額，列入 (B) 非固定支付並計入實領；'count' = 人數/數量，只做資訊顯示、不計入金額
@@ -4981,6 +5055,11 @@
       .reduce((t, f) => t + (Number(sal && sal[f.key]) || 0), 0);
   }
   // 全勤：本月可手動指定「全勤 / 非全勤」；留空 = 自動（依公式設定頁的全勤條件）
+  // 請假時數合計 = 結構性請假時數（員工資料，每月固定）+ 當月請假時數（月度紀錄）
+  // 注意：全勤判斷只看「當月請假時數」，結構性時數是約定的固定少上時數，不算缺勤
+  function totalLeaveHours(emp, sal) {
+    return (Number(emp && emp['結構性請假時數']) || 0) + (Number(sal && sal['請假時數']) || 0);
+  }
   function attendanceBonus(emp, sal) {
     const amt = Number(emp['全勤獎金']) || 0;
     const ov = String((sal && sal['全勤']) || '');
@@ -5002,7 +5081,7 @@
     const PAY_RATE = Number(FC('PAY_RATE'));
     const payHours = Number(sal['支薪時數']) || 0;
     const payAmt = Math.round(payHours * PAY_RATE);
-    const leaveH = Number(sal['請假時數']) || 0;
+    const leaveH = totalLeaveHours(emp, sal);
     const LEAVE_RATE = Number(FC('LEAVE_RATE'));   // 請假扣款 = 請假時數 × 費率
     const leaveD = Math.round(leaveH * LEAVE_RATE);
     const lateCnt = Number(sal['遲到次數']) || 0;
@@ -5139,22 +5218,304 @@
     monthSel.value = pickDefaultPayslipMonth(months);
   }
 
-  function renderPayslip() {
-    // 主管不可瀏覽「薪水條」
-    if (currentUser && currentUser.role === 'manager') { $('payslip').innerHTML = ''; return; }
-    const eid = $('psEmp').value;
-    const month = $('psMonth').value;
-    if (!eid || !month) {
-      $('payslip').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;">請選擇員工與月份</div>';
-      return;
-    }
-    const emp = findEmployee(eid);
-    const sal = findSalary(eid, month) || {};
-    if (!emp) {
-      $('payslip').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;">找不到員工資料</div>';
-      return;
-    }
+  // ==========================================================================
+  // ✉ Email 薪資條（單封 / 批次）— 透過 Apps Script 的 send_payslip 動作寄出
+  // 寄件人固定為 MAIL_SENDER；Apps Script 端需加上 Payslip_Mail.gs 的程式碼
+  // ==========================================================================
+  const MAIL_SENDER = 'wufatw@gmail.com';
+  const MAIL_KEY_STORE = 'kc_mail_key_v1';
+  let _mailRows = [];          // [{eid, name, campus, email, sentInfo, hasSal}]
+  let _mailSelected = new Set();
+  let _mailSending = false;
+  let _mailStatus = {};        // eid → {cls, text}
 
+  function escMail(t) {
+    return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim()); }
+
+  // Email 版薪資條：全部用 inline style 的 table（Gmail / Outlook / 手機都能正確顯示，也用來轉 PDF）
+  function buildPayslipEmailHtml(emp, month) {
+    const sal = findSalary(emp['員工編號'], month) || {};
+    if (sal['員工編號']) computeRow(emp, sal);
+    const d = getPayslipData(emp, sal);
+    const forceShow = (DATA && Array.isArray(DATA.displayOverrides)) ? DATA.displayOverrides : [];
+    const shown = label => forceShow.some(fs => label.startsWith(fs));
+    const isCount = k => k.includes('時數') || k.includes('(人)') || k.includes('(校)') || k.startsWith('投保薪資級距') ||
+                         d.extraCountLabels.includes(k);
+    const rowsHtml = (items) => items
+      .filter(([k, v]) => (Number(v) || 0) !== 0 || shown(k))
+      .map(([k, v]) => `<tr>
+          <td style="padding:6px 10px;border-bottom:1px dashed #e2e8f0;color:#475569;font-size:13px;">${k}</td>
+          <td style="padding:6px 10px;border-bottom:1px dashed #e2e8f0;text-align:right;font-family:Arial,sans-serif;font-weight:600;font-size:13px;color:${isCount(k) ? '#94a3b8' : '#1a202c'};">${fmtNT(v)}</td>
+        </tr>`).join('');
+    const section = (title, color, bg, items, subLabel, sub) => {
+      const body = rowsHtml(items);
+      if (!body && !sub) return '';
+      return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:12px;background:${bg};border-radius:8px;">
+        <tr><td colspan="2" style="padding:8px 10px;background:${color};color:#fff;font-weight:700;font-size:14px;">${title}</td></tr>
+        ${body}
+        <tr><td style="padding:8px 10px;font-weight:700;font-size:14px;">${subLabel}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:700;font-family:Arial,sans-serif;font-size:14px;">${fmtNT(sub)}</td></tr>
+      </table>`;
+    };
+    const info = [
+      ['員工姓名', (emp['員工姓名'] || '') + (emp['英文姓名'] ? ` (${emp['英文姓名']})` : '')],
+      ['員工編號', emp['員工編號']], ['職位', emp['職位'] || '—'],
+      ['校區', emp['校區']], ['到職日', emp['到職日'] || '—']
+    ].map(([k, v]) => `<tr><td style="padding:4px 10px;color:#64748b;font-size:12px;width:90px;">${k}</td><td style="padding:4px 10px;font-weight:600;font-size:13px;">${escMail(v)}</td></tr>`).join('');
+
+    // 備註：其他津貼明細 + 特殊項目說明 + 本月/員工備註
+    const noteParts = [];
+    const otherLines = otherAllowanceNoteLines(emp);
+    if (otherLines.length) noteParts.push('<b>【其他津貼】</b><br>' + otherLines.map(l => '・' + escMail(l)).join('<br>'));
+    const special = (Array.isArray(emp['特殊項目明細']) ? emp['特殊項目明細'] : []).filter(it => it && String(it.note || '').trim());
+    if (special.length) noteParts.push('<b>【特殊項目】</b><br>' + special.map(it => `・${escMail(it.name)} NT$ ${fmtNT(it.amount)}（${escMail(it.note)}）`).join('<br>'));
+    const note = String(sal['備註'] || '').trim() || String(emp['備註'] || '').trim();
+    if (note) noteParts.push(escMail(note).replace(/\n/g, '<br>'));
+    const notesHtml = noteParts.length ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;background:#FEF9C3;border-left:4px solid #EAB308;">
+        <tr><td style="padding:10px 12px;font-size:13px;line-height:1.7;color:#422006;"><b style="color:#854D0E;">📝 備註 Notes</b><br>${noteParts.join('<br><br>')}</td></tr></table>` : '';
+
+    const cashHtml = d.subD ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;background:#FEF3C7;border-left:4px solid #F59E0B;">
+        <tr><td style="padding:9px 12px;font-weight:700;color:#92400E;font-size:14px;">(D) 現金給付 Cash Payment（已現金支付）</td>
+            <td style="padding:9px 12px;text-align:right;font-weight:700;color:#92400E;font-family:Arial,sans-serif;">NT$ ${fmtNT(d.subD)}</td></tr></table>` : '';
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:'Microsoft JhengHei','PingFang TC',Arial,sans-serif;color:#1a202c;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f1f5f9;"><tr><td align="center" style="padding:16px 8px;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border-radius:12px;">
+  <tr><td style="padding:20px 20px 4px;text-align:center;border-bottom:3px solid #2E5984;">
+    <div style="font-size:20px;font-weight:700;color:#2E5984;">Kidcastle ${escMail(emp['校區'])}校區 — 薪資條</div>
+    <div style="font-size:12px;color:#64748b;margin:4px 0 10px;">民國${month.slice(0,3)}年${month.slice(3,5)}月 · Salary Payslip ${month}</div>
+  </td></tr>
+  <tr><td style="padding:12px 20px 20px;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;border-left:3px solid #4472C4;">${info}</table>
+    ${section('① 約定薪資結構 Fixed', '#4472C4', '#f8fafc', d.fixed, '小計 (A)', d.subA)}
+    ${section('② 非固定支付 Variable', '#4472C4', '#f8fafc', d.variable, '小計 (B)', d.subB)}
+    ${section('③ 應代扣項目 Deductions', '#C62828', '#FEF2F2', d.deductions, '小計 (C)', d.subC)}
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;background:#DBEAFE;border-left:4px solid #3B82F6;">
+      <tr><td style="padding:10px 12px;font-weight:700;color:#1E3A8A;font-size:14px;">本月應得總金額 (A)+(B)−(C)</td>
+          <td style="padding:10px 12px;text-align:right;font-weight:700;color:#1E40AF;font-family:Arial,sans-serif;font-size:16px;">NT$ ${fmtNT(d.subA + d.subB - d.subC)}</td></tr></table>
+    ${cashHtml}
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;background:#10B981;border-radius:10px;">
+      <tr><td style="padding:14px 16px;color:#fff;font-weight:700;font-size:15px;">實領／轉帳金額 Net</td>
+          <td style="padding:14px 16px;text-align:right;color:#fff;font-weight:800;font-family:Arial,sans-serif;font-size:22px;">NT$ ${fmtNT(d.net)}</td></tr></table>
+    ${notesHtml}
+    <div style="margin-top:16px;font-size:11px;color:#94a3b8;line-height:1.6;">此信由 Kidcastle 薪資系統寄出，內容含個人薪資資料，請勿轉寄。如有疑問請洽學校行政。</div>
+  </td></tr>
+</table></td></tr></table></body></html>`;
+  }
+  function payslipMailSubject(emp, month) {
+    return `【Kidcastle ${emp['校區']}校區】民國${month.slice(0,3)}年${month.slice(3,5)}月 薪資條 — ${emp['員工姓名']}`;
+  }
+
+  // ---------- modal ----------
+  function openMailModal(mode) {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可寄送薪資條', 'error'); return; }
+    const months = [...new Set(DATA.salary.map(s => String(s['月份'])))].sort().reverse();
+    const curMonth = ($('psMonth') && $('psMonth').value) || months[0] || '';
+    $('mailMonth').innerHTML = months.map(m => `<option value="${m}">${m} (民國${m.slice(0,3)}年${m.slice(3,5)}月)</option>`).join('');
+    $('mailMonth').value = curMonth;
+    $('mailCampus').value = mode === 'single' ? 'all' : (($('psCampus') && $('psCampus').value) || 'all');
+    $('mailSenderLbl').textContent = MAIL_SENDER;
+    $('mailProgress').style.display = 'none';
+    _mailStatus = {};
+    buildMailRows();
+    _mailSelected = new Set();
+    if (mode === 'single') {
+      const eid = $('psEmp') && $('psEmp').value;
+      const r = _mailRows.find(x => x.eid === eid);
+      if (!r) { toast('請先選擇員工', 'error'); return; }
+      if (!isValidEmail(r.email)) toast(`${r.name} 尚未設定 Email，請先到員工資料 ④ 填寫`, 'error');
+      else _mailSelected.add(eid);
+      renderMailList();
+      previewMail(eid);
+    } else {
+      mailSelect('unsent');
+      const first = _mailRows.find(r => _mailSelected.has(r.eid));
+      if (first) previewMail(first.eid); else clearMailPreview();
+    }
+    $('mailOverlay').classList.add('show');
+  }
+  function closeMailModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    if (_mailSending) { toast('寄送中，請稍候完成', 'error'); return; }
+    $('mailOverlay').classList.remove('show');
+  }
+  function buildMailRows() {
+    const month = $('mailMonth').value;
+    const campus = $('mailCampus').value;
+    _mailRows = DATA.employees
+      .filter(e => e['在職狀態'] === '在職' && (campus === 'all' || e['校區'] === campus))
+      .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])))
+      .map(e => {
+        const sal = findSalary(e['員工編號'], month);
+        return { eid: e['員工編號'], name: e['員工姓名'], campus: e['校區'],
+                 email: String(e['Email'] || '').trim(),
+                 sentInfo: sal && sal['薪資條寄送'] ? sal['薪資條寄送'] : null,
+                 hasSal: !!sal };
+      });
+  }
+  function mailSelect(mode) {
+    _mailSelected = new Set();
+    _mailRows.forEach(r => {
+      if (!isValidEmail(r.email)) return;
+      if (mode === 'all' || (mode === 'unsent' && !r.sentInfo && r.hasSal)) _mailSelected.add(r.eid);
+    });
+    renderMailList();
+  }
+  function renderMailList() {
+    const html = _mailRows.map(r => {
+      const ok = isValidEmail(r.email);
+      const st = _mailStatus[r.eid];
+      let badge = '';
+      if (st) badge = `<span class="st ${st.cls}" title="${escMail(st.title || '')}">${escMail(st.text)}</span>`;
+      else if (r.sentInfo) badge = `<span class="st sent" title="寄至 ${escMail(r.sentInfo.to)}">已寄 ${escMail(String(r.sentInfo.time).slice(5, 16))}</span>`;
+      const sub = !ok ? '<small class="warn">⚠ 未設定 Email（員工資料 ④）</small>'
+                : `<small>${escMail(r.email)}${r.hasSal ? '' : ' · <span style="color:#B45309;">本月無薪資紀錄</span>'}</small>`;
+      return `<div class="mail-row" data-eid="${r.eid}">
+        <input type="checkbox" class="mail-chk" data-eid="${r.eid}" ${_mailSelected.has(r.eid) ? 'checked' : ''} ${ok && !_mailSending ? '' : 'disabled'}>
+        <div class="who"><b>${escMail(r.name)}</b> <span style="color:#94a3b8;font-size:11px;">${r.eid} · ${r.campus}</span>${sub}</div>
+        <div>${badge}<button type="button" class="pv" data-pv="${r.eid}">預覽</button></div>
+      </div>`;
+    }).join('');
+    $('mailList').innerHTML = html || '<div style="padding:30px;text-align:center;color:#94a3b8;">沒有符合條件的在職員工</div>';
+    const noEmail = _mailRows.filter(r => !isValidEmail(r.email)).length;
+    $('mailSummary').innerHTML = `已選 <b>${_mailSelected.size}</b> 封 · 共 ${_mailRows.length} 人` +
+      (noEmail ? ` · <span style="color:#B45309;">${noEmail} 人未設定 Email</span>` : '');
+    $('mailSendBtn').textContent = `✉ 確認寄出 (${_mailSelected.size} 封)`;
+    $('mailSendBtn').disabled = _mailSending || !_mailSelected.size;
+  }
+  function clearMailPreview() {
+    $('mailPreviewH').textContent = '點左側「預覽」查看信件內容';
+    $('mailPreviewFrame').srcdoc = '';
+  }
+  function previewMail(eid) {
+    const emp = findEmployee(eid);
+    const month = $('mailMonth').value;
+    if (!emp || !month) return clearMailPreview();
+    document.querySelectorAll('.mail-row').forEach(el => el.classList.toggle('active', el.dataset.eid === eid));
+    $('mailPreviewH').innerHTML = `<b>主旨：</b>${escMail(payslipMailSubject(emp, month))}<br><b>收件人：</b>${escMail(emp['Email'] || '（未設定）')}`;
+    $('mailPreviewFrame').srcdoc = buildPayslipEmailHtml(emp, month);
+  }
+  document.addEventListener('change', e => {
+    const t = e.target;
+    if (!t) return;
+    if (t.classList && t.classList.contains('mail-chk')) {
+      if (t.checked) _mailSelected.add(t.dataset.eid); else _mailSelected.delete(t.dataset.eid);
+      renderMailList();
+    } else if (t.id === 'mailMonth' || t.id === 'mailCampus') {
+      _mailStatus = {};
+      buildMailRows();
+      mailSelect('unsent');
+      const first = _mailRows.find(r => _mailSelected.has(r.eid)) || _mailRows[0];
+      if (first) previewMail(first.eid); else clearMailPreview();
+    }
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-pv]');
+    if (b) previewMail(b.dataset.pv);
+  });
+
+  function getMailKey(forceAsk) {
+    let k = '';
+    try { k = localStorage.getItem(MAIL_KEY_STORE) || ''; } catch (_) {}
+    if (!k || forceAsk) {
+      k = prompt('請輸入「寄信密碼」（Apps Script 裡 MAIL_KEY 設定的值，只需輸入一次）：', '') || '';
+      k = k.trim();
+      if (k) try { localStorage.setItem(MAIL_KEY_STORE, k); } catch (_) {}
+    }
+    return k;
+  }
+
+  async function sendSelectedPayslips() {
+    if (_mailSending) return;
+    const month = $('mailMonth').value;
+    const targets = _mailRows.filter(r => _mailSelected.has(r.eid) && isValidEmail(r.email));
+    if (!targets.length) { toast('請至少勾選一位有 Email 的員工', 'error'); return; }
+    const resent = targets.filter(r => r.sentInfo).map(r => r.name);
+    const noSal = targets.filter(r => !r.hasSal).map(r => r.name);
+    const list = targets.slice(0, 15).map(r => `・${r.name} <${r.email}>`).join('\n') + (targets.length > 15 ? `\n…等共 ${targets.length} 人` : '');
+    let msg = `確定用 ${MAIL_SENDER} 寄出 ${targets.length} 封「${month}」薪資條？\n\n${list}`;
+    if (resent.length) msg += `\n\n⚠ 以下已寄過，會再寄一次：${resent.join('、')}`;
+    if (noSal.length) msg += `\n\n⚠ 以下本月沒有薪資紀錄（只會有固定薪資）：${noSal.join('、')}`;
+    if (!confirm(msg)) return;
+    let key = getMailKey(false);
+    if (!key) { toast('未輸入寄信密碼，已取消', 'error'); return; }
+
+    _mailSending = true;
+    $('mailCancelBtn').disabled = true;
+    $('mailProgress').style.display = '';
+    const attachPdf = $('mailAttachPdf').checked;
+    let okCnt = 0, failCnt = 0, done = 0;
+    const setProg = () => {
+      $('mailProgressBar').style.width = Math.round(done / targets.length * 100) + '%';
+      $('mailProgressTxt').textContent = `寄送中 ${done} / ${targets.length} · 成功 ${okCnt} · 失敗 ${failCnt}`;
+    };
+    setProg();
+    renderMailList();
+    for (const r of targets) {
+      const emp = findEmployee(r.eid);
+      _mailStatus[r.eid] = { cls: 'busy', text: '寄送中…' };
+      renderMailList();
+      try {
+        const payload = {
+          key, from: MAIL_SENDER, to: r.email,
+          subject: payslipMailSubject(emp, month),
+          html: buildPayslipEmailHtml(emp, month),
+          attachPdf, pdfName: `${emp['校區']}校區_${emp['員工姓名']}_${month}_薪資條.pdf`
+        };
+        let j;
+        try { j = await cloudPost('send_payslip', payload); }
+        catch (err) {
+          // 寄信密碼錯誤 → 讓老闆重新輸入一次再試
+          if (/key|密碼/i.test(err.message)) {
+            key = getMailKey(true);
+            if (!key) throw err;
+            payload.key = key;
+            j = await cloudPost('send_payslip', payload);
+          } else throw err;
+        }
+        const sal = ensureSalaryRecord(r.eid, month);
+        sal['薪資條寄送'] = { time: nowTimestamp(), to: r.email, by: currentUser.fullName };
+        r.sentInfo = sal['薪資條寄送']; r.hasSal = true;
+        _mailStatus[r.eid] = { cls: 'sent', text: '✓ 已寄出' };
+        okCnt++;
+        if (j && j.remaining != null) $('mailProgressTxt').dataset.remain = j.remaining;
+      } catch (err) {
+        _mailStatus[r.eid] = { cls: 'fail', text: '✗ 失敗', title: err.message };
+        failCnt++;
+        console.error('send_payslip failed', r.eid, err);
+        if (/unknown action|未知|not supported/i.test(err.message)) {
+          toast('Apps Script 尚未加入 send_payslip 功能，請先完成雲端設定', 'error');
+          done++; setProg(); break;
+        }
+      }
+      done++;
+      setProg();
+      renderMailList();
+      await new Promise(res => setTimeout(res, 800));   // 避免觸發 Gmail 頻率限制
+    }
+    _mailSending = false;
+    $('mailCancelBtn').disabled = false;
+    const remain = $('mailProgressTxt').dataset.remain;
+    $('mailProgressTxt').textContent = `完成：成功 ${okCnt} 封、失敗 ${failCnt} 封` +
+      (remain ? ` · 今日剩餘寄信額度 ${remain}` : '') + (failCnt ? '（滑鼠移到「✗ 失敗」可看原因）' : '');
+    _mailSelected = new Set();
+    renderMailList();
+    if (okCnt) {
+      persistData();
+      appendLog({ time: nowTimestamp(), user: currentUser.fullName,
+        text: `寄送 ${month} 薪資條 ${okCnt} 封（寄件人 ${MAIL_SENDER}）${failCnt ? `，失敗 ${failCnt} 封` : ''}` });
+    }
+    toast(failCnt ? `寄出 ${okCnt} 封，${failCnt} 封失敗` : `✓ 已寄出 ${okCnt} 封薪資條`, failCnt ? 'error' : 'success');
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('mailOverlay') && $('mailOverlay').classList.contains('show')) closeMailModal();
+  });
+
+  // 薪資條計算（畫面薪資條與 Email 薪資條共用，確保金額一致）
+  function getPayslipData(emp, sal) {
     // 先依目前公式重新計算加班費／支薪金額／請假扣款／遲到扣款，避免顯示舊的快取值
     if (sal['員工編號']) computeRow(emp, sal);
 
@@ -5215,20 +5576,41 @@
       ['健保自付 Health Ins', emp['健保自付']],
       ['健保眷屬扣款 Health Dep', emp['健保眷屬自付']],
       ['退休金提撥 Retirement', emp['退休金提撥']],
-      ['請假時數 Leave Hours', sal['請假時數']],
-      [`請假扣款 Leave Deduct (×${FC('LEAVE_RATE')}/hr)`, sal['請假扣款']],
+      ['結構性請假時數 Fixed Leave Hours', Number(emp['結構性請假時數']) || 0],
+      ['當月請假時數 Leave Hours', Number(sal['請假時數']) || 0],
+      [`請假扣款 Leave Deduct (×${FC('LEAVE_RATE')}/hr)`, Math.round(totalLeaveHours(emp, sal) * Number(FC('LEAVE_RATE')))],
       ['遲到扣款 Late', sal['遲到扣款']],
       ['扣款 Deduction', sal['扣款']]
     ];
     // Exclude 請假時數 from sum (it's hours, not money) — only the 請假扣款 (money) counts
     const subC = deductions
-      .filter(([k]) => !k.startsWith('請假時數'))
+      .filter(([k]) => !k.includes('請假時數'))
       .reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
     // D — 現金給付 (Cash already paid; subtracted from final net)
     const subD = Number(emp['現金給付']) || 0;
 
     const net = subA + subB - subC - subD;
+    return { attBonus, fixed, variable, deductions, extraCountLabels, subA, subB, subC, subD, net };
+  }
+
+  function renderPayslip() {
+    // 主管不可瀏覽「薪水條」
+    if (currentUser && currentUser.role === 'manager') { $('payslip').innerHTML = ''; return; }
+    const eid = $('psEmp').value;
+    const month = $('psMonth').value;
+    if (!eid || !month) {
+      $('payslip').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;">請選擇員工與月份</div>';
+      return;
+    }
+    const emp = findEmployee(eid);
+    const sal = findSalary(eid, month) || {};
+    if (!emp) {
+      $('payslip').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;">找不到員工資料</div>';
+      return;
+    }
+
+    const { fixed, variable, deductions, subA, subB, subC, subD, net } = getPayslipData(emp, sal);
     const today = new Date().toISOString().substr(0, 10);
 
     // Force-show overrides: items whose key prefix matches displayOverrides should NOT be hidden even if 0
@@ -5462,13 +5844,14 @@
       ['健保自付',     emp['健保自付']],
       ['健保眷屬扣款', emp['健保眷屬自付']],
       ['退休金提撥',   emp['退休金提撥']],
-      ['請假時數',   sal['請假時數']],
-      [`請假扣款 (×${FC('LEAVE_RATE')}/時)`, sal['請假扣款']],
+      ['結構性請假時數', Number(emp['結構性請假時數']) || 0],
+      ['當月請假時數',   Number(sal['請假時數']) || 0],
+      [`請假扣款 (×${FC('LEAVE_RATE')}/時)`, Math.round(totalLeaveHours(emp, sal) * Number(FC('LEAVE_RATE')))],
       ['遲到扣款',   sal['遲到扣款']],
       ['扣款',       sal['扣款']]
     ];
     const subC = deductions
-      .filter(([k]) => !k.startsWith('請假時數'))
+      .filter(([k]) => !k.includes('請假時數'))
       .reduce((s, [_, v]) => s + (Number(v) || 0), 0);
     const subD = Number(emp['現金給付']) || 0;
     const net = subA + subB - subC - subD;
@@ -5610,7 +5993,8 @@
         ['健保自付',     '健保自付 Health Ins'],
         ['健保眷屬扣款', '健保眷屬扣款 Health Dependent'],
         ['退休金提撥',   '退休金提撥 Retirement'],
-        ['請假時數',   '請假時數 Leave Hours'],
+        ['結構性請假時數', '結構性請假時數 Fixed Leave Hours'],
+        ['當月請假時數',   '當月請假時數 Leave Hours'],
         ['請假扣款',   '請假扣款 Leave Deduct'],
         ['遲到扣款',   '遲到扣款 Late'],
         ['扣款',       '扣款 Deduction']
