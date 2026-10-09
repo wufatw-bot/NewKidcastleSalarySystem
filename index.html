@@ -3904,7 +3904,7 @@
   // =========================================================================
   // Default Apps Script Web App URL — shared across all users by default.
   // Users can override via the「☁ 雲端設定」dialog (writes to localStorage).
-  const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbyQpJuII2RkmYQ-3P33XMt_Vv8Fd9eAV8KmwnHiTOQiXZuL3E9yvIBBiMRNgxEBKpU/exec';
+  const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbxipSVJFWZTjy5Kw8JcHYukt9NLPY2p2Z88hNOV-sIe1M82wY1SsGYFXjrRr6sfXYc/exec';
   const CLOUD_URL_KEY = 'kc_cloud_url_v1';   // optional per-user override
   function getCloudUrl() {
     try { return localStorage.getItem(CLOUD_URL_KEY) || DEFAULT_CLOUD_URL; } catch(e) { return DEFAULT_CLOUD_URL; }
