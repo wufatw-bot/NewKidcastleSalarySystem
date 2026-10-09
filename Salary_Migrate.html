@@ -179,7 +179,7 @@ async function apply() {
         '上班時數': 184, '加班時數': 0, '加班費': 0,
         '請假時數': u.leave ? Math.round(u.leave/180) : 0,
         '請假扣款': u.leave, '遲到次數': 0, '遲到扣款': 0,
-        '獎金': u.bonus, '扣款': 0, '特殊調整': 0, '備註': '由Excel匯入'
+        '獎金': u.bonus, '扣款': 0, '備註': '由Excel匯入'
       });
     } else if (u.action === 'UPDATE') {
       const emp = cloudData.employees.find(e => e['員工姓名'] === u.name);
@@ -187,7 +187,7 @@ async function apply() {
       // Update salary[month] bonus + leave
       let sal = cloudData.salary.find(s => s['員工編號'] === emp['員工編號'] && String(s['月份']) === u.month);
       if (!sal) {
-        sal = {'月份': u.month, '員工編號': emp['員工編號'], '上班時數': 184, '加班時數': 0, '加班費': 0, '請假時數': 0, '請假扣款': 0, '遲到次數': 0, '遲到扣款': 0, '獎金': 0, '扣款': 0, '特殊調整': 0, '備註': null};
+        sal = {'月份': u.month, '員工編號': emp['員工編號'], '上班時數': 184, '加班時數': 0, '加班費': 0, '請假時數': 0, '請假扣款': 0, '遲到次數': 0, '遲到扣款': 0, '獎金': 0, '扣款': 0, '備註': null};
         cloudData.salary.push(sal);
       }
       sal['獎金'] = u.bonus;

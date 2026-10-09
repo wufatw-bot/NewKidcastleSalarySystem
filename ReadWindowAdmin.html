@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>薪資條開放設定</title>
+<!--
+  ReadWindowAdmin.html — 老闆專用：薪資條開放查詢設定
+  - 可獨立開啟，也可把 <div class="rwa"> 與 <script> 整段貼進 homepage.html 的老闆頁面。
+  - 會自動使用 window.RW_API_URL（若 homepage 有設定）；否則在畫面上輸入 Web App 網址。
+  - 老闆密碼 = Code.gs 裡的 ADMIN_KEY，只存在這個瀏覽器分頁（關閉後需重新輸入）。
+-->
+<style>
+  body { margin: 0; background: #f4f5f7; }
+  .rwa { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; max-width: 760px; margin: 16px auto; padding: 20px;
+         border: 1px solid #d9d9d9; border-radius: 10px; background: #fff; color: #222; box-sizing: border-box; }
+  .rwa h2 { margin: 0 0 4px; font-size: 20px; }
+  .rwa .sub { color: #666; font-size: 13px; margin-bottom: 16px; }
+  .rwa .status { padding: 10px 12px; border-radius: 6px; margin-bottom: 16px; font-weight: 600; }
+  .rwa .status.on { background: #e8f5e9; color: #1b5e20; }
+  .rwa .status.off { background: #fff3e0; color: #8a4b00; }
+  .rwa fieldset { border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px 14px; margin: 0 0 14px; }
+  .rwa legend { font-weight: 600; padding: 0 6px; }
+  .rwa .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 6px 0; }
+  .rwa label { font-size: 14px; }
+  .rwa input[type=number] { width: 70px; padding: 5px; }
+  .rwa input[type=text], .rwa input[type=password] { padding: 6px; min-width: 0; flex: 1; }
+  .rwa input[type=date], .rwa input[type=month] { padding: 5px; }
+  .rwa textarea { width: 100%; min-height: 120px; font-family: monospace; font-size: 13px; padding: 6px; box-sizing: border-box; }
+  .rwa table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .rwa th, .rwa td { border-bottom: 1px solid #eee; padding: 6px 4px; text-align: left; }
+  .rwa .tag { background: #e3f2fd; color: #0d47a1; border-radius: 4px; padding: 1px 6px; font-size: 12px; margin-left: 6px; }
+  .rwa button { padding: 8px 16px; border-radius: 6px; border: 1px solid #bbb; background: #f7f7f7; cursor: pointer; font-size: 14px; }
+  .rwa button.primary { background: #1565c0; border-color: #1565c0; color: #fff; }
+  .rwa button.small { padding: 3px 10px; font-size: 13px; }
+  .rwa button:disabled { opacity: .5; cursor: default; }
+  .rwa .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .rwa .msg { margin-top: 10px; font-size: 14px; min-height: 1em; }
+  .rwa .msg.err { color: #c62828; }
+  .rwa .msg.ok { color: #2e7d32; }
+  .rwa .hint { color: #777; font-size: 12px; }
+  .rwa #rwaEditor { display: none; }
+</style>
+</head>
+<body>
+
+<div class="rwa">
+  <h2>薪資條開放查詢設定</h2>
+  <div class="sub" id="rwaUpdated">請先登入</div>
+
+  <fieldset id="rwaLogin">
+    <legend>老闆登入</legend>
+    <div class="row" id="rwaUrlRow">
+      <label style="white-space:nowrap">Web App 網址</label>
+      <input type="text" id="rwaUrl" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+    <div class="row">
+      <label style="white-space:nowrap">老闆密碼</label>
+      <input type="password" id="rwaKey" placeholder="Code.gs 裡的 ADMIN_KEY">
+      <button class="primary" type="button" onclick="rwaLogin()">登入</button>
+    </div>
+  </fieldset>
+
+  <div id="rwaEditor">
+    <div class="status" id="rwaStatus"></div>
+
+    <fieldset>
+      <legend>開放模式</legend>
+      <div class="row">
+        <label><input type="radio" name="rwaMode" value="auto"> 自動（依下方規則）</label>
+        <label><input type="radio" name="rwaMode" value="open"> 強制開放</label>
+        <label><input type="radio" name="rwaMode" value="closed"> 強制關閉</label>
+      </div>
+      <div class="hint">臨時需要提早開放或暫停查詢時使用，處理完記得改回「自動」。</div>
+    </fieldset>
+
+    <fieldset>
+      <legend>自動規則</legend>
+      <div class="row">
+        <label>每月 <input type="number" id="rwaOpenDay" min="1" max="28"> 日開放</label>
+        <label>開放 <input type="number" id="rwaOpenDays" min="1" max="31"> 天</label>
+        <label><input type="checkbox" id="rwaPostpone"> 遇週末或假日順延至下一個上班日</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>特別開放期間（指定月份，覆蓋自動規則）</legend>
+      <table>
+        <thead><tr><th>月份</th><th>開始</th><th>結束</th><th></th></tr></thead>
+        <tbody id="rwaOverrides"></tbody>
+      </table>
+      <div class="actions"><button class="small" type="button" onclick="rwaAddOverride()">＋ 新增特別期間</button></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>國定假日 / 園所休假日</legend>
+      <textarea id="rwaHolidays" placeholder="每行一個日期，例如 2027-02-08"></textarea>
+      <div class="hint">每行一個日期（2027-02-08 或 2027/2/8 皆可）。只需填平日放假的日子，週六日會自動跳過。</div>
+    </fieldset>
+
+    <div class="actions">
+      <button class="primary" type="button" onclick="rwaSave()">儲存設定</button>
+      <button type="button" onclick="rwaPreview()">試算（不儲存）</button>
+      <button type="button" onclick="rwaReset()">恢復預設</button>
+      <button type="button" onclick="rwaLogout()">登出</button>
+    </div>
+
+    <fieldset style="margin-top:16px">
+      <legend>未來 12 個月開放期間</legend>
+      <table>
+        <thead><tr><th>月份</th><th>開放期間</th></tr></thead>
+        <tbody id="rwaPreviewBody"></tbody>
+      </table>
+    </fieldset>
+  </div>
+
+  <div class="msg" id="rwaMsg"></div>
+</div>
+
+<script>
+(function () {
+  var URL_KEY = 'kidcastle_rw_url';
+  var SKEY = 'kidcastle_rw_admin';
+
+  function $(id) { return document.getElementById(id); }
+  function msg(text, type) { var m = $('rwaMsg'); m.textContent = text || ''; m.className = 'msg ' + (type || ''); }
+  function store(k, v) { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return sessionStorage.getItem(k) || ''; } catch (e) { return ''; } }
+  function storeUrl(v) { try { localStorage.setItem(URL_KEY, v); } catch (e) {} }
+  function loadUrl() { try { return localStorage.getItem(URL_KEY) || ''; } catch (e) { return ''; } }
+
+  function apiUrl() { return (window.RW_API_URL || $('rwaUrl').value || '').trim(); }
+  function adminKey() { return load(SKEY); }
+
+  // 用 text/plain 送出，避免 Apps Script 的 CORS 預檢失敗
+  function post(body) {
+    var url = apiUrl();
+    if (!url) return Promise.reject(new Error('請先輸入 Web App 網址'));
+    return fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { if (!j.ok) throw new Error(j.error || '發生錯誤'); return j; });
+  }
+
+  function renderPreview(rows) {
+    $('rwaPreviewBody').innerHTML = rows.map(function (r) {
+      return '<tr><td>' + r.month + '</td><td>' + r.label + (r.special ? '<span class="tag">特別期間</span>' : '') + '</td></tr>';
+    }).join('');
+  }
+
+  function overrideRow(ym, start, end) {
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><input type="month" class="ov-ym" value="' + (ym || '') + '"></td>' +
+      '<td><input type="date" class="ov-st" value="' + (start || '') + '"></td>' +
+      '<td><input type="date" class="ov-en" value="' + (end || '') + '"></td>' +
+      '<td><button class="small" type="button">刪除</button></td>';
+    tr.querySelector('button').onclick = function () { tr.remove(); };
+    return tr;
+  }
+
+  function render(d) {
+    var s = d.settings;
+    document.querySelectorAll('input[name=rwaMode]').forEach(function (r) { r.checked = (r.value === s.mode); });
+    $('rwaOpenDay').value = s.openDay;
+    $('rwaOpenDays').value = s.openDays;
+    $('rwaPostpone').checked = !!s.postpone;
+    $('rwaHolidays').value = (s.holidays || []).join('\n');
+    var tb = $('rwaOverrides'); tb.innerHTML = '';
+    Object.keys(s.overrides || {}).sort().forEach(function (ym) {
+      tb.appendChild(overrideRow(ym, s.overrides[ym].start, s.overrides[ym].end));
+    });
+    $('rwaUpdated').textContent = s.updatedAt ? ('最後修改：' + s.updatedAt) : '目前使用預設設定';
+    var st = d.window, b = $('rwaStatus');
+    b.textContent = '員工目前看到：' + st.message;
+    b.className = 'status ' + (st.open ? 'on' : 'off');
+    renderPreview(d.preview);
+    $('rwaLogin').style.display = 'none';
+    $('rwaEditor').style.display = 'block';
+  }
+
+  function collect() {
+    var mode = 'auto';
+    document.querySelectorAll('input[name=rwaMode]').forEach(function (r) { if (r.checked) mode = r.value; });
+    var overrides = {};
+    var rows = document.querySelectorAll('#rwaOverrides tr');
+    for (var i = 0; i < rows.length; i++) {
+      var ym = rows[i].querySelector('.ov-ym').value;
+      var st = rows[i].querySelector('.ov-st').value;
+      var en = rows[i].querySelector('.ov-en').value;
+      if (!ym && !st && !en) continue;
+      if (!ym || !st || !en) throw new Error('特別開放期間請填完整的月份、開始與結束日期。');
+      overrides[ym] = { start: st, end: en };
+    }
+    return {
+      mode: mode,
+      openDay: $('rwaOpenDay').value,
+      openDays: $('rwaOpenDays').value,
+      postpone: $('rwaPostpone').checked,
+      overrides: overrides,
+      holidays: $('rwaHolidays').value.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean)
+    };
+  }
+
+  function fail(e) { msg((e && e.message) || String(e), 'err'); }
+
+  window.rwaAddOverride = function () { $('rwaOverrides').appendChild(overrideRow('', '', '')); };
+
+  window.rwaLogin = function () {
+    var key = $('rwaKey').value.trim();
+    if (!window.RW_API_URL) storeUrl($('rwaUrl').value.trim());
+    if (!key) return fail(new Error('請輸入老闆密碼'));
+    msg('登入中…');
+    post({ action: 'read_window_get', adminKey: key })
+      .then(function (d) { store(SKEY, key); render(d); msg(''); })
+      .catch(fail);
+  };
+
+  window.rwaLogout = function () {
+    store(SKEY, null);
+    $('rwaKey').value = '';
+    $('rwaEditor').style.display = 'none';
+    $('rwaLogin').style.display = 'block';
+    $('rwaUpdated').textContent = '請先登入';
+    msg('已登出。', 'ok');
+  };
+
+  window.rwaSave = function () {
+    var s; try { s = collect(); } catch (e) { return fail(e); }
+    msg('儲存中…');
+    post({ action: 'read_window_save', adminKey: adminKey(), settings: s })
+      .then(function (d) { render(d); msg('已儲存，員工端立即生效。', 'ok'); })
+      .catch(fail);
+  };
+
+  window.rwaPreview = function () {
+    var s; try { s = collect(); } catch (e) { return fail(e); }
+    msg('試算中…');
+    post({ action: 'read_window_preview', adminKey: adminKey(), settings: s })
+      .then(function (d) { renderPreview(d.preview); msg('以上為試算結果，尚未儲存。'); })
+      .catch(fail);
+  };
+
+  window.rwaReset = function () {
+    if (!confirm('確定要恢復預設設定（每月 17 日、開放 7 天、遇假日順延）？')) return;
+    post({ action: 'read_window_reset', adminKey: adminKey() })
+      .then(function (d) { render(d); msg('已恢復預設設定。', 'ok'); })
+      .catch(fail);
+  };
+
+  // 初始化
+  if (window.RW_API_URL) $('rwaUrlRow').style.display = 'none';
+  else $('rwaUrl').value = loadUrl();
+  if (adminKey() && apiUrl()) {
+    post({ action: 'read_window_get', adminKey: adminKey() }).then(render).catch(function () { store(SKEY, null); });
+  }
+})();
+</script>
+</body>
+</html>
