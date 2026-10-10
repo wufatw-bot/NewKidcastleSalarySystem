@@ -130,10 +130,28 @@ header .sub { font-size:14px; opacity:.9; margin-top:4px; }
     </div>
     <div class="field">
       <label>登入密碼 Password</label>
-      <input type="password" id="empPwd" placeholder="與身份證字號相同" autocomplete="current-password">
+      <input type="password" id="empPwd" placeholder="首次登入：與身份證字號相同" autocomplete="current-password">
     </div>
     <button class="btn" id="btnLogin" onclick="doLogin()">🔍 查詢薪資</button>
-    <p style="margin-top:12px;font-size:12px;color:#94a3b8;">忘記密碼？請聯絡學校老闆協助重置。</p>
+    <p style="margin-top:12px;font-size:12px;color:#94a3b8;">第一次登入：帳號與密碼都是您的身份證字號，登入後請設定新密碼。忘記密碼？請聯絡學校老闆協助重置。</p>
+  </div>
+
+  <!-- 首次登入：強制設定新密碼 -->
+  <div class="card no-print" id="setPwdCard" style="display:none;">
+    <h2>🔐 首次登入：請設定新密碼</h2>
+    <p style="font-size:13px;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:10px 12px;margin-bottom:14px;">
+      您目前的密碼是身份證字號。為了保護您的薪資資料，請先設定一組新密碼，之後登入請使用新密碼。
+    </p>
+    <div class="alert error" id="setPwdErr">⚠ <span id="setPwdErrText"></span></div>
+    <div class="field">
+      <label>新密碼 New Password（至少 6 碼）</label>
+      <input type="password" id="newPwd" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>確認新密碼 Confirm</label>
+      <input type="password" id="newPwd2" autocomplete="new-password">
+    </div>
+    <button class="btn" id="btnSetPwd" onclick="saveNewPassword()">💾 儲存新密碼並查詢薪資</button>
   </div>
 
   <!-- Loading state -->
@@ -186,6 +204,76 @@ async function cloudGet(action) {
   return j;
 }
 
+async function cloudPost(action, payload) {
+  const r = await fetch(CLOUD_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // 避免 CORS 預檢
+    body: JSON.stringify(Object.assign({ action }, payload || {})),
+    redirect: 'follow'
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || '雲端錯誤');
+  return j;
+}
+
+// 首次登入判斷：密碼仍是身份證字號（或員工編號）＝初始密碼
+function isInitialPassword(emp, pwd) {
+  const p = String(pwd || '').trim().toLowerCase();
+  if (!p) return false;
+  const idNo = String(emp['身份證字號'] || '').trim().toLowerCase();
+  const eid  = String(emp['員工編號'] || '').trim().toLowerCase();
+  return (idNo && p === idNo) || (eid && p === eid);
+}
+
+let _loginPwd = '';
+function showPayslipView() {
+  populateMonth();
+  $('loadingCard').style.display = 'none';
+  $('setPwdCard').style.display = 'none';
+  $('payslipCard').style.display = 'block';
+  renderPayslip();
+}
+
+async function saveNewPassword() {
+  const nw = $('newPwd').value;
+  const cf = $('newPwd2').value;
+  const err = m => { $('setPwdErrText').textContent = m; $('setPwdErr').classList.add('show'); };
+  $('setPwdErr').classList.remove('show');
+  if (!nw || !cf) return err('請輸入新密碼兩次');
+  if (nw.length < 6) return err('新密碼至少 6 碼');
+  if (nw !== cf) return err('兩次輸入的新密碼不一致');
+  if (isInitialPassword(currentEmp, nw)) return err('新密碼不能是身份證字號或員工編號');
+  $('btnSetPwd').disabled = true;
+  $('btnSetPwd').textContent = '儲存中…';
+  try {
+    // 重新讀取最新雲端資料，只改自己的「登入密碼」再寫回，避免覆蓋別人剛存的資料
+    const fresh = (await cloudGet('read')).data || {};
+    const idNo = String(currentEmp['身份證字號'] || '').trim().toUpperCase();
+    const me = (fresh.employees || []).find(e => String(e['身份證字號'] || '').trim().toUpperCase() === idNo);
+    if (!me) throw new Error('找不到您的員工資料，請聯絡老闆');
+    if (String(me['登入密碼'] || '').toLowerCase() !== _loginPwd.toLowerCase()) {
+      throw new Error('密碼已在其他地方被修改，請重新登入');
+    }
+    me['登入密碼'] = nw;
+    await cloudPost('write', { data: fresh });
+    try {
+      await cloudPost('append_log', { entry: { time: new Date().toLocaleString('zh-TW', { hour12: false }).replace(/\//g, '-'),
+        user: me['員工姓名'], text: me['員工姓名'] + ' 首次登入，已設定新密碼' } });
+    } catch (_) {}
+    DATA = fresh;
+    currentEmp = me;
+    _loginPwd = nw;
+    $('newPwd').value = ''; $('newPwd2').value = '';
+    showPayslipView();
+  } catch (e) {
+    err(e.message);
+  } finally {
+    $('btnSetPwd').disabled = false;
+    $('btnSetPwd').textContent = '💾 儲存新密碼並查詢薪資';
+  }
+}
+
 async function doLogin() {
   const idNo = ($('empId').value || '').trim().toUpperCase();
   const pwd = ($('empPwd').value || '').trim();
@@ -209,10 +297,15 @@ async function doLogin() {
       throw new Error('密碼錯誤');
     }
     currentEmp = emp;
-    populateMonth();
-    $('loadingCard').style.display = 'none';
-    $('payslipCard').style.display = 'block';
-    renderPayslip();
+    _loginPwd = stored;
+    if (isInitialPassword(emp, pwd)) {
+      // 首次登入：先設定新密碼才能看薪資條
+      $('loadingCard').style.display = 'none';
+      $('setPwdCard').style.display = 'block';
+      setTimeout(() => $('newPwd').focus(), 50);
+      return;
+    }
+    showPayslipView();
   } catch (e) {
     $('loadingCard').style.display = 'none';
     $('loginCard').style.display = 'block';
@@ -226,6 +319,7 @@ function doLogout() {
   currentEmp = null;
   DATA = null;
   $('payslipCard').style.display = 'none';
+  $('setPwdCard').style.display = 'none';
   $('loginCard').style.display = 'block';
   $('empPwd').value = '';
   $('btnLogin').disabled = false;
@@ -420,6 +514,6 @@ document.addEventListener('keydown', e => {
   }
 });
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261009V2100</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261010V2145</div>
 </body>
 </html>

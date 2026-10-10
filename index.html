@@ -2144,7 +2144,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261009V2100</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261010V2145</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2954,13 +2954,16 @@
   <div class="small-modal" onclick="event.stopPropagation()">
     <div class="head">
       <div class="icon-l">🔑</div>
-      <h2>修改我的密碼 Change Password</h2>
-      <button class="close" onclick="closeMyPwd()">✕</button>
+      <h2 id="myPwdTitle">修改我的密碼 Change Password</h2>
+      <button class="close" id="myPwdCloseX" onclick="closeMyPwd()">✕</button>
     </div>
     <div class="body">
+      <div class="alert" id="myPwdForceNote" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;">
+        🔐 這是您第一次登入（目前密碼為身份證字號）。為了保護您的薪資資料，請先設定一組新密碼，之後登入請使用新密碼。
+      </div>
       <div class="alert error" id="myPwdErr">⚠ <span id="myPwdErrMsg">—</span></div>
       <div class="alert success" id="myPwdOk">✓ <span id="myPwdOkMsg">—</span></div>
-      <div class="field">
+      <div class="field" id="myPwdCurrentField">
         <label>目前密碼 Current Password</label>
         <input type="password" id="myPwdCurrent" autocomplete="current-password">
       </div>
@@ -2974,7 +2977,7 @@
       </div>
     </div>
     <div class="foot">
-      <button class="btn-mini secondary" onclick="closeMyPwd()">取消</button>
+      <button class="btn-mini secondary" id="myPwdCancel" onclick="closeMyPwd()">取消</button>
       <button class="btn-mini primary" onclick="saveMyPassword()">💾 儲存</button>
     </div>
   </div>
@@ -3523,7 +3526,7 @@
     $('btnLogin').textContent = '驗證中…';
     hideAlerts();
 
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         // 1) Check manager/owner accounts (CREDENTIALS)
         const list = CREDENTIALS[currentSchool].users;
@@ -3532,7 +3535,16 @@
           String(x.password) === p
         );
         // 2) Fall back to employee accounts (DATA.employees scoped to this school)
+        //    登入前 DATA 只是頁面內建的預設資料，必須先讀取雲端最新資料，才能比對真正的帳號／密碼（身份證字號或員工自設的新密碼）
         if (!hit) {
+          try {
+            DATA = await loadData();
+          } catch (e) {
+            showError('無法連線雲端讀取員工資料：' + e.message);
+            $('btnLogin').disabled = false;
+            $('btnLogin').textContent = '登入 Sign In';
+            return;
+          }
           const schoolCampus = campusShort(currentSchool);
           const empHit = DATA.employees.find(e =>
             e['在職狀態'] === '在職' &&
@@ -3700,10 +3712,14 @@
     $('btnLogin').textContent = '登入 Sign In';
     $('password').value = '';
 
-    // First-login Email setup for employee (only if Email is empty)
+    // 員工首次登入：密碼仍是身份證字號 → 先強制設定新密碼，再進行 Email 設定
     if (user.role === 'employee' && user.empId) {
       const emp = findEmployee(user.empId);
-      if (emp && !emp['Email']) {
+      const needEmail = emp && !emp['Email'];
+      if (emp && isInitialEmployeePassword(emp, user.password)) {
+        _afterForcedPwd = needEmail ? () => setTimeout(openFirstEmail, 300) : null;
+        setTimeout(() => openChangeMyPassword(true), 600);
+      } else if (needEmail) {
         // Delay slightly so dashboard fully renders first
         setTimeout(openFirstEmail, 600);
       }
@@ -6762,18 +6778,37 @@
   });
 
   // -------- Change My Password (any logged-in user) --------
-  function openChangeMyPassword() {
+  // 員工「首次登入」判斷：密碼仍是身份證字號（或尚未填身份證字號時的員工編號）＝初始密碼，必須先改密碼
+  let _pwdForced = false;
+  let _afterForcedPwd = null;
+  function isInitialEmployeePassword(emp, pwd) {
+    if (!emp) return false;
+    const p = String(pwd || '').trim().toLowerCase();
+    if (!p) return false;
+    const idNo = String(emp['身份證字號'] || '').trim().toLowerCase();
+    const eid  = String(emp['員工編號'] || '').trim().toLowerCase();
+    return (idNo && p === idNo) || (eid && p === eid);
+  }
+  function openChangeMyPassword(force) {
     if (!currentUser) return;
+    _pwdForced = !!force;
+    $('myPwdTitle').textContent = _pwdForced ? '首次登入：請設定新密碼 Set New Password' : '修改我的密碼 Change Password';
+    $('myPwdForceNote').classList.toggle('show', _pwdForced);
+    $('myPwdCurrentField').style.display = _pwdForced ? 'none' : '';
+    $('myPwdCloseX').style.display = _pwdForced ? 'none' : '';
+    $('myPwdCancel').style.display = _pwdForced ? 'none' : '';
     $('myPwdCurrent').value = '';
     $('myPwdNew').value = '';
     $('myPwdConfirm').value = '';
     $('myPwdErr').classList.remove('show');
     $('myPwdOk').classList.remove('show');
+    if (_pwdForced) $('myPwdCurrent').value = currentUser.password;
     $('myPwdOverlay').classList.add('show');
-    setTimeout(() => $('myPwdCurrent').focus(), 50);
+    setTimeout(() => $(_pwdForced ? 'myPwdNew' : 'myPwdCurrent').focus(), 50);
   }
   function closeMyPwd(e) {
     if (e && e.target !== e.currentTarget) return;
+    if (_pwdForced) return;   // 首次登入強制改密碼：未完成前不能關閉
     $('myPwdOverlay').classList.remove('show');
   }
   function showMyPwdErr(msg) {
@@ -6795,9 +6830,11 @@
       // Employee: update their 登入密碼 in DATA.employees
       const emp = findEmployee(currentUser.empId);
       if (!emp) { showMyPwdErr('找不到員工資料'); return; }
+      if (isInitialEmployeePassword(emp, nw)) { showMyPwdErr('新密碼不能是身份證字號或員工編號'); return; }
       emp['登入密碼'] = nw;
       currentUser.password = nw;
       persistData();
+      try { flushPersist(); } catch (_) {}
     } else {
       // Owner/Manager: update CREDENTIALS
       const list = CREDENTIALS[currentUser.schoolId].users;
@@ -6815,7 +6852,12 @@
     $('myPwdOkMsg').textContent = '密碼已更新，下次登入請使用新密碼';
     $('myPwdOk').classList.add('show');
     $('myPwdErr').classList.remove('show');
-    setTimeout(() => closeMyPwd(), 1500);
+    const wasForced = _pwdForced;
+    setTimeout(() => {
+      _pwdForced = false;
+      closeMyPwd();
+      if (wasForced && typeof _afterForcedPwd === 'function') { const f = _afterForcedPwd; _afterForcedPwd = null; f(); }
+    }, 1500);
     toast('密碼已更新', 'success');
   }
 
@@ -9534,6 +9576,14 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261010V2145', date: '2026-10-10 21:45',
+      changes: [
+        '員工首次登入：帳號、密碼皆為身份證字號；登入後必須先設定新密碼（至少 6 碼、不可與身份證字號相同）才能查看薪資條',
+        '主系統登入與「員工薪資查詢」頁面都會要求首次改密碼；員工忘記密碼時，老闆把「登入密碼」改回身份證字號即可重設',
+        '修正主系統員工登入：改為讀取雲端最新資料比對帳號密碼（之前比對的是頁面內建的預設資料，員工自設的新密碼不會生效，且只要知道員工編號就能登入）'
+      ]
+    },
     {
       version: 'V20261009V2100', date: '2026-10-09 21:00',
       changes: [
