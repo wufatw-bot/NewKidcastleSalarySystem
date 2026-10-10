@@ -2144,7 +2144,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261010V2145</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261011V0725</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2999,7 +2999,7 @@
       </div>
       <div class="field">
         <label>密碼 Password</label>
-        <input type="text" id="acctPassword" autocomplete="off">
+        <input type="text" id="acctPassword" data-pwd="1" autocomplete="off">
       </div>
       <div class="field">
         <label>角色 Role</label>
@@ -3349,7 +3349,7 @@
         <label for="password">密碼 Password</label>
         <div class="ipt">
           <span class="pre">🔒</span>
-          <input type="password" id="password" name="password" placeholder="請輸入密碼" required autocomplete="current-password">
+          <input type="password" id="password" data-no-eye="1" name="password" placeholder="請輸入密碼" required autocomplete="current-password">
           <button type="button" class="eye" id="eyeBtn" aria-label="顯示密碼" title="顯示 / 隱藏密碼">
             <span id="eyeIcon">👁</span>
           </button>
@@ -6803,6 +6803,7 @@
     $('myPwdErr').classList.remove('show');
     $('myPwdOk').classList.remove('show');
     if (_pwdForced) $('myPwdCurrent').value = currentUser.password;
+    if (window.resetPwdEyes) resetPwdEyes($('myPwdOverlay'));
     $('myPwdOverlay').classList.add('show');
     setTimeout(() => $(_pwdForced ? 'myPwdNew' : 'myPwdCurrent').focus(), 50);
   }
@@ -8561,7 +8562,7 @@
             </div>`;
         } else {
           const safe = String(v == null ? '' : v).replace(/"/g, '&quot;');
-          inputHtml = `<input type="text" class="${cls}" data-key="${f.key}" value="${safe}"${f.readonly ? ' readonly' : ''}>`;
+          inputHtml = `<input type="text" class="${cls}" data-key="${f.key}" value="${safe}"${f.key === '登入密碼' ? ' data-pwd="1" autocomplete="off"' : ''}${f.readonly ? ' readonly' : ''}>`;
         }
         // Quick-fill buttons for 現金給付
         let quickFillHtml = '';
@@ -9577,6 +9578,13 @@
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
     {
+      version: 'V20261011V0725', date: '2026-10-11 07:25',
+      changes: [
+        '每一個密碼欄位右側新增 👁 顯示／隱藏按鈕：老闆密碼確認、修改密碼、首次登入設定新密碼、帳號編輯、員工資料的「登入密碼」、員工薪資查詢、老闆設定面板等',
+        '帳號編輯與員工資料的「登入密碼」改為預設隱藏（••••），按 👁 才顯示'
+      ]
+    },
+    {
       version: 'V20261010V2145', date: '2026-10-10 21:45',
       changes: [
         '員工首次登入：帳號、密碼皆為身份證字號；登入後必須先設定新密碼（至少 6 碼、不可與身份證字號相同）才能查看薪資條',
@@ -9619,5 +9627,75 @@
   function closeChangelog() { document.getElementById('changelogModal').classList.remove('show'); }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChangelog(); });
 </script>
+<!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
+<style>
+  .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }
+  .pwd-eye-wrap > input { padding-right: 40px !important; box-sizing: border-box; }
+  .pwd-eye-wrap.block { display: block; width: 100%; }
+  .pwd-eye-wrap.block > input { width: 100% !important; }
+  .pwd-eye-wrap.inline { display: inline-block; }
+  .pwd-eye-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    border: none; background: transparent; cursor: pointer; font-size: 16px; line-height: 1;
+    padding: 6px 7px; border-radius: 6px; opacity: .7; }
+  .pwd-eye-btn:hover { opacity: 1; background: rgba(15,23,42,.06); }
+  .pwd-eye-btn.on { opacity: 1; }
+  @media print { .pwd-eye-btn { display: none !important; } }
+</style>
+<script>
+(function () {
+  function isEyeTarget(el) {
+    return el && el.tagName === 'INPUT' && !el.dataset.noEye && !el.closest('.pwd-eye-wrap') &&
+      (el.type === 'password' || el.dataset.pwd === '1');
+  }
+  function addEye(input) {
+    if (!isEyeTarget(input)) return;
+    if (input.dataset.pwd === '1') input.type = 'password';
+    const wrap = document.createElement('span');
+    const cs = getComputedStyle(input);
+    const rendered = input.offsetWidth > 0;
+    const parentW = input.parentElement ? input.parentElement.clientWidth : 0;
+    const full = rendered ? (input.offsetWidth >= parentW - 6) : (cs.width.endsWith('%') || cs.display === 'block');
+    wrap.className = 'pwd-eye-wrap ' + (full ? 'block' : 'inline');
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pwd-eye-btn no-print';
+    btn.textContent = '👁';
+    btn.title = btn.ariaLabel = '顯示密碼';
+    btn.tabIndex = -1;
+    btn.addEventListener('mousedown', e => e.preventDefault());   // 不讓輸入框失去焦點
+    btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? '🙈' : '👁';
+      btn.title = btn.ariaLabel = show ? '隱藏密碼' : '顯示密碼';
+      btn.classList.toggle('on', show);
+    });
+    wrap.appendChild(btn);
+  }
+  // 把畫面上所有密碼欄位恢復成「隱藏」（開啟密碼視窗、登出時呼叫）
+  window.resetPwdEyes = function (root) {
+    (root || document).querySelectorAll('.pwd-eye-wrap').forEach(w => {
+      const i = w.querySelector('input'), b = w.querySelector('.pwd-eye-btn');
+      if (i) i.type = 'password';
+      if (b) { b.textContent = '👁'; b.title = b.ariaLabel = '顯示密碼'; b.classList.remove('on'); }
+    });
+  };
+  function scan(root) {
+    if (!root || !root.querySelectorAll) return;
+    if (isEyeTarget(root)) addEye(root);
+    root.querySelectorAll('input[type="password"], input[data-pwd="1"]').forEach(addEye);
+  }
+  function start() {
+    scan(document.body);
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(scan)))
+      .observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
 </body>
+
 </html>

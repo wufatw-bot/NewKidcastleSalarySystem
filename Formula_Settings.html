@@ -595,6 +595,76 @@ function toast(msg, type) {
 
 load();
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261010V2145</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261011V0725</div>
+<!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
+<style>
+  .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }
+  .pwd-eye-wrap > input { padding-right: 40px !important; box-sizing: border-box; }
+  .pwd-eye-wrap.block { display: block; width: 100%; }
+  .pwd-eye-wrap.block > input { width: 100% !important; }
+  .pwd-eye-wrap.inline { display: inline-block; }
+  .pwd-eye-btn { position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    border: none; background: transparent; cursor: pointer; font-size: 16px; line-height: 1;
+    padding: 6px 7px; border-radius: 6px; opacity: .7; }
+  .pwd-eye-btn:hover { opacity: 1; background: rgba(15,23,42,.06); }
+  .pwd-eye-btn.on { opacity: 1; }
+  @media print { .pwd-eye-btn { display: none !important; } }
+</style>
+<script>
+(function () {
+  function isEyeTarget(el) {
+    return el && el.tagName === 'INPUT' && !el.dataset.noEye && !el.closest('.pwd-eye-wrap') &&
+      (el.type === 'password' || el.dataset.pwd === '1');
+  }
+  function addEye(input) {
+    if (!isEyeTarget(input)) return;
+    if (input.dataset.pwd === '1') input.type = 'password';
+    const wrap = document.createElement('span');
+    const cs = getComputedStyle(input);
+    const rendered = input.offsetWidth > 0;
+    const parentW = input.parentElement ? input.parentElement.clientWidth : 0;
+    const full = rendered ? (input.offsetWidth >= parentW - 6) : (cs.width.endsWith('%') || cs.display === 'block');
+    wrap.className = 'pwd-eye-wrap ' + (full ? 'block' : 'inline');
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pwd-eye-btn no-print';
+    btn.textContent = '👁';
+    btn.title = btn.ariaLabel = '顯示密碼';
+    btn.tabIndex = -1;
+    btn.addEventListener('mousedown', e => e.preventDefault());   // 不讓輸入框失去焦點
+    btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.textContent = show ? '🙈' : '👁';
+      btn.title = btn.ariaLabel = show ? '隱藏密碼' : '顯示密碼';
+      btn.classList.toggle('on', show);
+    });
+    wrap.appendChild(btn);
+  }
+  // 把畫面上所有密碼欄位恢復成「隱藏」（開啟密碼視窗、登出時呼叫）
+  window.resetPwdEyes = function (root) {
+    (root || document).querySelectorAll('.pwd-eye-wrap').forEach(w => {
+      const i = w.querySelector('input'), b = w.querySelector('.pwd-eye-btn');
+      if (i) i.type = 'password';
+      if (b) { b.textContent = '👁'; b.title = b.ariaLabel = '顯示密碼'; b.classList.remove('on'); }
+    });
+  };
+  function scan(root) {
+    if (!root || !root.querySelectorAll) return;
+    if (isEyeTarget(root)) addEye(root);
+    root.querySelectorAll('input[type="password"], input[data-pwd="1"]').forEach(addEye);
+  }
+  function start() {
+    scan(document.body);
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(scan)))
+      .observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
 </body>
+
 </html>
