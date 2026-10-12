@@ -2144,7 +2144,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261011V0725</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261012V1335</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -8625,7 +8625,7 @@
   // ── 本月薪資 Monthly — 加班/請假/遲到/獎金/扣款/本月備註（寫入當月薪資紀錄 sal，非員工基本資料 emp）──
   // 欄位用 data-sal-key（不是 data-key），所以不會被 readDrawerForm()／saveEmployee() 誤收進員工表單；
   // 改動即時寫入 DATA.salary（debounce 儲存），不需按下方「儲存」鍵。
-  const DRAWER_MONTHLY_FIELDS = [
+  const DRAWER_MONTHLY_FIELDS_ALL = [
     { key: '加班時數', label: '加班時數 OT Hours',      min: 0,       max: 200,    step: 0.5 },
     { key: '支薪時數', label: '支薪時數 Paid Hours',    min: 0,       max: 400,    step: 0.5 },
     { key: '請假時數', label: '請假時數 Leave Hours',    min: 0,       max: 200,    step: 0.5 },
@@ -8636,7 +8636,8 @@
       key: f.key, label: `${f.label} ${f.en}`,
       min: 0, max: f.kind === 'money' ? 999999 : 9999, step: 1
     }))
-  ].filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
+  ];
+  const DRAWER_MONTHLY_FIELDS = DRAWER_MONTHLY_FIELDS_ALL.filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
   function renderDrawerMonthlySectionInner() {
     if (!_editingEid || !_drawerMonth) return '';
     if (currentUser && currentUser.role === 'employee') return '';
@@ -8651,6 +8652,18 @@
         <input type="number" data-sal-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${v}">
       </div>`;
     }).join('');
+    // 已停用的本月欄位（獎金、扣款、考試津貼、預繳津貼、安親人數、混班數、全勤）：
+    // 輸入畫面已移除，但舊資料仍會顯示在薪資條並計入金額 → 老闆可在這裡修改或清除（只顯示本月有值的欄位）
+    const isOwner = currentUser && currentUser.role === 'owner';
+    const legacyHtml = !isOwner ? '' : DRAWER_MONTHLY_FIELDS_ALL
+      .filter(f => REMOVED_INPUT_KEYS.includes(f.key) && (Number(sal[f.key]) || 0) !== 0)
+      .map(f => `<div class="field-cell" data-mcol="${f.key}">
+        <label>${f.label} <small style="font-weight:normal;color:#B45309;">（已停用欄位，可修改或清除）</small></label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" data-sal-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${sal[f.key]}" style="flex:1;min-width:0;">
+          <button type="button" class="btn-mini secondary" data-clear-sal="${f.key}" title="清除為 0" style="white-space:nowrap;">🗑 清除</button>
+        </div>
+      </div>`).join('');
     const noteVal = String(sal['備註'] == null ? '' : sal['備註']).replace(/</g, '&lt;').replace(/"/g, '&quot;');
     const attCur = String(sal['全勤'] || '');
     const attOpt = (val, txt) => `<option value="${val}"${attCur === val ? ' selected' : ''}>${txt}</option>`;
@@ -8658,8 +8671,11 @@
         <label>全勤 Attendance <small style="font-weight:normal;color:#94a3b8;">(自動＝依公式設定的全勤條件)</small></label>
         <select data-sal-key="全勤">${attOpt('', '自動')}${attOpt('全勤', '✓ 全勤')}${attOpt('非全勤', '✗ 非全勤')}</select>
       </div>`;
+    const legacyAttHtml = (isOwner && attCur) ? attHtml.replace('(自動＝依公式設定的全勤條件)', '(已停用欄位；改回「自動」即清除)') : '';
     return `
       ${fieldsHtml}
+      ${legacyHtml}
+      ${legacyAttHtml}
       <div class="field-cell" data-mcol="加班時數">
         <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數 × ${FC('OT_RATE')}元/小時)</small></label>
         <input type="number" id="drawerOtPayDisplay" value="${otPay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
@@ -8749,6 +8765,16 @@
     if (!body) return;
     body.addEventListener('input', handleDrawerMonthlyEdit);
     body.addEventListener('change', handleDrawerMonthlyEdit);
+    // 🗑 清除：把已停用的本月欄位設為 0（沿用上面的即時儲存流程）
+    body.addEventListener('click', e => {
+      const btn = e.target.closest && e.target.closest('[data-clear-sal]');
+      if (!btn || btn.disabled) return;
+      const inp = body.querySelector(`[data-sal-key="${btn.dataset.clearSal}"]`);
+      if (!inp) return;
+      inp.value = 0;
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+      toast(`已清除「${btn.dataset.clearSal}」`, 'success');
+    });
   })();
 
   // -------- 其他津貼 itemizer wiring (generic — see ITEMIZER_META) --------
@@ -9577,6 +9603,12 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261012V1335', date: '2026-10-12 13:35',
+      changes: [
+        '修正：已停用的本月欄位（獎金、扣款、考試津貼、預繳津貼、安親人數、混班數、全勤）若舊資料有值，會顯示在薪資條卻無法修改。現在老闆在員工資料「本月薪資」區塊可看到這些有值的欄位，可直接修改或按 🗑 清除'
+      ]
+    },
     {
       version: 'V20261011V0725', date: '2026-10-11 07:25',
       changes: [
