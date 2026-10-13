@@ -2154,6 +2154,17 @@
   #riModal .ri-drop span { font-size: 12.5px; }
   #riModal .ri-fl { font-size: 13px; margin-top: 6px; }
   #riModal .ri-fl.ok { color: #047857; } #riModal .ri-fl.bad { color: #b91c1c; }
+  #riModal .ri-sheets { margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; background: #f8fafc; }
+  #riModal .ri-sheets-h { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+  #riModal .ri-sheets-h .ri-step { background: #10B981; color: #fff; border-radius: 999px; padding: 1px 9px; font-size: 12px; }
+  #riModal .ri-sheets-h .ri-qb { margin-left: auto; display: flex; gap: 6px; }
+  #riModal .ri-sheets-h .ri-qb button { border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; font-family: inherit; }
+  #riModal .ri-sheets-h .ri-qb button:hover { background: #ecfdf5; border-color: #10B981; }
+  #riModal .ri-sheet { display: flex; align-items: center; gap: 8px; padding: 6px 4px; font-size: 13.5px; border-top: 1px dashed #e2e8f0; cursor: pointer; }
+  #riModal .ri-sheet:first-of-type { border-top: none; }
+  #riModal .ri-sheet small { color: #64748b; }
+  #riModal .ri-sheet.off { color: #94a3b8; }
+  #riModal .ri-sheet.empty { color: #cbd5e1; cursor: default; }
   #riModal .ri-opts { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; margin: 12px 0; font-size: 13px; color: #475569; }
   #riModal .ri-opts input[type=number] { width: 80px; padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font: inherit; }
   #riModal .ri-opts label { display: flex; align-items: center; gap: 6px; }
@@ -2180,7 +2191,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261012V1500</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261013V1210</div>
 
 <!-- 修改記錄視窗 -->
 <div id="riModal" class="no-print" onclick="if(event.target===this)closeReportImport()" role="dialog" aria-modal="true" aria-labelledby="riTitle">
@@ -9699,7 +9710,7 @@ function findHeaders(grid) {
 
 const RX = {
   care:   /安親人數\s*[:：]?\s*(\d+(?:\.\d+)?)/,
-  eng:    /上美語(?:班)?(?:人數)?\s*[:：]\s*(\d+(?:\.\d+)?)/,
+  eng:    /(?:上美語(?:班)?(?:人數)?|美語人數)\s*[:：]\s*(\d+(?:\.\d+)?)/,
   math:   /數學班\s*[:：]\s*(\d+(?:\.\d+)?)/,
   mixCalc:/(\d+)\s*[*×xX]\s*(\d+)\s*=\s*(\d+)/,
   cross:  /跨校補貼金?\s*(\d+)\s*元?/,
@@ -9746,8 +9757,31 @@ function parseBlocks(grid, headers) {
     });
     return t;
   });
+  // 表格下方沒有「X年級-老師」標題、只寫名字的人（例：主任、助理老師、櫃台老師）
+  const NAME_RX = /^([\u4e00-\u9fff]{2,4})\s*([A-Za-z]+)?$/;
+  const people = outside.filter(o => o.r >= footStart && o.r <= footStart + 4 &&
+    NAME_RX.test(o.t) && !/總|計|合|人數|津貼|美語|安親|老師|主任/.test(o.t));
+  const others = people.map(p => {
+    const m = p.t.match(NAME_RX);
+    const t = { name: m[1], en: m[2] || '', kind: '其他老師', grade: '', eng: null, math: null, care: null,
+                mixCount: null, mixTotal: null, mixInferred: false, newbie: null, skipFull: false,
+                careTotal: null, role: '', notes: [] };
+    const nextP = people.filter(q => q.c === p.c && q.r > p.r).map(q => q.r).sort((a, b) => a - b)[0] || Infinity;
+    outside.filter(o => o.c === p.c && o.r > p.r && o.r < nextP && o.r <= p.r + 8).forEach(({ t: s2 }) => {
+      let m2, hit = false;
+      if ((m2 = s2.match(RX.eng)))  { t.eng = num(m2[1]); hit = true; }
+      if ((m2 = s2.match(RX.math))) { t.math = num(m2[1]); hit = true; }
+      if ((m2 = s2.match(RX.care))) { t.careTotal = num(m2[1]); hit = true; }
+      if (!hit && /老師|主任|助理|櫃台|行政/.test(s2) && !/\d/.test(s2)) { t.role = s2; hit = true; }
+      if (!hit) t.notes.push(s2);
+    });
+    if (t.role) t.notes.unshift('報表職稱：' + t.role);
+    if (t.careTotal != null) t.notes.push(`報表寫「安親人數 ${t.careTotal} 人」（可能是全校總數，未自動填入帶班人數，需要可手動輸入）`);
+    if (t.eng == null && t.math == null && t.careTotal == null) t.notes.push('報表沒有寫人數，可直接在框內輸入');
+    return t;
+  });
   const consumed = new Set(blocks.flatMap(b => b.strings.map(s => s.t)));
-  return { teachers, outside, consumed };
+  return { teachers, others, outside, consumed };
 }
 
 function parseSummaryTable(grid) {
@@ -9822,15 +9856,20 @@ function parseSheet(XLSX, ws, sheetName, fileName, rate) {
   const result = { src, sheet: sheetName, rows: [], notes: [], status: '' };
   const headers = findHeaders(grid);
   if (headers.length) {
-    const { teachers, outside, consumed } = parseBlocks(grid, headers);
+    const { teachers, others, outside, consumed } = parseBlocks(grid, headers);
     teachers.forEach(t => result.rows.push({
       name: t.name, src, kind: '帶班老師', grade: t.grade,
       eng: t.eng, math: t.math, care: t.care,
       mixCount: t.mixCount, mixTotal: t.mixTotal, mixInferred: false,
       newbie: t.newbie, skipFull: t.skipFull, notes: t.notes, conflicts: []
     }));
+    others.forEach(t => result.rows.push({
+      name: t.name, enName: t.en, src, kind: t.role || '其他老師', other: true, grade: '',
+      eng: t.eng, math: t.math, care: null, mixCount: null, mixTotal: null, mixInferred: false,
+      newbie: null, skipFull: false, notes: t.notes, conflicts: []
+    }));
     result.notes = globalNotes(grid, consumed);
-    result.status = `找到 ${teachers.length} 位帶班老師`;
+    result.status = `找到 ${teachers.length} 位帶班老師` + (others.length ? `、${others.length} 位其他老師（${others.map(t => t.name).join('、')}）` : '');
     return result;
   }
   const summary = parseSummaryTable(grid);
@@ -9934,23 +9973,42 @@ function fillMix(row, rate) {
   function readFile(f) {
     return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsArrayBuffer(f); });
   }
+  // ① 讀檔 → ② 選擇分頁 → ③ 預覽與勾選員工
   async function handleFiles(fileList) {
     if (typeof XLSX === 'undefined') { toast('Excel 讀取元件尚未載入，請重新整理頁面', 'error'); return; }
     const rate = Number(g('riRate').value) || 0;
-    ri.parsed = []; g('riFiles').innerHTML = '';
+    ri.parsed = []; ri.rows = []; g('riFiles').innerHTML = '';
+    const errs = [];
     for (const f of Array.from(fileList)) {
       let wb;
       try { wb = XLSX.read(await readFile(f), { type: 'array' }); }
-      catch (e) { g('riFiles').insertAdjacentHTML('beforeend', `<div class="ri-fl bad">${esc(f.name)}：讀取失敗（${esc(e.message)}）</div>`); continue; }
-      const res = wb.SheetNames.map(n => RIP.parseSheet(XLSX, wb.Sheets[n], n, f.name, rate));
-      RIP.mergeFile(res);
-      res.forEach(r => {
-        if (r.rows.length) g('riFiles').insertAdjacentHTML('beforeend', `<div class="ri-fl ok">${esc(f.name)} › ${esc(r.sheet)}：${esc(r.status)}</div>`);
-        ri.parsed.push(r);
-      });
-      if (!res.some(r => r.rows.length)) g('riFiles').insertAdjacentHTML('beforeend', `<div class="ri-fl bad">${esc(f.name)}：找不到可辨識的班級資料</div>`);
+      catch (e) { errs.push(`${f.name}：讀取失敗（${e.message}）`); continue; }
+      const res = wb.SheetNames.map(n => Object.assign(RIP.parseSheet(XLSX, wb.Sheets[n], n, f.name, rate), { file: f.name }));
+      if (!res.some(r => r.rows.length)) errs.push(`${f.name}：找不到可辨識的班級資料`);
+      ri.parsed.push(...res);
     }
+    // 預設：有「安親」分頁就只勾安親分頁，否則勾所有有資料的分頁
+    const usable = ri.parsed.filter(r => r.rows.length);
+    const hasCare = usable.some(r => /安親/.test(r.sheet));
+    usable.forEach(r => { r.include = hasCare ? /安親/.test(r.sheet) : true; });
+    renderSheets(errs);
     buildRows(); renderPreview();
+  }
+
+  function renderSheets(errs) {
+    const box = g('riFiles');
+    const errHtml = (errs || []).map(t => `<div class="ri-fl bad">${esc(t)}</div>`).join('');
+    if (!ri.parsed.length) { box.innerHTML = errHtml; return; }
+    const list = ri.parsed.map((r, i) => {
+      const ok = r.rows.length > 0;
+      return `<label class="ri-sheet${ok ? (r.include ? '' : ' off') : ' empty'}">
+        <input type="checkbox" data-sheet="${i}" ${r.include ? 'checked' : ''} ${ok ? '' : 'disabled'}>
+        <b>${esc(r.sheet)}</b> <small>${esc(r.file)}・${esc(ok ? r.status : '沒有可辨識的資料')}</small></label>`;
+    }).join('');
+    box.innerHTML = errHtml + `<div class="ri-sheets">
+      <div class="ri-sheets-h"><span class="ri-step">步驟 2</span>選擇要匯入的分頁
+        <span class="ri-qb"><button type="button" data-sheetq="care">只選安親</button><button type="button" data-sheetq="all">全選</button><button type="button" data-sheetq="none">清除</button></span></div>
+      ${list}</div>`;
   }
 
   // 解析結果 → 與員工比對 → 預覽列
@@ -9959,7 +10017,10 @@ function fillMix(row, rate) {
     const zero = g('riZero').checked;
     const emps = scopeEmployees();
     const byEid = {}; ri.rows = [];
-    ri.parsed.forEach(p => p.rows.forEach(src => {
+    // 只用勾選的分頁；同一個檔案的彙總表再與帶班老師合併
+    const chosen = JSON.parse(JSON.stringify(ri.parsed.filter(r => r.include && r.rows.length)));
+    [...new Set(chosen.map(r => r.file))].forEach(f => RIP.mergeFile(chosen.filter(r => r.file === f)));
+    chosen.forEach(p => p.rows.forEach(src => {
       const r = JSON.parse(JSON.stringify(src));
       // 混班校數：報表有寫「700*2」就用 2；只寫津貼金額則 ÷ 每校津貼
       RIP.fillMix(r, rate);
@@ -9969,8 +10030,8 @@ function fillMix(row, rate) {
         if (vals.math == null) { vals.math = 0; zeroFill.math = true; }
         if (vals.mixCount == null) { vals.mixCount = 0; zeroFill.mixCount = true; }
       }
-      if (vals.eng == null && vals.math == null && vals.care == null && vals.mixCount == null) return;
-      const emp = matchEmp([r.name, r.sumName], emps);
+      if (!r.other && vals.eng == null && vals.math == null && vals.care == null && vals.mixCount == null) return;
+      const emp = matchEmp([r.name, r.sumName, r.enName], emps);
       const notes = [];
       if (r.skipFull) notes.push('報表註記「扣全勤」');
       if (r.newbie) notes.push(`報表有帶新人津貼 ${r.newbie} 元（需另外加到其他津貼）`);
@@ -9980,7 +10041,7 @@ function fillMix(row, rate) {
       }
       if (r.mixInferred) notes.push('混班校數由津貼金額推算');
       (r.conflicts || []).forEach(c => notes.push(c));
-      const row = { label: r.name, kind: r.kind, src: p.src, emp, vals, zeroFill, notes, checked: false };
+      const row = { label: r.name, kind: r.kind, other: !!r.other, src: p.src, emp, vals, zeroFill, notes, checked: false };
       if (emp) {
         const prev = byEid[emp['員工編號']];
         if (prev) {   // 同一位員工出現在多個地方 → 補上空白欄位
@@ -10002,9 +10063,9 @@ function fillMix(row, rate) {
 
   function cellHtml(r, i, [key, f]) {
     const v = r.vals[f];
-    if (v == null) return '<td class="ri-na">—</td>';
+    if (v == null && !r.other) return '<td class="ri-na">—</td>';
     const cur = r.emp ? curVal(r, key) : null;
-    const chg = r.emp && cur !== v;
+    const chg = r.emp && v != null && cur !== v;
     return `<td class="${chg ? 'ri-chg' : ''}${r.zeroFill[f] ? ' ri-zero' : ''}"${r.zeroFill[f] ? ' title="報表沒寫這一項，視為 0"' : ''}>
       <input type="text" inputmode="decimal" data-i="${i}" data-f="${f}" value="${fmt(v)}" aria-label="${esc(r.label)} ${key}">
       <small>${r.emp ? '現在 ' + fmt(cur) : ''}</small></td>`;
@@ -10013,9 +10074,12 @@ function fillMix(row, rate) {
   function renderPreview() {
     const box = g('riPreview');
     if (!ri.rows.length) {
-      box.innerHTML = ri.parsed.length
-        ? '<div class="ri-empty">報表裡沒有找到可填入的人數。</div>'
-        : '<div class="ri-empty">選擇報表後，這裡會列出每位老師「現在的值 → 報表的值」，勾選要填入的人再按下方按鈕。</div>';
+      const anyUsable = ri.parsed.some(r => r.rows.length);
+      box.innerHTML = !ri.parsed.length
+        ? '<div class="ri-empty">選擇報表後，這裡會列出每位老師「現在的值 → 報表的值」，勾選要填入的人再按下方按鈕。</div>'
+        : !anyUsable ? '<div class="ri-empty">報表裡沒有找到可填入的人數。</div>'
+        : !ri.parsed.some(r => r.include) ? '<div class="ri-empty">請在上方「步驟 2」勾選至少一個分頁。</div>'
+        : '<div class="ri-empty">勾選的分頁裡沒有找到可填入的人數。</div>';
       updateSummary(); return;
     }
     const emps = scopeEmployees();
@@ -10055,6 +10119,20 @@ function fillMix(row, rate) {
     file.addEventListener('change', () => { handleFiles(file.files); file.value = ''; });
     g('riRate').addEventListener('input', () => { if (ri.parsed.length) { buildRows(); renderPreview(); } });
     g('riZero').addEventListener('change', () => { if (ri.parsed.length) { buildRows(); renderPreview(); } });
+    const fl = g('riFiles');
+    fl.addEventListener('change', e => {
+      const t = e.target; if (t.dataset.sheet == null) return;
+      ri.parsed[+t.dataset.sheet].include = t.checked;
+      t.closest('.ri-sheet').classList.toggle('off', !t.checked);
+      buildRows(); renderPreview();
+    });
+    fl.addEventListener('click', e => {
+      const b = e.target.closest && e.target.closest('[data-sheetq]'); if (!b) return;
+      const q = b.dataset.sheetq;
+      ri.parsed.forEach(r => { if (r.rows.length) r.include = q === 'all' ? true : q === 'none' ? false : /安親/.test(r.sheet); });
+      if (q === 'care' && !ri.parsed.some(r => r.include)) toast('找不到名稱含「安親」的分頁', 'error');
+      renderSheets(); buildRows(); renderPreview();
+    });
     const pv = g('riPreview');
     pv.addEventListener('change', e => {
       const t = e.target;
@@ -10124,13 +10202,27 @@ function fillMix(row, rate) {
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
     {
+      version: 'V20261013V1210', date: '2026-10-13 12:10',
+      changes: [
+        '修正「從報表匯入人數」：安親班分頁表格下方只寫名字、沒有「X年級-老師」標題的人（例：廖月櫻、郭子綺、林歆怡）之前會被略過，現在也會列出',
+        '這些老師的「9月美語人數」會填入美語人數；「9月安親人數」可能是全校總數，只放在備註、不自動填入帶班人數；報表沒寫人數的（助理老師、櫃台老師）可直接在框內輸入'
+      ]
+    },
+    {
+      version: 'V20261013V1155', date: '2026-10-13 11:55',
+      changes: [
+        '「📥 從報表匯入人數」新增「步驟 2：選擇要匯入的分頁」：讀檔後列出每個分頁（例：9月安親班、9月美語班），勾選後才列入預覽；檔案有「安親」分頁時預設只勾安親分頁，可按「只選安親／全選／清除」快速切換',
+        '修正：修改記錄中 13:35 那一筆的版本號誤寫成 V20261012V1500，已改回 V20261012V1335'
+      ]
+    },
+    {
       version: 'V20261012V1500', date: '2026-10-12 15:00',
       changes: [
         '新增「📥 從報表匯入人數」：在「主管輸入」頁按鈕，選擇月報表 Excel（115年9月、同安二校報表等），自動讀出每位老師的美語人數、數學班人數、帶班人數、混班校數，預覽「現在 → 報表」後，勾選要填入的員工即可寫入員工資料；津貼金額依公式設定重新計算並記入變更紀錄。主管只能寫入老闆有開放編輯的欄位'
       ]
     },
     {
-      version: 'V20261012V1500', date: '2026-10-12 13:35',
+      version: 'V20261012V1335', date: '2026-10-12 13:35',
       changes: [
         '修正：已停用的本月欄位（獎金、扣款、考試津貼、預繳津貼、安親人數、混班數、全勤）若舊資料有值，會顯示在薪資條卻無法修改。現在老闆在員工資料「本月薪資」區塊可看到這些有值的欄位，可直接修改或按 🗑 清除'
       ]
