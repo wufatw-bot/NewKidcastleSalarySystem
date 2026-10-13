@@ -2144,7 +2144,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261013V1710</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261013V2045</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2248,6 +2248,7 @@
         <div class="u-role" id="dbRole">—</div>
         <a class="change-pwd-link" onclick="openChangeMyPassword()">🔑 修改我的密碼</a>
         <a class="change-pwd-link" onclick="openCloudSetup()" style="margin-left:8px;">☁ 雲端設定</a>
+        <a class="change-pwd-link vm-link" onclick="openVarMap()" style="margin-left:8px;">🗺 關係圖</a>
       </div>
       <button class="btn-logout" onclick="logout()">登出</button>
     </div>
@@ -2513,6 +2514,9 @@
         <a class="btn-mini primary" href="Formula_Settings.html" target="_blank" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);text-decoration:none;display:inline-flex;align-items:center;">
           📐 薪資公式設定
         </a>
+        <button class="btn-mini primary" style="background:linear-gradient(135deg,#334155,#0F172A);" onclick="openVarMap()">
+          🗺 變數關係圖
+        </button>
       </div>
     </div>
   </div>
@@ -3790,6 +3794,7 @@
 
     // Begin polling for cloud changes every 30s
     startPolling();
+    try { if (window.vmRunPendingGoto) vmRunPendingGoto(); } catch (_) {}
 
     // reset login form
     $('btnLogin').disabled = false;
@@ -9885,6 +9890,20 @@
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
     {
+      version: 'V20261013V2045', date: '2026-10-13 20:45',
+      changes: [
+        '新增獨立網頁 Variable_Map.html：不用登入就能線上查看變數關係圖與「位置總表」，可分享連結',
+        '在 Variable_Map.html 按「前往」會打開薪資系統，登入後自動跳到該欄位'
+      ]
+    },
+    {
+      version: 'V20261013V2025', date: '2026-10-13 20:25',
+      changes: [
+        '新增「🗺 變數關係圖」（右上角「🗺 關係圖」或 總覽 → 🔧 管理工具）：列出每個薪資項目的公式、上下游關係、輸入位置與可修改的人',
+        '在關係圖點選項目後按「前往 →」，可直接打開該頁面並標示欄位（員工資料、主管輸入、薪水條、公式設定頁、員工查詢頁等）'
+      ]
+    },
+    {
       version: 'V20261013V1710', date: '2026-10-13 17:10',
       changes: [
         '新增老闆專用「🗑 刪除資料」（總覽 → 🔧 管理工具），需 Boss 密碼：可刪除「個人」（員工資料＋全部薪資，或某月份薪資）、「月份」（某月份全部薪資紀錄，可限校區）、「項目」（把某項目歸零，可限月份、員工、校區）',
@@ -10016,6 +10035,343 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
 </script>
+<!-- 🗺 變數關係圖：每個薪資項目的位置與關係，點選可直接前往該頁面 -->
+<style>
+  #varMapOverlay { position: fixed; inset: 0; z-index: 9500; display: none; background: #f1f5f9; flex-direction: column; }
+  #varMapOverlay.show { display: flex; }
+  .vm-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+  .vm-top h2 { margin: 0; font-size: 18px; color: #0f172a; }
+  .vm-top .vm-sub { color: #64748b; font-size: 12px; }
+  .vm-top input { padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px; min-width: 180px; }
+  .vm-top .vm-close { margin-left: auto; border: none; background: #0f172a; color: #fff; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 700; }
+  .vm-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: #334155; }
+  .vm-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .vm-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .vm-main { flex: 1; display: flex; min-height: 0; }
+  .vm-canvas { flex: 1; overflow: auto; position: relative; }
+  .vm-canvas svg { display: block; }
+  .vm-panel { width: 340px; flex-shrink: 0; background: #fff; border-left: 1px solid #e2e8f0; overflow-y: auto; padding: 16px; font-size: 13px; color: #1e293b; }
+  .vm-panel h3 { margin: 0 0 6px; font-size: 18px; }
+  .vm-panel .vm-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fff; }
+  .vm-panel .vm-sec { margin-top: 14px; }
+  .vm-panel .vm-sec b { display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; }
+  .vm-panel .vm-formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; font-family: "Courier New", monospace; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; }
+  .vm-chip { display: inline-block; margin: 2px 4px 2px 0; padding: 3px 8px; border-radius: 999px; background: #f1f5f9; border: 1px solid #e2e8f0; cursor: pointer; font-size: 12px; }
+  .vm-chip:hover { background: #e2e8f0; }
+  .vm-go { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; margin-bottom: 6px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+  .vm-go button { border: none; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 700; cursor: pointer; background: #2563EB; color: #fff; white-space: nowrap; }
+  .vm-go button:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .vm-node { cursor: pointer; }
+  .vm-node rect { transition: opacity .15s; }
+  .vm-node text { font-size: 12.5px; font-weight: 600; pointer-events: none; }
+  .vm-edge { fill: none; stroke: #94a3b8; stroke-width: 1.2; opacity: .45; transition: opacity .15s; }
+  .vm-dim .vm-node:not(.on) { opacity: .18; }
+  .vm-dim .vm-edge:not(.on) { opacity: .05; }
+  .vm-edge.on { opacity: 1; stroke-width: 2; }
+  .vm-edge.on.up { stroke: #2563EB; }
+  .vm-edge.on.down { stroke: #DC2626; }
+  .vm-node.sel rect { stroke: #0f172a; stroke-width: 2.5; }
+  .vm-colhead { font-size: 13px; font-weight: 800; fill: #0f172a; }
+  .vm-grphead { font-size: 11px; font-weight: 700; fill: #64748b; }
+  .vm-flash { outline: 3px solid #F59E0B !important; outline-offset: 2px; box-shadow: 0 0 0 6px rgba(245,158,11,.25) !important; transition: outline-color .3s; }
+  @media (max-width: 820px) {
+    .vm-main { flex-direction: column; }
+    .vm-panel { width: auto; max-height: 42vh; border-left: none; border-top: 1px solid #e2e8f0; }
+  }
+  @media print { #varMapOverlay { display: none !important; } }
+  body.role-employee .vm-link { display: none !important; }
+</style>
+<div id="varMapOverlay" class="no-print" role="dialog" aria-label="變數關係圖">
+  <div class="vm-top">
+    <div>
+      <h2>🗺 薪資變數關係圖</h2>
+      <div class="vm-sub">點選任一項目：<b style="color:#2563EB">藍線</b>＝它用到誰（上游），<b style="color:#DC2626">紅線</b>＝它影響誰（下游）；右側可直接「前往」該頁面</div>
+    </div>
+    <input type="search" id="vmSearch" placeholder="🔍 搜尋項目，例如：考試津貼" oninput="vmSearch(this.value)">
+    <div class="vm-legend" id="vmLegend"></div>
+    <a href="Variable_Map.html" target="_blank" rel="noopener" style="font-size:12px;color:#2563EB;font-weight:700;text-decoration:none;">↗ 在新分頁開啟（可分享）</a>
+    <button type="button" class="vm-close" onclick="closeVarMap()">✕ 關閉</button>
+  </div>
+  <div class="vm-main">
+    <div class="vm-canvas" id="vmCanvas" onclick="if(event.target===this||event.target.tagName==='svg')vmSelect(null)"></div>
+    <div class="vm-panel" id="vmPanel"></div>
+  </div>
+</div>
+<script>
+(function () {
+  // ── 位置（前往目標）────────────────────────────────────────────
+  const W_OWNER = k => ({ text: '員工資料（✏ 編輯）→「' + k + '」', go: { drawer: k } });
+  const W_SAL   = k => ({ text: '員工資料 →「📅 本月薪資」→「' + k + '」', go: { drawer: k, sal: true } });
+  const W_MGR   = k => ({ text: '📝 主管輸入（表格欄位「' + k + '」）', go: { tab: 'manager', col: k } });
+  const W_OWNTAB= { text: '🔒 老闆輸入（員工總表）', go: { tab: 'owner' } };
+  const W_FORM  = { text: '📐 薪資公式設定頁（Formula_Settings.html）', go: { url: 'Formula_Settings.html' } };
+  const W_PS    = { text: '📄 薪水條', go: { tab: 'payslip' } };
+  const W_MAIL  = { text: '📄 薪水條 →「✉ 寄送薪資條」', go: { tab: 'payslip', fn: 'mail' } };
+  const W_VIEW  = { text: '員工薪資查詢頁（Employee_Salary_View.html）', go: { url: 'Employee_Salary_View.html' } };
+  const W_OVER  = { text: '📊 總覽', go: { tab: 'overview' } };
+
+  // ── 項目定義：col＝欄位(0~6)、g＝分類、deps＝用到哪些項目 ─────────────
+  const G = {
+    P: { name: '公式參數', color: '#7C3AED' },
+    M: { name: '每月輸入', color: '#0EA5E9' },
+    L: { name: '已停用的每月欄位', color: '#94A3B8' },
+    H: { name: '員工人數／時數', color: '#14B8A6' },
+    F: { name: '員工固定金額', color: '#F59E0B' },
+    I: { name: '勞健保／退休金', color: '#EA580C' },
+    C: { name: '自動計算', color: '#22C55E' },
+    S: { name: '小計', color: '#2563EB' },
+    R: { name: '結果', color: '#DC2626' },
+    O: { name: '輸出／頁面', color: '#0F172A' }
+  };
+  const COLS = ['① 公式參數', '② 每月／人數輸入', '③ 員工固定金額', '④ 自動計算', '⑤ 小計', '⑥ 結果', '⑦ 輸出'];
+  const N = [
+    // ① 公式參數
+    { id: 'OT_RATE', label: '加班費率', col: 0, g: 'P', desc: '每小時加班費', formula: '預設 180 元／小時', where: [W_FORM], who: '老闆' },
+    { id: 'PAY_RATE', label: '支薪費率', col: 0, g: 'P', desc: '支薪時數的時薪', formula: '預設 180 元／小時', where: [W_FORM], who: '老闆' },
+    { id: 'LEAVE_RATE', label: '請假扣款費率', col: 0, g: 'P', desc: '每請假 1 小時扣多少', formula: '預設 133 元／小時', where: [W_FORM], who: '老闆' },
+    { id: 'LATE_FEE', label: '遲到扣款', col: 0, g: 'P', desc: '每遲到 1 次扣多少', formula: '預設 100 元／次', where: [W_FORM], who: '老闆' },
+    { id: 'ATT_RULE', label: '全勤條件', col: 0, g: 'P', desc: '什麼情況算全勤', formula: '預設：當月請假 0 小時 且 遲到 0 次', where: [W_FORM], who: '老闆' },
+    { id: 'ENG_RATE', label: '美語津貼費率', col: 0, g: 'P', desc: '每位美語學生的津貼', formula: '預設 100 元／人', where: [W_FORM], who: '老闆' },
+    { id: 'MATH_RATE', label: '數學班津貼費率', col: 0, g: 'P', desc: '每位數學班學生的津貼', formula: '預設 100 元／人', where: [W_FORM], who: '老闆' },
+    { id: 'MIX_RATE', label: '混班津貼費率', col: 0, g: 'P', desc: '每個混班校區的津貼', formula: '預設 500 元／校', where: [W_FORM], who: '老闆' },
+    { id: 'TUTOR_FIXED', label: '美語輔導固定額', col: 0, g: 'P', desc: '美語輔導津貼每月固定金額', formula: '預設 3,000 元／月', where: [W_FORM], who: '老闆' },
+    { id: 'CS_PARAMS', label: '帶班人數分段', col: 0, g: 'P', desc: '帶班人數津貼的分段公式參數（平時／暑期 7、8 月不同費率）', formula: '基準 15 人、分段 20 人\n平時：每人 500／1,000\n暑期：每人 1,000／1,500', where: [W_FORM], who: '老闆' },
+    { id: 'UNLOCK_DAY', label: '薪資條開放日', col: 0, g: 'P', desc: '員工每月幾號起可以查詢當月薪資條', formula: '預設每月 17 日（遇假日順延，開放 7 天）', where: [W_FORM, { text: '老闆設定面板（ReadWindowAdmin.html）', go: { url: 'ReadWindowAdmin.html' } }], who: '老闆' },
+    // ② 每月輸入
+    { id: '加班時數', col: 1, g: 'M', desc: '當月加班時數', where: [W_MGR('加班時數'), W_SAL('加班時數')], who: '主管、老闆' },
+    { id: '支薪時數', col: 1, g: 'M', desc: '當月另外支薪的時數', where: [W_MGR('支薪時數'), W_SAL('支薪時數')], who: '主管、老闆' },
+    { id: '請假時數', col: 1, g: 'M', desc: '當月請假時數', where: [W_MGR('請假時數'), W_SAL('請假時數')], who: '主管、老闆' },
+    { id: '遲到次數', col: 1, g: 'M', desc: '當月遲到次數', where: [W_MGR('遲到次數'), W_SAL('遲到次數')], who: '主管、老闆' },
+    { id: '本月備註', col: 1, g: 'M', desc: '只顯示在當月薪資條的備註', where: [W_MGR('備註'), W_SAL('備註')], who: '主管、老闆' },
+    { id: '獎金', col: 1, g: 'L', desc: '當月獎金（輸入畫面已停用；有舊值時老闆可在本月薪資修改或清除）', where: [W_SAL('獎金')], who: '老闆' },
+    { id: '扣款', col: 1, g: 'L', desc: '當月其他扣款（已停用欄位）', where: [W_SAL('扣款')], who: '老闆' },
+    { id: '考試津貼', col: 1, g: 'L', desc: '當月考試津貼（已停用欄位）', where: [W_SAL('考試津貼')], who: '老闆' },
+    { id: '預繳津貼', col: 1, g: 'L', desc: '當月預繳津貼（已停用欄位）', where: [W_SAL('預繳津貼')], who: '老闆' },
+    { id: '全勤指定', label: '全勤（手動指定）', col: 1, g: 'L', desc: '手動指定本月「全勤／非全勤」，覆蓋自動判斷（已停用欄位）', where: [W_SAL('全勤')], who: '老闆' },
+    { id: '美語人數', col: 1, g: 'H', desc: '美語課學生人數', where: [W_OWNER('美語人數')], who: '老闆' },
+    { id: '數學班人數', col: 1, g: 'H', desc: '數學班學生人數', where: [W_OWNER('數學班人數')], who: '老闆' },
+    { id: '帶班人數', col: 1, g: 'H', desc: '帶班學生人數（可有小數）', where: [W_OWNER('帶班人數')], who: '老闆' },
+    { id: '混班校數', col: 1, g: 'H', desc: '混班／混校的校區數', where: [W_OWNER('混班校數')], who: '老闆' },
+    { id: '結構性請假時數', col: 1, g: 'H', desc: '每月固定的請假時數（例如固定少上班的時數）', where: [W_OWNER('結構性請假時數')], who: '老闆' },
+    // ③ 員工固定金額
+    { id: '底薪', col: 2, g: 'F', desc: '每月底薪', where: [W_OWNER('底薪'), W_OWNTAB], who: '老闆' },
+    { id: '全勤獎金設定', label: '全勤獎金（金額）', col: 2, g: 'F', desc: '符合全勤時可領的金額', where: [W_OWNER('全勤獎金')], who: '老闆' },
+    { id: '年資津貼', col: 2, g: 'F', desc: '依年資發放的固定津貼', where: [W_OWNER('年資津貼')], who: '老闆' },
+    { id: '主管津貼', col: 2, g: 'F', desc: '主任／組長的職務津貼', where: [W_OWNER('主管津貼')], who: '老闆' },
+    { id: '數學津貼', label: '數學津貼（手動）', col: 2, g: 'F', desc: '手動加項（不是數學班津貼）', where: [W_OWNER('數學津貼')], who: '老闆' },
+    { id: '留班獎金', col: 2, g: 'F', desc: '自由輸入的留班獎金', where: [W_OWNER('留班獎金')], who: '老闆' },
+    { id: '考試獎金', col: 2, g: 'F', desc: '考試相關獎金（員工固定項目）', where: [W_OWNER('考試獎金')], who: '老闆' },
+    { id: '其他津貼', col: 2, g: 'F', desc: '可逐項輸入名目／金額／說明，自動加總；明細會寫進薪資條備註', where: [W_OWNER('其他津貼')], who: '老闆' },
+    { id: '勞保自付', col: 2, g: 'I', desc: '勞保（選「🔴 扣薪」時由員工付，列入 C）', where: [W_OWNER('勞保自付額')], who: '老闆' },
+    { id: '健保自付', col: 2, g: 'I', desc: '健保（選「🔴 扣薪」時由員工付，列入 C）', where: [W_OWNER('健保自付額')], who: '老闆' },
+    { id: '健保眷屬自付', col: 2, g: 'I', desc: '健保眷屬（扣薪模式）', where: [W_OWNER('健保眷屬扣款')], who: '老闆' },
+    { id: '退休金提撥', col: 2, g: 'I', desc: '退休金（扣薪模式）', where: [W_OWNER('退休金')], who: '老闆' },
+    { id: '補貼勞健保退休', label: '補貼（勞健保／退休金）', col: 2, g: 'I', desc: '同一欄位選「🟢 補貼」時改由公司付：補貼公會投保勞保、補貼公會健保自付、補貼健保眷屬、補貼退休金，列入 B', where: [W_OWNER('勞保自付額')], who: '老闆' },
+    { id: '現金給付', col: 2, g: 'F', desc: '已用現金先付給員工的金額，轉帳時扣除', where: [W_OWNER('現金給付')], who: '老闆' },
+    // ④ 自動計算
+    { id: '加班費', col: 3, g: 'C', desc: '自動計算', formula: '加班費 = 加班時數 × 加班費率', deps: ['加班時數', 'OT_RATE'], where: [W_SAL('加班時數'), W_PS], who: '自動' },
+    { id: '支薪金額', col: 3, g: 'C', desc: '自動計算', formula: '支薪金額 = 支薪時數 × 支薪費率', deps: ['支薪時數', 'PAY_RATE'], where: [W_SAL('支薪時數'), W_PS], who: '自動' },
+    { id: '請假扣款', col: 3, g: 'C', desc: '自動計算', formula: '請假扣款 = (請假時數 + 結構性請假時數) × 請假扣款費率', deps: ['請假時數', '結構性請假時數', 'LEAVE_RATE'], where: [W_PS], who: '自動' },
+    { id: '遲到扣款', col: 3, g: 'C', desc: '自動計算', formula: '遲到扣款 = 遲到次數 × 遲到扣款', deps: ['遲到次數', 'LATE_FEE'], where: [W_PS], who: '自動' },
+    { id: '全勤獎金實發', label: '全勤獎金（實發）', col: 3, g: 'C', desc: '本月實際發放的全勤獎金', formula: '手動指定「全勤」→ 全勤獎金金額\n手動指定「非全勤」→ 0\n自動 → 符合全勤條件才發', deps: ['全勤獎金設定', '全勤指定', '請假時數', '遲到次數', 'ATT_RULE'], where: [W_PS], who: '自動' },
+    { id: '美語津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '美語津貼 = 美語人數 × 美語津貼費率', deps: ['美語人數', 'ENG_RATE'], where: [W_OWNER('美語津貼')], who: '自動（老闆可改）' },
+    { id: '數學班津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '數學班津貼 = 數學班人數 × 數學班津貼費率', deps: ['數學班人數', 'MATH_RATE'], where: [W_OWNER('數學班津貼')], who: '自動（老闆可改）' },
+    { id: '帶班人數津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '人數 ≤ 基準 → 0\n基準＋1～分段 → (人數−基準) × 第一段費率\n超過分段 → 再加 (人數−分段) × 第二段費率\n（7、8 月用暑期費率）', deps: ['帶班人數', 'CS_PARAMS'], where: [W_OWNER('帶班人數津貼')], who: '自動（老闆可改）' },
+    { id: '混班津貼', col: 3, g: 'C', desc: '輸入校數時自動帶出（也可手動改）', formula: '混班津貼 = 混班校數 × 混班津貼費率', deps: ['混班校數', 'MIX_RATE'], where: [W_OWNER('混班津貼')], who: '自動（老闆可改）' },
+    { id: '美語輔導津貼', col: 3, g: 'C', desc: '固定金額', formula: '美語輔導津貼 = 美語輔導固定額', deps: ['TUTOR_FIXED'], where: [W_OWNER('美語輔導津貼')], who: '自動（老闆可改）' },
+    // ⑤ 小計
+    { id: 'A', label: '(A) 約定薪資', col: 4, g: 'S', desc: '薪資條第一區', formula: 'A = 底薪 + 全勤獎金（實發）+ 年資津貼', deps: ['底薪', '全勤獎金實發', '年資津貼'], where: [W_PS], who: '自動' },
+    { id: 'B', label: '(B) 非固定支付', col: 4, g: 'S', desc: '薪資條第二區', formula: 'B = 主管 + 美語 + 美語輔導 + 數學班\n  + 帶班人數 + 混班 + 數學(手動) + 留班\n  + 考試獎金 + 其他津貼 + 補貼（勞健保／退休金）\n  + 加班費 + 支薪金額 + 考試津貼 + 預繳津貼 + 獎金', deps: ['主管津貼', '美語津貼', '美語輔導津貼', '數學班津貼', '帶班人數津貼', '混班津貼', '數學津貼', '留班獎金', '考試獎金', '其他津貼', '補貼勞健保退休', '加班費', '支薪金額', '考試津貼', '預繳津貼', '獎金'], where: [W_PS], who: '自動' },
+    { id: 'C', label: '(C) 應代扣', col: 4, g: 'S', desc: '薪資條第三區', formula: 'C = 勞保自付 + 健保自付 + 健保眷屬\n  + 退休金提撥 + 請假扣款 + 遲到扣款 + 扣款', deps: ['勞保自付', '健保自付', '健保眷屬自付', '退休金提撥', '請假扣款', '遲到扣款', '扣款'], where: [W_PS], who: '自動' },
+    { id: 'D', label: '(D) 現金給付', col: 4, g: 'S', desc: '薪資條第四區', formula: 'D = 現金給付', deps: ['現金給付'], where: [W_PS], who: '自動' },
+    // ⑥ 結果
+    { id: '應發薪資', col: 5, g: 'R', desc: '扣勞健保前的薪資（Excel 匯出、總覽使用）', formula: '應發 = A + B − 請假扣款 − 遲到扣款 − 扣款', deps: ['A', 'B', '請假扣款', '遲到扣款', '扣款'], where: [W_OVER, W_MGR('應發薪資')], who: '自動' },
+    { id: '實領', label: '實領（餘款轉帳）', col: 5, g: 'R', desc: '最後轉帳給員工的金額', formula: '實領 = A + B − C − D', deps: ['A', 'B', 'C', 'D'], where: [W_PS], who: '自動' },
+    // ⑦ 輸出
+    { id: '薪水條', col: 6, g: 'O', desc: '每位員工每月的薪資條（可列印／存 PDF）', deps: ['實領', 'A', 'B', 'C', 'D', '本月備註'], where: [W_PS], who: '老闆、員工本人' },
+    { id: 'Email薪資條', label: 'Email 薪資條', col: 6, g: 'O', desc: '寄送薪資條給員工（寄件人 wufatw@gmail.com）', deps: ['薪水條'], where: [W_MAIL], who: '老闆' },
+    { id: '員工查詢', label: '員工薪資查詢', col: 6, g: 'O', desc: '員工用身份證字號登入查自己的薪資條（每月開放日起 7 天）', deps: ['薪水條', 'UNLOCK_DAY'], where: [W_VIEW], who: '員工本人' },
+    { id: 'Excel匯出', label: 'Excel 匯出', col: 6, g: 'O', desc: '匯出 Salary Data.xlsx 等報表', deps: ['應發薪資', '實領'], where: [{ text: '📝 主管輸入 →「⬇ 匯出 Salary Data.xlsx」', go: { tab: 'manager' } }], who: '主管、老闆' },
+    { id: '總覽', label: '總覽儀表板', col: 6, g: 'O', desc: '全校薪資統計、圖表', deps: ['應發薪資', '實領'], where: [W_OVER], who: '主管、老闆' }
+  ];
+  const byId = {}; N.forEach(n => { n.label = n.label || n.id; n.deps = n.deps || []; byId[n.id] = n; });
+  const kids = {}; N.forEach(n => n.deps.forEach(d => (kids[d] = kids[d] || []).push(n.id)));
+  window.VAR_MAP_NODES = N;
+
+  // ── 版面 ──────────────────────────────────────────────────────
+  const NW = 156, NH = 30, GAP = 7, COLW = 210, TOP = 44, LEFT = 18, GH = 22;
+  let built = false, selected = null;
+  const pos = {};
+  function layout() {
+    const colY = COLS.map(() => TOP);
+    const lastG = {};
+    N.forEach(n => {
+      if (lastG[n.col] !== n.g) { colY[n.col] += (lastG[n.col] ? 10 : 0) + GH; lastG[n.col] = n.g; n._grpHead = true; }
+      pos[n.id] = { x: LEFT + n.col * COLW, y: colY[n.col] };
+      colY[n.col] += NH + GAP;
+    });
+    return { w: LEFT * 2 + (COLS.length - 1) * COLW + NW, h: Math.max(...colY) + 20 };
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function build() {
+    const { w, h } = layout();
+    let edges = '', nodes = '', heads = '';
+    COLS.forEach((c, i) => { heads += `<text class="vm-colhead" x="${LEFT + i * COLW}" y="22">${c}</text>`; });
+    N.forEach(n => {
+      const p = pos[n.id];
+      if (n._grpHead) heads += `<text class="vm-grphead" x="${p.x}" y="${p.y - 7}">${esc(G[n.g].name)}</text>`;
+      n.deps.forEach(d => {
+        const a = pos[d]; if (!a) return;
+        const x1 = a.x + NW, y1 = a.y + NH / 2, x2 = p.x, y2 = p.y + NH / 2, mx = (x1 + x2) / 2;
+        edges += `<path class="vm-edge" data-from="${esc(d)}" data-to="${esc(n.id)}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"/>`;
+      });
+      const col = G[n.g].color;
+      nodes += `<g class="vm-node" data-id="${esc(n.id)}" transform="translate(${p.x},${p.y})" onclick="event.stopPropagation();vmSelect('${n.id.replace(/'/g, "\\'")}')">
+        <title>${esc(n.label)}</title>
+        <rect width="${NW}" height="${NH}" rx="7" fill="#fff" stroke="${col}" stroke-width="1.5"/>
+        <rect width="6" height="${NH}" rx="3" fill="${col}"/>
+        <text x="14" y="${NH / 2 + 4.5}" fill="#0f172a">${esc(n.label.length > 11 ? n.label.slice(0, 11) + '…' : n.label)}</text>
+      </g>`;
+    });
+    $('vmCanvas').innerHTML = `<svg id="vmSvg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${heads}${edges}${nodes}</svg>`;
+    $('vmLegend').innerHTML = Object.values(G).map(g => `<span><i style="background:${g.color}"></i>${g.name}</span>`).join('');
+    built = true;
+  }
+  function walk(id, map, acc) { (map(id) || []).forEach(x => { if (!acc.has(x)) { acc.add(x); walk(x, map, acc); } }); return acc; }
+  window.vmSelect = function (id) {
+    selected = id;
+    const svg = $('vmSvg'); if (!svg) return;
+    svg.querySelectorAll('.on,.sel,.up,.down').forEach(el => el.classList.remove('on', 'sel', 'up', 'down'));
+    if (!id) { svg.classList.remove('vm-dim'); renderPanel(null); return; }
+    const up = walk(id, x => byId[x] ? byId[x].deps : [], new Set());
+    const down = walk(id, x => kids[x], new Set());
+    svg.classList.add('vm-dim');
+    [id, ...up, ...down].forEach(x => { const g = svg.querySelector(`.vm-node[data-id="${CSS.escape(x)}"]`); if (g) g.classList.add('on'); });
+    svg.querySelector(`.vm-node[data-id="${CSS.escape(id)}"]`).classList.add('sel');
+    svg.querySelectorAll('.vm-edge').forEach(e => {
+      const f = e.dataset.from, t = e.dataset.to;
+      if ((t === id || up.has(t)) && (up.has(f))) e.classList.add('on', 'up');
+      else if ((f === id || down.has(f)) && down.has(t)) e.classList.add('on', 'down');
+    });
+    renderPanel(id);
+    const g = svg.querySelector(`.vm-node[data-id="${CSS.escape(id)}"]`);
+    if (g && g.scrollIntoView) g.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  };
+  function chips(ids) {
+    return ids.length ? ids.map(x => `<span class="vm-chip" onclick="vmSelect('${x.replace(/'/g, "\\'")}')">${esc(byId[x].label)}</span>`).join('') : '<span style="color:#94a3b8">（無）</span>';
+  }
+  function renderPanel(id) {
+    const p = $('vmPanel');
+    if (!id) {
+      p.innerHTML = `<h3>怎麼看這張圖</h3>
+        <p style="line-height:1.7;color:#475569">由左到右是資料的流向：<br>① 公式參數 → ② 每月／人數輸入 → ③ 員工固定金額 → ④ 自動計算 → ⑤ 小計 A/B/C/D → ⑥ 結果 → ⑦ 輸出。</p>
+        <p style="line-height:1.7;color:#475569">點任一項目，會標出它<b style="color:#2563EB">用到的項目</b>和<b style="color:#DC2626">會影響的項目</b>，右邊會顯示公式、在哪裡輸入，按「前往」可直接打開該頁面。</p>
+        <div class="vm-sec"><b>最常用</b>${chips(['實領', 'B', '加班費', '全勤獎金實發', '帶班人數津貼', '考試津貼'])}</div>`;
+      return;
+    }
+    const n = byId[id], g = G[n.g];
+    const go = (n.where || []).map((w, i) => `<div class="vm-go"><span>${esc(w.text)}</span><button type="button" onclick="vmGo('${id.replace(/'/g, "\\'")}',${i})">前往 →</button></div>`).join('');
+    p.innerHTML = `<span class="vm-badge" style="background:${g.color}">${esc(g.name)}</span>
+      <h3 style="margin-top:8px">${esc(n.label)}</h3>
+      <div style="color:#475569;line-height:1.6">${esc(n.desc || '')}</div>
+      ${n.formula ? `<div class="vm-sec"><b>公式／預設值</b><div class="vm-formula">${esc(n.formula)}</div></div>` : ''}
+      <div class="vm-sec"><b>⬅ 用到（上游）</b>${chips(n.deps)}</div>
+      <div class="vm-sec"><b>➡ 影響（下游）</b>${chips(kids[id] || [])}</div>
+      <div class="vm-sec"><b>📍 位置（按「前往」直接打開）</b>${go || '<span style="color:#94a3b8">（無）</span>'}</div>
+      <div class="vm-sec"><b>👤 誰可以改</b>${esc(n.who || '')}</div>`;
+  }
+  window.vmSearch = function (q) {
+    q = (q || '').trim(); if (!q) return;
+    const hit = N.find(n => n.label.includes(q) || n.id.includes(q));
+    if (hit) vmSelect(hit.id);
+  };
+  window.openVarMap = function () {
+    if (!built) build();
+    $('vmSearch').value = '';
+    vmSelect(null);
+    $('varMapOverlay').classList.add('show');
+  };
+  window.closeVarMap = function () { $('varMapOverlay').classList.remove('show'); };
+  // 從線上關係圖（Variable_Map.html）按「前往」：網址帶 #goto=項目:位置，登入後自動跳到該欄位
+  try {
+    const m = location.hash.match(/^#goto=(.+)$/);
+    if (m) { sessionStorage.setItem('vm_goto', decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname + location.search); }
+  } catch (_) {}
+  window.vmRunPendingGoto = function () {
+    let v = null;
+    try { v = sessionStorage.getItem('vm_goto'); sessionStorage.removeItem('vm_goto'); } catch (_) {}
+    if (!v) return;
+    const k = v.lastIndexOf(':'), id = v.slice(0, k), i = Number(v.slice(k + 1)) || 0;
+    if (byId[id] && byId[id].where[i]) setTimeout(() => vmGo(id, i), 700);
+  };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('varMapOverlay').classList.contains('show')) closeVarMap(); });
+
+  // ── 前往 ──────────────────────────────────────────────────────
+  function flash(el) {
+    if (!el) return false;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.classList.add('vm-flash');
+    setTimeout(() => el.classList.remove('vm-flash'), 2600);
+    return true;
+  }
+  function tabAllowed(tab) {
+    const b = document.querySelector(`.tab[data-tab="${tab}"]`);
+    return b && !b.classList.contains('hidden');
+  }
+  function pickEmployee() {
+    if (typeof _editingEid !== 'undefined' && _editingEid && findEmployee(_editingEid)) return _editingEid;
+    const ps = $('psEmp'); if (ps && ps.value && findEmployee(ps.value)) return ps.value;
+    const campus = (typeof campusShort === 'function' && currentUser) ? campusShort(currentUser.schoolId) : '';
+    const e = DATA.employees.find(x => x['在職狀態'] === '在職' && (!campus || x['校區'] === campus)) || DATA.employees[0];
+    return e && e['員工編號'];
+  }
+  window.vmGo = function (id, i) {
+    const w = byId[id].where[i], g = w.go;
+    if (g.url) { window.open(g.url, '_blank'); return; }
+    if (!currentUser) { toast('請先登入', 'error'); return; }
+    if (g.drawer) {
+      if (currentUser.role !== 'owner' && !g.sal) { toast('此欄位只有老闆可以編輯', 'error'); return; }
+      const eid = pickEmployee(); if (!eid) { toast('目前沒有員工資料', 'error'); return; }
+      closeVarMap();
+      activateTab(currentUser.role === 'owner' ? 'owner' : 'manager');
+      openEditEmployee(eid);
+      setTimeout(() => {
+        const body = $('drawerBody'); const k = CSS.escape(g.drawer);
+        const find = () => body && (g.sal ? body.querySelector(`[data-sal-key="${k}"]`)
+                             : body.querySelector(`[data-pair="${k}"], [data-field-cell="${k}"], [data-key="${k}"]`));
+        let el = find();
+        // 底薪／年資津貼／主管津貼等欄位只在「編輯模式」顯示 → 老闆自動切換到編輯模式再找一次
+        if (!el && currentUser.role === 'owner' && typeof _drawerEditMode !== 'undefined' && !_drawerEditMode && typeof toggleDrawerEdit === 'function') {
+          toggleDrawerEdit(); el = find();
+        }
+        const target = el && (el.closest('.field-cell') || el);
+        if (!flash(target)) {
+          flash(g.sal ? $('drawerMonthlySection') : body);
+          toast(g.sal ? `「${g.drawer}」目前沒有值，所以沒有顯示（已停用欄位只在有值時出現）` : `請在員工資料中找「${g.drawer}」`, 'error');
+        } else {
+          toast(`已打開員工資料：${(findEmployee(eid) || {})['員工姓名'] || eid}，可用上方「◀ 員工 ▶」切換其他人`, 'success');
+        }
+      }, 450);
+      return;
+    }
+    if (g.tab) {
+      if (!tabAllowed(g.tab)) { toast('您的帳號沒有這個頁面的權限', 'error'); return; }
+      closeVarMap();
+      activateTab(g.tab);
+      setTimeout(() => {
+        const pane = $('tab-' + g.tab);
+        if (g.fn === 'mail') { flash(document.querySelector('.mail-owner-only') || pane); return; }
+        if (g.col && pane) {
+          const th = [...pane.querySelectorAll('th')].find(t => t.textContent.includes(g.col));
+          if (flash(th)) return;
+        }
+        if (pane) { pane.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+      }, 200);
+    }
+  };
+})();
+</script>
+
 </body>
 
 </html>
