@@ -2144,7 +2144,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261013V2045</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261014V1300</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2785,6 +2785,60 @@
     </div>
   </div>
 
+  <!-- 📥 批次新增員工（Excel / CSV / 文字） -->
+  <div class="small-modal-overlay" id="bulkEmpOverlay" onclick="closeBulkEmp(event)">
+    <div class="small-modal" style="max-width:1080px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#10B981,#047857);">
+        <div class="icon-l">📥</div>
+        <h2>批次新增員工 — Excel / CSV / 文字</h2>
+        <button class="close" onclick="closeBulkEmp()">✕</button>
+      </div>
+      <div class="body" style="max-height:72vh;overflow:auto;">
+        <p style="margin:0 0 12px;color:#065F46;font-size:13px;background:#ECFDF5;padding:8px 12px;border-radius:6px;border-left:3px solid #10B981;line-height:1.7;">
+          ① 上傳 Excel（.xlsx / .xls）或 CSV / 文字檔，或直接把 Excel 表格複製貼到下方文字框。<br>
+          ② 第一列建議是標題（如：<code>員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪</code>），欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同，可直接沿用匯出檔。<br>
+          ③ 沒有標題列時，依序視為：<b>員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪、Email</b>（用 Tab、逗號或「，」分隔，一行一位）。<br>
+          ④ 員工編號留空會自動產生（同安 TA…、莊敬 ZJ…）；登入帳號／密碼預設為身份證字號（未填則用員工編號）。沒填的欄位用下方預設值與新員工預設薪資。
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini secondary" onclick="downloadBulkEmpTemplate('xlsx')">⬇ 下載 Excel 範本</button>
+          <button class="btn-mini secondary" onclick="downloadBulkEmpTemplate('csv')">⬇ 下載 CSV 範本</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+          <div class="field"><label>預設校區（檔案沒填時）</label>
+            <select id="bulkEmpCampus"><option value="同安">同安</option><option value="莊敬">莊敬</option></select></div>
+          <div class="field"><label>預設職位（檔案沒填時）</label>
+            <select id="bulkEmpPos"><option>老師</option><option>主任</option><option>組長</option><option>行政</option><option>其他</option></select></div>
+          <div class="field"><label>預設到職日（檔案沒填時）</label>
+            <input type="date" id="bulkEmpHire"></div>
+        </div>
+        <div class="field">
+          <label>上傳檔案（.xlsx / .xls / .csv / .txt）</label>
+          <input type="file" id="bulkEmpFile" accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,.txt" onchange="if (this.files.length) document.getElementById('bulkEmpText').value = ''">
+        </div>
+        <div class="field">
+          <label>或直接貼上文字（可從 Excel 複製貼上）</label>
+          <textarea id="bulkEmpText" rows="6" oninput="if (this.value.trim()) document.getElementById('bulkEmpFile').value = ''" placeholder="員工姓名,英文姓名,校區,職位,到職日,身份證字號,底薪&#10;王小明,Tom,同安,老師,2026-11-01,A123456789,29500&#10;李小華,,莊敬,行政,2026/11/01,B223456789," style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini primary" onclick="parseBulkEmp()" style="background:linear-gradient(135deg,#10B981,#047857);">🔍 解析並預覽</button>
+          <button class="btn-mini secondary" onclick="resetBulkEmp()">清除</button>
+        </div>
+        <div id="bulkEmpSummary" style="display:none;background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-bottom:10px;line-height:1.7;"></div>
+        <div style="overflow:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;">
+            <thead id="bulkEmpThead"></thead>
+            <tbody id="bulkEmpTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeBulkEmp()">取消</button>
+        <button class="btn-mini primary" id="bulkEmpApplyBtn" onclick="applyBulkEmp()" disabled style="opacity:.5;background:linear-gradient(135deg,#10B981,#047857);">✅ 確認新增</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 主管輸入 -->
   <div class="tab-pane" id="tab-manager">
     <div class="mgr-controls no-print">
@@ -2869,6 +2923,7 @@
         <button class="btn-mini secondary" onclick="reloadFromStorage()" title="從本機儲存同步最新資料（如有其他人/視窗修改）">🔄 重新整理</button>
         <button class="btn-mini secondary" onclick="copyPrevMonthForOwner()" title="把上個月的工時/獎金等複製到最新月份">📋 複製上個月的資料</button>
         <button class="btn-mini secondary" onclick="addEmployee()">➕ 新增員工</button>
+        <button class="btn-mini secondary" onclick="openBulkEmp()" title="從 Excel / CSV / 貼上文字 一次新增多位員工">📥 批次新增員工</button>
         <button class="btn-mini primary" onclick="openMgrPerms()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);" title="設定主管可以看到 / 編輯哪些欄位">🛡 主管權限設定</button>
         <button class="btn-mini secondary" onclick="openPayslipSettings()" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;" title="設定薪水條上哪些項目即使為 0 也要顯示">⚙ 薪水條顯示項目</button>
         <button class="btn-mini primary" onclick="exportEmployees()">⬇ 匯出 Employee Data.xlsx</button>
@@ -5070,6 +5125,427 @@
       hideLoadingOverlay();
       toast('雲端寫入失敗：' + e.message, 'error');
     }
+  }
+
+  // =========================================================================
+  // 📥 批次新增員工 — 從 Excel / CSV / 貼上文字 一次新增多位員工
+  // =========================================================================
+  // 沒有標題列時，依此順序對應欄位
+  const BULK_EMP_DEFAULT_COLS = ['員工姓名','英文姓名','校區','職位','到職日','身份證字號','底薪','Email'];
+  // 範本欄位
+  const BULK_EMP_TEMPLATE_COLS = ['員工編號','員工姓名','英文姓名','校區','職位','到職日','身份證字號','Email',
+                                  '底薪','全勤獎金','年資津貼','主管津貼','投保級距','勞保自付','健保自付','退休金提撥',
+                                  '銀行名稱','銀行帳號','備註'];
+  const BULK_EMP_TEXT_FIELDS = ['員工編號','員工姓名','英文姓名','校區','職位','到職日','離職日','在職狀態','身份證字號',
+                                '投保級距','請假類別','登入帳號','登入密碼','Email','銀行名稱','銀行帳號','備註'];
+  // 常見別名（比對時忽略大小寫與空白）
+  const BULK_EMP_ALIASES = {
+    '姓名':'員工姓名','中文姓名':'員工姓名','中文名':'員工姓名','name':'員工姓名','chinesename':'員工姓名',
+    '英文名':'英文姓名','英文名字':'英文姓名','englishname':'英文姓名',
+    '編號':'員工編號','員工id':'員工編號','employeeid':'員工編號','empid':'員工編號',
+    '校':'校區','學校':'校區','分校':'校區','campus':'校區','school':'校區',
+    '職稱':'職位','position':'職位','title':'職位',
+    '到職':'到職日','到職日期':'到職日','hiredate':'到職日','startdate':'到職日',
+    '離職':'離職日','離職日期':'離職日',
+    '身分證字號':'身份證字號','身分證':'身份證字號','身份證':'身份證字號','idno':'身份證字號','idnumber':'身份證字號',
+    '狀態':'在職狀態','status':'在職狀態',
+    'email':'Email','e-mail':'Email','mail':'Email','信箱':'Email','電子郵件':'Email','電子信箱':'Email',
+    '帳號':'登入帳號','密碼':'登入密碼',
+    'basesalary':'底薪','salary':'底薪','本薪':'底薪',
+    '混班人數':'混班校數',
+    '銀行':'銀行名稱','帳戶':'銀行帳號','銀行帳戶':'銀行帳號'
+  };
+  let _bulkEmpPlan = [];
+  let _bulkEmpExtraCols = [];
+
+  function bulkEmpKnownFields() {
+    const set = new Set(BULK_EMP_TEXT_FIELDS);
+    OWN_SECTIONS.forEach(sec => sec.fields.forEach(f => {
+      if (f.type === 'premium_pair') { set.add(f.deductKey); set.add(f.subsidyKey); }
+      else if (f.type !== 'leave_info') set.add(f.key);
+    }));
+    ['分校人數超額獎金','分校人數超額人數','美語輔導人數','數學人數','留班比率','已休日數','現金給付']
+      .forEach(k => set.add(k));
+    return set;
+  }
+  function bulkEmpMapHeader(h, known) {
+    const raw = String(h == null ? '' : h).trim();
+    if (!raw) return null;
+    const noSp = raw.replace(/\s+/g, '');
+    const cands = [raw, noSp, noSp.replace(/[（(].*$/, ''), raw.split(/\s+/)[0]];
+    for (const c of cands) {
+      if (known.has(c)) return c;
+      const a = BULK_EMP_ALIASES[c.toLowerCase()];
+      if (a) return a;
+    }
+    return null;
+  }
+  function bulkEmpEsc(v) {
+    return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function bulkEmpYmd(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  // 日期：Excel 日期 / 序號、2026-11-01、2026/11/1、115/11/01（民國）、20261101、1151101
+  function bulkEmpDate(v) {
+    if (v == null || v === '') return { val: '' };
+    if (v instanceof Date && !isNaN(v)) return { val: bulkEmpYmd(v) };
+    if (typeof v === 'number' && v > 20000 && v < 80000 && typeof XLSX !== 'undefined') {
+      const p = XLSX.SSF.parse_date_code(v);
+      if (p) return { val: p.y + '-' + String(p.m).padStart(2, '0') + '-' + String(p.d).padStart(2, '0') };
+    }
+    const s = String(v).trim();
+    let y, m, d, mt;
+    if ((mt = s.match(/^(\d{2,4})\s*[\/\-.年]\s*(\d{1,2})\s*[\/\-.月]\s*(\d{1,2})\s*日?$/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+    else if ((mt = s.match(/^(\d{4})(\d{2})(\d{2})$/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+    else if ((mt = s.match(/^(\d{3})(\d{2})(\d{2})$/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+    else return { error: `日期格式無法辨識「${s}」` };
+    if (y < 1911) y += 1911;   // 民國年
+    const dt = new Date(y, m - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return { error: `日期不存在「${s}」` };
+    return { val: bulkEmpYmd(dt) };
+  }
+  function bulkEmpCampus(v) {
+    const s = String(v == null ? '' : v).trim().toUpperCase();
+    if (!s) return '';
+    if (/^(同安|TA)/.test(s)) return '同安';
+    if (/^(莊敬|庄敬|ZJ)/.test(s)) return '莊敬';
+    return null;
+  }
+  // 分隔文字（Tab / 逗號 / 全形逗號 / 分號 / 空白），支援 "..." 引號
+  function bulkEmpParseText(text) {
+    text = String(text || '').replace(/^﻿/, '').replace(/\r\n?/g, '\n');
+    const lines = text.split('\n').filter(l => l.trim());
+    if (!lines.length) return [];
+    let delim = null;
+    for (const c of ['\t', ',', '，', ';']) { if (lines.some(l => l.includes(c))) { delim = c; break; } }
+    if (!delim) return lines.map(l => l.trim().split(/\s+/));
+    const rows = [];
+    let row = [], cell = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else inQ = false; }
+        else cell += ch;
+      } else if (ch === '"' && cell === '') inQ = true;
+      else if (ch === delim) { row.push(cell); cell = ''; }
+      else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    row.push(cell); rows.push(row);
+    return rows;
+  }
+  // CSV 先試 UTF-8，若有亂碼改用 Big5（台灣版 Excel 預設另存的 CSV）
+  function bulkEmpDecode(buf) {
+    const u8 = new TextDecoder('utf-8').decode(buf);
+    if (!u8.includes('�')) return u8;
+    try { return new TextDecoder('big5').decode(buf); } catch (_) { return u8; }
+  }
+  async function bulkEmpReadFile(file) {
+    const buf = await file.arrayBuffer();
+    if (/\.(csv|tsv|txt)$/i.test(file.name)) return bulkEmpParseText(bulkEmpDecode(buf));
+    if (typeof XLSX === 'undefined') throw new Error('SheetJS 未載入，無法讀取 Excel');
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    // 優先使用名稱含「員工」的工作表，否則第一張
+    const name = wb.SheetNames.find(n => /員工|employee/i.test(n)) || wb.SheetNames[0];
+    return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+  }
+
+  function openBulkEmp() {
+    if (!currentUser || currentUser.role !== 'owner') {
+      toast('僅老闆可使用此功能', 'error'); return;
+    }
+    const oc = $('ownCampus') && $('ownCampus').value;
+    $('bulkEmpCampus').value = (oc === '莊敬') ? '莊敬' : '同安';
+    if (!$('bulkEmpHire').value) $('bulkEmpHire').value = bulkEmpYmd(new Date());
+    $('bulkEmpOverlay').classList.add('show');
+  }
+  function closeBulkEmp(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('bulkEmpOverlay').classList.remove('show');
+  }
+  function resetBulkEmp() {
+    $('bulkEmpFile').value = '';
+    $('bulkEmpText').value = '';
+    _bulkEmpPlan = [];
+    $('bulkEmpThead').innerHTML = '';
+    $('bulkEmpTbody').innerHTML = '';
+    $('bulkEmpSummary').style.display = 'none';
+    updateBulkEmpApplyBtn();
+  }
+  function downloadBulkEmpTemplate(kind) {
+    const example = { '員工姓名': '王小明', '英文姓名': 'Tom', '校區': '同安', '職位': '老師', '到職日': '2026-11-01',
+                      '身份證字號': 'A123456789', 'Email': 'tom@example.com', '底薪': Number(FC('NEW_BASE')) };
+    if (kind === 'csv') {
+      const q = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+      const lines = [BULK_EMP_TEMPLATE_COLS.map(q).join(','),
+                     BULK_EMP_TEMPLATE_COLS.map(h => q(example[h] == null ? '' : example[h])).join(',')];
+      const blob = new Blob(['﻿' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '新增員工範本.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast('已下載 新增員工範本.csv（範例那一列請改成真實資料或刪除）', 'success');
+      return;
+    }
+    if (typeof XLSX === 'undefined') { toast('SheetJS 未載入', 'error'); return; }
+    const ws = XLSX.utils.aoa_to_sheet([BULK_EMP_TEMPLATE_COLS]);
+    ws['!cols'] = BULK_EMP_TEMPLATE_COLS.map(h => ({ wch: /帳號|Email|身份證/.test(h) ? 18 : 12 }));
+    const help = [
+      ['欄位', '說明', '範例'],
+      ['員工編號', '可留空，系統依校區自動產生（同安 TA…、莊敬 ZJ…）', ''],
+      ['員工姓名', '必填', example['員工姓名']],
+      ['英文姓名', '選填', example['英文姓名']],
+      ['校區', '同安 或 莊敬；留空用畫面上的預設校區', example['校區']],
+      ['職位', '老師／主任／組長／行政／其他；留空用預設職位', example['職位']],
+      ['到職日', '2026-11-01、2026/11/1 或 民國 115/11/01；留空用預設到職日', example['到職日']],
+      ['身份證字號', '員工首次登入的帳號與密碼', example['身份證字號']],
+      ['Email', '選填，寄送薪資條用', example['Email']],
+      ['底薪 等金額欄位', `留空用新員工預設（底薪 ${FC('NEW_BASE')}、全勤 ${FC('NEW_ATT')}、勞保 ${FC('NEW_LABOR')}、退休金 ${FC('NEW_RETIRE')}）`, example['底薪']],
+      ['其他欄位', '欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同的欄位都可以加上去', '']
+    ];
+    const wsHelp = XLSX.utils.aoa_to_sheet(help);
+    wsHelp['!cols'] = [{ wch: 16 }, { wch: 70 }, { wch: 18 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '新增員工');
+    XLSX.utils.book_append_sheet(wb, wsHelp, '說明');
+    XLSX.writeFile(wb, '新增員工範本.xlsx');
+    toast('已下載 新增員工範本.xlsx', 'success');
+  }
+
+  function bulkEmpNextId(campus, taken) {
+    const prefix = campus === '莊敬' ? 'ZJ' : 'TA';
+    let max = 0;
+    taken.forEach(id => {
+      if (id.startsWith(prefix)) max = Math.max(max, parseInt(id.slice(2)) || 0);
+    });
+    return prefix + String(max + 1).padStart(3, '0');
+  }
+
+  async function parseBulkEmp() {
+    let rows;
+    try {
+      const f = $('bulkEmpFile').files && $('bulkEmpFile').files[0];
+      const txt = $('bulkEmpText').value;
+      if (f) rows = await bulkEmpReadFile(f);
+      else if (txt.trim()) rows = bulkEmpParseText(txt);
+      else { toast('請上傳檔案或貼上文字', 'error'); return; }
+    } catch (e) {
+      toast('讀取失敗：' + e.message, 'error'); return;
+    }
+    rows = (rows || []).map(r => (r || []).map(c => typeof c === 'string' ? c.trim() : c))
+                       .filter(r => r.some(c => c !== '' && c != null));
+    if (!rows.length) { toast('沒有讀到任何資料', 'error'); return; }
+
+    // 判斷第一列是否為標題
+    const known = bulkEmpKnownFields();
+    const mapped = rows[0].map(h => bulkEmpMapHeader(h, known));
+    const hasHeader = mapped.includes('員工姓名') || mapped.filter(Boolean).length >= 2;
+    let cols, dataRows;
+    const ignored = [];
+    if (hasHeader) {
+      cols = mapped;
+      rows[0].forEach((h, i) => { if (!mapped[i] && String(h).trim()) ignored.push(String(h).trim()); });
+      dataRows = rows.slice(1).map((r, i) => ({ line: i + 2, cells: r }));
+    } else {
+      cols = BULK_EMP_DEFAULT_COLS;
+      dataRows = rows.map((r, i) => ({ line: i + 1, cells: r }));
+    }
+    if (!cols.includes('員工姓名')) { toast('找不到「員工姓名」欄位', 'error'); return; }
+
+    const defCampus = $('bulkEmpCampus').value;
+    const defPos = $('bulkEmpPos').value;
+    const defHire = $('bulkEmpHire').value || bulkEmpYmd(new Date());
+    const posOpts = ['老師','主任','組長','行政','老闆','其他'];
+    const takenIds = new Set(DATA.employees.map(e => String(e['員工編號'])));
+    const existIdNos = new Map(DATA.employees.filter(e => e['身份證字號'])
+      .map(e => [String(e['身份證字號']).trim().toUpperCase(), e]));
+    const existNames = new Map(DATA.employees.map(e => [String(e['員工姓名'] || '').trim(), e]));
+    const batchIdNos = new Set(), batchNames = new Set();
+
+    _bulkEmpPlan = dataRows.map(({ line, cells }) => {
+      const errors = [], warns = [], given = {};
+      cols.forEach((k, i) => {
+        if (!k) return;
+        const v = cells[i];
+        if (v === '' || v == null) return;
+        given[k] = v;
+      });
+      const name = String(given['員工姓名'] || '').trim();
+      const campus = given['校區'] != null ? bulkEmpCampus(given['校區']) : defCampus;
+      if (campus === null) errors.push(`校區須為 同安 或 莊敬（「${given['校區']}」）`);
+      const c = campus || defCampus;
+
+      const emp = {
+        '員工編號': '', '員工姓名': name, '英文姓名': '', '校區': c, '職位': defPos,
+        '到職日': defHire, '離職日': '', '在職狀態': '在職', '身份證字號': '',
+        '底薪': Number(FC('NEW_BASE')), '全勤獎金': Number(FC('NEW_ATT')), '年資津貼': 0, '主管津貼': 0,
+        '分校人數超額獎金': 0, '美語津貼': 0,
+        '數學班津貼': 0, '混班/混校津貼': 0, '帶班人數津貼': 0,
+        '其他津貼': 0, '勞保自付': Number(FC('NEW_LABOR')), '補貼公會投保勞保': 0, '健保自付': 0, '補貼公會健保自付': 0,
+        '退休金提撥': Number(FC('NEW_RETIRE')),
+        '現金給付': 0, '銀行名稱': '', '銀行帳號': '', 'Email': '', '備註': '',
+        '其他津貼明細': []
+      };
+      Object.keys(given).forEach(k => {
+        if (k === '校區') return;
+        let v = given[k];
+        if (k === '到職日' || k === '離職日') {
+          const r = bulkEmpDate(v);
+          if (r.error) errors.push(`${k}：${r.error}`); else emp[k] = r.val;
+        } else if (BULK_EMP_TEXT_FIELDS.includes(k)) {
+          emp[k] = v instanceof Date ? bulkEmpYmd(v) : String(v).trim();
+        } else {
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/[,\s$元]|NT\$?/gi, ''));
+          if (isNaN(n)) errors.push(`${k} 不是數字（「${v}」）`); else emp[k] = n;
+        }
+      });
+
+      if (!name) errors.push('員工姓名為必填');
+      if (!posOpts.includes(emp['職位'])) warns.push(`職位「${emp['職位']}」不在清單（老師／主任／組長／行政／其他）`);
+      if (!['在職','離職','留職停薪'].includes(emp['在職狀態'])) {
+        warns.push(`在職狀態「${emp['在職狀態']}」無法辨識，改為 在職`);
+        emp['在職狀態'] = '在職';
+      }
+
+      // 身份證字號
+      const idNo = String(emp['身份證字號'] || '').trim().toUpperCase();
+      emp['身份證字號'] = idNo;
+      if (idNo) {
+        if (!/^[A-Z][A-Z0-9]\d{8}$/.test(idNo)) warns.push(`身份證字號格式看起來不正確（${idNo}）`);
+        if (existIdNos.has(idNo)) {
+          const o = existIdNos.get(idNo);
+          errors.push(`身份證字號已存在（${o['員工編號']} ${o['員工姓名']}）`);
+        } else if (batchIdNos.has(idNo)) errors.push('身份證字號在本次匯入中重複');
+      }
+      if (name && existNames.has(name)) {
+        const o = existNames.get(name);
+        warns.push(`已有同名員工 ${o['員工編號']}（${o['在職狀態'] || ''}），請確認不是重複`);
+      } else if (name && batchNames.has(name)) warns.push('本次匯入中有同名的員工');
+
+      // 員工編號
+      let eid = String(emp['員工編號'] || '').trim().toUpperCase();
+      let autoId = false;
+      if (eid) {
+        if (takenIds.has(eid)) errors.push(`員工編號 ${eid} 已存在`);
+      } else if (!errors.length) {
+        eid = bulkEmpNextId(c, takenIds);
+        autoId = true;
+      }
+      emp['員工編號'] = eid;
+
+      // 登入帳號／密碼：非老闆 → 身份證字號（未填暫用員工編號）；與 migrateEmployeeRecords 規則一致
+      const cred = emp['職位'] === '老闆' ? eid.toLowerCase() : (idNo || eid);
+      if (!emp['登入帳號']) emp['登入帳號'] = cred;
+      if (!emp['登入密碼']) emp['登入密碼'] = cred;
+
+      const ok = !errors.length;
+      if (ok) {
+        takenIds.add(eid);
+        if (idNo) batchIdNos.add(idNo);
+        if (name) batchNames.add(name);
+      }
+      return { line, emp, errors, warns, autoId, ok, selected: ok };
+    });
+
+    // 預覽表：固定欄位 + 檔案中有填的其他欄位
+    const baseCols = ['員工編號','員工姓名','英文姓名','校區','職位','到職日','身份證字號','底薪'];
+    _bulkEmpExtraCols = cols.filter((k, i) => k && !baseCols.includes(k) && cols.indexOf(k) === i);
+    const th = 'padding:6px 8px;text-align:left;';
+    $('bulkEmpThead').innerHTML = `<tr style="background:#1e293b;color:#fff;">
+      <th style="${th}"><input type="checkbox" id="bulkEmpAll" checked onchange="toggleBulkEmpAll(this.checked)"></th>
+      <th style="${th}">列</th><th style="${th}">狀態</th>
+      ${baseCols.concat(_bulkEmpExtraCols).map(k => `<th style="${th}">${bulkEmpEsc(k)}</th>`).join('')}
+      <th style="${th}">訊息</th></tr>`;
+    $('bulkEmpTbody').innerHTML = _bulkEmpPlan.map((p, i) => {
+      const e = p.emp;
+      const st = !p.ok ? '<span style="color:#DC2626;font-weight:700;">✕ 錯誤</span>'
+               : p.warns.length ? '<span style="color:#B45309;font-weight:700;">⚠ 注意</span>'
+               : '<span style="color:#047857;font-weight:700;">✓ 可新增</span>';
+      const bg = !p.ok ? 'background:#FEF2F2;' : p.warns.length ? 'background:#FFFBEB;' : '';
+      const td = 'padding:5px 8px;';
+      const cell = k => {
+        let v = e[k];
+        if (k === '員工編號') {
+          return `<td style="${td}"><span style="font-family:Courier New,monospace;font-weight:700;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:5px;font-size:11px;">${bulkEmpEsc(v || '—')}</span>${p.autoId ? ' <small style="color:#64748b;">自動</small>' : ''}</td>`;
+        }
+        if (typeof v === 'number') v = v.toLocaleString();
+        return `<td style="${td}">${bulkEmpEsc(v === '' || v == null ? '—' : v)}</td>`;
+      };
+      const msgs = p.errors.map(m => `<div style="color:#DC2626;">✕ ${bulkEmpEsc(m)}</div>`)
+        .concat(p.warns.map(m => `<div style="color:#B45309;">⚠ ${bulkEmpEsc(m)}</div>`)).join('');
+      return `<tr style="border-bottom:1px solid #e2e8f0;${bg}">
+        <td style="${td}"><input type="checkbox" ${p.selected ? 'checked' : ''} ${p.ok ? '' : 'disabled'} onchange="toggleBulkEmpRow(${i}, this.checked)"></td>
+        <td style="${td}color:#64748b;">${p.line}</td><td style="${td}">${st}</td>
+        ${baseCols.concat(_bulkEmpExtraCols).map(cell).join('')}
+        <td style="${td}white-space:normal;min-width:200px;">${msgs || '<span style="color:#94a3b8;">—</span>'}</td></tr>`;
+    }).join('') || '<tr><td colspan="12" style="text-align:center;color:#dc2626;padding:20px;">⚠ 沒有資料列</td></tr>';
+
+    const okN = _bulkEmpPlan.filter(p => p.ok).length;
+    const warnN = _bulkEmpPlan.filter(p => p.ok && p.warns.length).length;
+    const errN = _bulkEmpPlan.length - okN;
+    let sum = `共讀到 <b>${_bulkEmpPlan.length}</b> 列：<b style="color:#047857;">${okN}</b> 位可新增` +
+              (warnN ? `（其中 <b style="color:#B45309;">${warnN}</b> 位請注意）` : '') +
+              (errN ? `，<b style="color:#DC2626;">${errN}</b> 列有錯誤會略過` : '') + '。' +
+              (hasHeader ? '' : '<br>未偵測到標題列，依預設順序對應：' + BULK_EMP_DEFAULT_COLS.join('、'));
+    if (ignored.length) sum += `<br>⚠ 無法辨識、已忽略的欄位：<b>${ignored.map(bulkEmpEsc).join('、')}</b>`;
+    $('bulkEmpSummary').innerHTML = sum;
+    $('bulkEmpSummary').style.display = '';
+    updateBulkEmpApplyBtn();
+  }
+  function toggleBulkEmpRow(i, on) {
+    if (_bulkEmpPlan[i] && _bulkEmpPlan[i].ok) _bulkEmpPlan[i].selected = on;
+    updateBulkEmpApplyBtn();
+  }
+  function toggleBulkEmpAll(on) {
+    _bulkEmpPlan.forEach((p, i) => { if (p.ok) p.selected = on; });
+    $('bulkEmpTbody').querySelectorAll('input[type=checkbox]:not(:disabled)').forEach(cb => { cb.checked = on; });
+    updateBulkEmpApplyBtn();
+  }
+  function updateBulkEmpApplyBtn() {
+    const n = _bulkEmpPlan.filter(p => p.ok && p.selected).length;
+    const btn = $('bulkEmpApplyBtn');
+    btn.disabled = n === 0;
+    btn.style.opacity = n === 0 ? '0.5' : '';
+    btn.textContent = n ? `✅ 確認新增 ${n} 位員工` : '✅ 確認新增';
+  }
+  async function applyBulkEmp() {
+    const toAdd = _bulkEmpPlan.filter(p => p.ok && p.selected);
+    if (!toAdd.length) { toast('沒有可新增的員工', 'error'); return; }
+    // 寫入前再檢查一次（避免預覽後資料已被其他人修改）
+    const dup = toAdd.filter(p => DATA.employees.some(e => e['員工編號'] === p.emp['員工編號']));
+    if (dup.length) {
+      toast(`員工編號 ${dup.map(p => p.emp['員工編號']).join('、')} 已存在，請重新按「解析並預覽」`, 'error');
+      return;
+    }
+    if (!confirm(`確認新增 ${toAdd.length} 位員工？\n\n${toAdd.slice(0, 15).map(p => `${p.emp['員工編號']} ${p.emp['員工姓名']}（${p.emp['校區']}・${p.emp['職位']}）`).join('\n')}${toAdd.length > 15 ? `\n…等 ${toAdd.length} 位` : ''}\n\n會立即同步到雲端。`)) return;
+    if (!DATA.ownerBaseline) DATA.ownerBaseline = {};
+    toAdd.forEach(p => {
+      const emp = JSON.parse(JSON.stringify(p.emp));
+      DATA.employees.push(emp);
+    });
+    migrateEmployeeRecords(DATA);   // 補齊其他預設欄位
+    toAdd.forEach(p => {
+      const emp = DATA.employees.find(e => e['員工編號'] === p.emp['員工編號']);
+      if (emp) DATA.ownerBaseline[emp['員工編號']] = JSON.parse(JSON.stringify(emp));
+    });
+    closeBulkEmp();
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try {
+      await doPersistNow();
+    } finally {
+      hideLoadingOverlay();
+    }
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser ? currentUser.fullName : '系統',
+      text: `批次新增員工 ${toAdd.length} 位：${toAdd.map(p => `${p.emp['員工編號']} ${p.emp['員工姓名']}`).join('、')}`
+    });
+    [renderOwnerTable, populateManagerSelectors, renderManagerTable, populatePayslipSelectors, renderPayslip, renderDashboard]
+      .forEach(fn => { try { fn(); } catch (_) {} });
+    toast(`✓ 已新增 ${toAdd.length} 位員工`, 'success');
+    resetBulkEmp();
   }
 
   // Enter key triggers password validate
@@ -9889,6 +10365,15 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261014V1300', date: '2026-10-14 13:00',
+      changes: [
+        '新增「📥 批次新增員工」（員工資料頁，「➕ 新增員工」旁）：可上傳 Excel（.xlsx/.xls）、CSV／文字檔，或直接從 Excel 複製貼上，一次新增多位員工',
+        '欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同（也接受 姓名、身分證、Email 等常見寫法）；沒有標題列時依序為 員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪、Email',
+        '員工編號留空會自動產生（同安 TA…、莊敬 ZJ…）；到職日支援 2026-11-01、2026/11/1、民國 115/11/01；CSV 支援 UTF-8 與 Big5',
+        '新增前會先預覽：檢查必填、校區、日期、數字、重複的員工編號／身份證字號、同名員工，可逐筆勾選；可下載 Excel／CSV 範本'
+      ]
+    },
     {
       version: 'V20261013V2045', date: '2026-10-13 20:45',
       changes: [
