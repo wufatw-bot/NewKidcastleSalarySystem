@@ -3,6 +3,12 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261018V2030（2026-10-18 20:30）
+- 🧪 測試信新增「✅ 確認收到，寄送回條」按鈕：員工按下後開啟確認頁，再按「確認收到」即送出回條（兩步驟，避免信箱的連結掃描誤觸），並寄一封「【回條】」通知給寄件人 wufatw@gmail.com
+- 「✉ 寄送薪資條」視窗新增「📬 查詢回條」：員工名單旁顯示「✅ 已回條 時間」或「⏳ 未回條」，並列出尚未回條的人；開啟視窗時也會自動更新
+- 後端新增 Receipt.gs（不含密碼）：send_test_mail 附回條按鈕、?action=receipt 確認頁、receipt_list 查詢；回條紀錄存在雲端硬碟 KidcastleSalary_Receipts.json，連結有簽章無法偽造
+- ⚠ 需依 Receipt.gs 開頭說明：新增 Receipt 指令碼 → Code.gs 的 doGet／doPost 各加一行（send_test_mail 改呼叫 sendTestMailWithReceipt_）→ 部署「新版本」
+
 ## V20261014V1300（2026-10-14 13:00）
 - 新增「📥 批次新增員工」（員工資料頁，「➕ 新增員工」旁）：可上傳 Excel（.xlsx/.xls）、CSV／文字檔，或直接從 Excel 複製貼上，一次新增多位員工
 - 欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同（也接受 姓名、身分證、Email 等常見寫法）；沒有標題列時依序為：員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪、Email
