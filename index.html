@@ -2144,7 +2144,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261014V1300</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261018V1930</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -3456,6 +3456,7 @@
     </div>
     <div class="foot" style="flex-wrap:wrap;align-items:center;">
       <span style="flex:1;font-size:12px;color:#64748b;" id="mailSummary">—</span>
+      <button class="btn-mini secondary" onclick="sendTestMails()" id="mailTestBtn" title="只寄一句測試文字，不含薪資內容">🧪 寄送測試信</button>
       <button class="btn-mini secondary" onclick="closeMailModal()" id="mailCancelBtn">關閉</button>
       <button class="btn-mini primary" onclick="sendSelectedPayslips()" id="mailSendBtn" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">✉ 確認寄出</button>
     </div>
@@ -6315,6 +6316,66 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && $('mailOverlay') && $('mailOverlay').classList.contains('show')) closeMailModal();
   });
+
+  // 🧪 寄送測試信（V20261018V1930）— 只寄一句測試文字，不含薪資內容，不標記已寄
+  const TEST_MAIL_TEXT = '這是Kidcastle莊敬同安校的薪水條系統寄送測試';
+  async function sendTestMails() {
+    if (_mailSending) return;
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可寄送測試信', 'error'); return; }
+    const picked = _mailRows.filter(r => _mailSelected.has(r.eid) && isValidEmail(r.email));
+    const targets = picked.length ? picked : [{ eid: null, name: '寄件人（自己）', email: MAIL_SENDER }];
+    const list = targets.slice(0, 15).map(r => `・${r.name} <${r.email}>`).join('\n') + (targets.length > 15 ? `\n…等共 ${targets.length} 人` : '');
+    if (!confirm(`寄出 ${targets.length} 封測試信？\n內容：「${TEST_MAIL_TEXT}」（不含薪資資料）\n\n${list}` +
+                 (picked.length ? '' : '\n\n（左側沒有勾選員工，所以只寄給寄件人自己）'))) return;
+    let key = getMailKey(false);
+    if (!key) { toast('未輸入寄信密碼，已取消', 'error'); return; }
+
+    _mailSending = true;
+    $('mailCancelBtn').disabled = true; $('mailTestBtn').disabled = true;
+    $('mailProgress').style.display = '';
+    let okCnt = 0, failCnt = 0, done = 0, remain = '';
+    const setProg = () => {
+      $('mailProgressBar').style.width = Math.round(done / targets.length * 100) + '%';
+      $('mailProgressTxt').textContent = `測試信寄送中 ${done} / ${targets.length} · 成功 ${okCnt} · 失敗 ${failCnt}`;
+    };
+    setProg(); renderMailList();
+    for (const r of targets) {
+      if (r.eid) { _mailStatus[r.eid] = { cls: 'busy', text: '測試中…' }; renderMailList(); }
+      try {
+        let j;
+        try { j = await cloudPost('send_test_mail', { key, to: r.email }); }
+        catch (err) {
+          if (/key|密碼/i.test(err.message)) {
+            key = getMailKey(true);
+            if (!key) throw err;
+            j = await cloudPost('send_test_mail', { key, to: r.email });
+          } else throw err;
+        }
+        okCnt++;
+        if (r.eid) _mailStatus[r.eid] = { cls: 'sent', text: '✓ 測試已寄' };
+        if (j && j.remaining != null) remain = j.remaining;
+      } catch (err) {
+        failCnt++;
+        if (r.eid) _mailStatus[r.eid] = { cls: 'fail', text: '✗ 測試失敗', title: err.message };
+        console.error('send_test_mail failed', r.email, err);
+        if (/unknown action|未知|not supported/i.test(err.message)) {
+          toast('Apps Script 尚未加入 send_test_mail，請先更新 Code.gs 並重新部署', 'error');
+          done++; setProg(); break;
+        }
+        if (!r.eid) toast('測試信失敗：' + err.message, 'error');
+      }
+      done++; setProg(); renderMailList();
+      await new Promise(res => setTimeout(res, 800));
+    }
+    _mailSending = false;
+    $('mailCancelBtn').disabled = false; $('mailTestBtn').disabled = false;
+    $('mailProgressTxt').textContent = `測試信完成：成功 ${okCnt} 封、失敗 ${failCnt} 封` +
+      (remain !== '' ? ` · 今日剩餘寄信額度 ${remain}` : '') + (failCnt ? '（滑鼠移到「✗ 測試失敗」可看原因）' : '');
+    renderMailList();
+    if (okCnt) appendLog({ time: nowTimestamp(), user: currentUser.fullName,
+      text: `寄送薪水條系統測試信 ${okCnt} 封（寄件人 ${MAIL_SENDER}）${failCnt ? `，失敗 ${failCnt} 封` : ''}` });
+    toast(failCnt ? `測試信寄出 ${okCnt} 封，${failCnt} 封失敗` : `✓ 已寄出 ${okCnt} 封測試信`, failCnt ? 'error' : 'success');
+  }
 
   // 薪資條計算（畫面薪資條與 Email 薪資條共用，確保金額一致）
   function getPayslipData(emp, sal) {
@@ -10365,6 +10426,14 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261018V1930', date: '2026-10-18 19:30',
+      changes: [
+        '「✉ 寄送薪資條」視窗新增「🧪 寄送測試信」按鈕：內容只有「這是Kidcastle莊敬同安校的薪水條系統寄送測試」，不含任何薪資資料、不附 PDF，也不會標記為「已寄」',
+        '測試信寄給左側勾選的員工；沒有勾選時寄給寄件人 wufatw@gmail.com 自己',
+        '後端（Code.gs）新增 send_test_mail 動作；移除薪資條 Email 底部的員工薪資查詢連結'
+      ]
+    },
     {
       version: 'V20261014V1300', date: '2026-10-14 13:00',
       changes: [
