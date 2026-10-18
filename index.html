@@ -2144,7 +2144,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261018V1930</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261018V1945</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2839,6 +2839,51 @@
     </div>
   </div>
 
+  <!-- 📧 批次匯入 Email（Excel / CSV / 文字）V20261018V1945 -->
+  <div class="small-modal-overlay" id="bulkMailOverlay" onclick="closeBulkMail(event)">
+    <div class="small-modal" style="max-width:1080px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">
+        <div class="icon-l">📧</div>
+        <h2>批次匯入 Email — Excel / CSV / 文字</h2>
+        <button class="close" onclick="closeBulkMail()">✕</button>
+      </div>
+      <div class="body" style="max-height:72vh;overflow:auto;">
+        <p style="margin:0 0 12px;color:#0C4A6E;font-size:13px;background:#F0F9FF;padding:8px 12px;border-radius:6px;border-left:3px solid #0EA5E9;line-height:1.7;">
+          ① 上傳 Excel（.xlsx / .xls）或 CSV，或直接從 Excel 複製貼到下方。Google 表單回覆下載成 .xlsx / .csv 也可以直接用。<br>
+          ② 需要有 <b>Email</b> 欄，以及 <b>員工編號</b> 或 <b>姓名</b>（中文或英文皆可）其中一欄；有「校區／分校」欄會用來區分同名員工。<br>
+          ③ 姓名可以中英混寫，例如「Summer游晏慈」會對到「游晏慈」。同一人出現多次以最後一筆為準。<br>
+          ④ 沒有標題列時，每行視為：<b>姓名、Email</b>。按「⬇ 下載員工 Email 範本」可取得目前所有員工的名單，直接填 Email 再上傳最方便。
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini secondary" onclick="downloadBulkMailTemplate()">⬇ 下載員工 Email 範本（.xlsx）</button>
+        </div>
+        <div class="field">
+          <label>上傳檔案（.xlsx / .xls / .csv / .txt）</label>
+          <input type="file" id="bulkMailFile" accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,.txt" onchange="if (this.files.length) document.getElementById('bulkMailText').value = ''">
+        </div>
+        <div class="field">
+          <label>或直接貼上文字（可從 Excel 複製貼上）</label>
+          <textarea id="bulkMailText" rows="5" oninput="if (this.value.trim()) document.getElementById('bulkMailFile').value = ''" placeholder="員工姓名,校區,Email&#10;王小明,同安,tom@example.com&#10;Summer游晏慈,莊敬,summer@example.com" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini primary" onclick="parseBulkMail()" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">🔍 解析並預覽</button>
+          <button class="btn-mini secondary" onclick="resetBulkMail()">清除</button>
+        </div>
+        <div id="bulkMailSummary" style="display:none;background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-bottom:10px;line-height:1.7;"></div>
+        <div style="overflow:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;">
+            <thead id="bulkMailThead"></thead>
+            <tbody id="bulkMailTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeBulkMail()">取消</button>
+        <button class="btn-mini primary" id="bulkMailApplyBtn" onclick="applyBulkMail()" disabled style="opacity:.5;background:linear-gradient(135deg,#0EA5E9,#0369A1);">✅ 確認匯入</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 主管輸入 -->
   <div class="tab-pane" id="tab-manager">
     <div class="mgr-controls no-print">
@@ -2924,6 +2969,7 @@
         <button class="btn-mini secondary" onclick="copyPrevMonthForOwner()" title="把上個月的工時/獎金等複製到最新月份">📋 複製上個月的資料</button>
         <button class="btn-mini secondary" onclick="addEmployee()">➕ 新增員工</button>
         <button class="btn-mini secondary" onclick="openBulkEmp()" title="從 Excel / CSV / 貼上文字 一次新增多位員工">📥 批次新增員工</button>
+        <button class="btn-mini secondary" onclick="openBulkMail()" title="從 Excel / CSV / Google 表單回覆 一次填入多位員工的 Email">📧 批次匯入 Email</button>
         <button class="btn-mini primary" onclick="openMgrPerms()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);" title="設定主管可以看到 / 編輯哪些欄位">🛡 主管權限設定</button>
         <button class="btn-mini secondary" onclick="openPayslipSettings()" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;" title="設定薪水條上哪些項目即使為 0 也要顯示">⚙ 薪水條顯示項目</button>
         <button class="btn-mini primary" onclick="exportEmployees()">⬇ 匯出 Employee Data.xlsx</button>
@@ -6316,6 +6362,223 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && $('mailOverlay') && $('mailOverlay').classList.contains('show')) closeMailModal();
   });
+
+  // ==========================================================================
+  // 📧 批次匯入 Email（V20261018V1945）— 從 Excel / CSV / 貼上文字 填入員工 Email
+  //   比對順序：員工編號 → 中文姓名（可包含，例如「Summer游晏慈」→「游晏慈」）→ 英文姓名
+  //   同名時用校區區分；同一員工出現多次以最後一筆為準
+  // ==========================================================================
+  let _bulkMailPlan = [];
+  function openBulkMail() {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可使用此功能', 'error'); return; }
+    $('bulkMailOverlay').classList.add('show');
+  }
+  function closeBulkMail(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('bulkMailOverlay').classList.remove('show');
+  }
+  function resetBulkMail() {
+    $('bulkMailFile').value = ''; $('bulkMailText').value = '';
+    _bulkMailPlan = [];
+    $('bulkMailThead').innerHTML = ''; $('bulkMailTbody').innerHTML = '';
+    $('bulkMailSummary').style.display = 'none';
+    updateBulkMailApplyBtn();
+  }
+  function downloadBulkMailTemplate() {
+    if (typeof XLSX === 'undefined') { toast('SheetJS 未載入', 'error'); return; }
+    const rows = [['員工編號', '員工姓名', '英文姓名', '校區', 'Email']];
+    DATA.employees
+      .filter(e => e['在職狀態'] !== '離職')
+      .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])))
+      .forEach(e => rows.push([e['員工編號'] || '', e['員工姓名'] || '', e['英文姓名'] || '', e['校區'] || '', e['Email'] || '']));
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '員工Email');
+    XLSX.writeFile(wb, '員工Email範本.xlsx');
+    toast('已下載 員工Email範本.xlsx：在 Email 欄填好後上傳即可', 'success');
+  }
+  async function bulkMailReadFile(file) {
+    const buf = await file.arrayBuffer();
+    if (/\.(csv|tsv|txt)$/i.test(file.name)) return bulkEmpParseText(bulkEmpDecode(buf));
+    if (typeof XLSX === 'undefined') throw new Error('SheetJS 未載入，無法讀取 Excel');
+    const wb = XLSX.read(buf, { type: 'array' });
+    const name = wb.SheetNames.find(n => /mail|信箱|員工|form|回覆/i.test(n)) || wb.SheetNames[0];
+    return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
+  }
+  const _bmZh = v => String(v || '').replace(/[A-Za-z0-9\s.\-_'’()（）]+/g, '');
+  const _bmEn = v => String(v || '').replace(/[^A-Za-z]/g, '').toLowerCase();
+  const _bmCampus = v => { v = String(v || ''); return v.includes('同安') ? '同安' : v.includes('莊敬') ? '莊敬' : ''; };
+  const _bmIsMail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim());
+
+  function bulkMailMatch(rec) {
+    const emps = DATA.employees;
+    if (rec.eid) {
+      const e = emps.find(x => String(x['員工編號']).toUpperCase() === rec.eid.toUpperCase());
+      if (e) return [e];
+    }
+    const fZh = _bmZh(rec.zh), fEn = [_bmEn(rec.en), _bmEn(rec.zh)].filter(Boolean);
+    let hits = [];
+    if (fZh.length >= 2) {
+      hits = emps.filter(e => {
+        const z = _bmZh(e['員工姓名']);
+        return z.length >= 2 && (z === fZh || fZh.includes(z) || z.includes(fZh));
+      });
+    }
+    if (!hits.length && fEn.length) {
+      hits = emps.filter(e => {
+        const en = _bmEn(e['英文姓名']), nm = _bmEn(e['員工姓名']);
+        return fEn.some(x => x && (x === en || x === nm));
+      });
+    }
+    if (hits.length > 1 && rec.campus) {
+      const c = hits.filter(e => e['校區'] === rec.campus);
+      if (c.length) hits = c;
+    }
+    if (hits.length > 1) {
+      const active = hits.filter(e => e['在職狀態'] !== '離職');
+      if (active.length) hits = active;
+    }
+    return hits;
+  }
+
+  async function parseBulkMail() {
+    let rows = [];
+    try {
+      const f = $('bulkMailFile').files[0];
+      if (f) rows = await bulkMailReadFile(f);
+      else rows = bulkEmpParseText($('bulkMailText').value);
+    } catch (err) { toast('讀取失敗：' + err.message, 'error'); return; }
+    rows = rows.map(r => r.map(c => String(c == null ? '' : c).trim())).filter(r => r.some(Boolean));
+    if (!rows.length) { toast('沒有資料，請上傳檔案或貼上文字', 'error'); return; }
+
+    // 找標題列
+    const head = rows[0];
+    const hasHead = head.some(c => /mail|信箱|姓名|編號|name/i.test(c)) && !head.some(_bmIsMail);
+    const find = re => head.findIndex(c => re.test(c));
+    let col;
+    if (hasHead) {
+      col = {
+        eid: find(/員工編號|^編號$|^id$/i),
+        zh: (() => { let i = find(/中文/); if (i < 0) i = head.findIndex(c => /姓名|名字|^name$/i.test(c) && !/英文|english/i.test(c)); return i; })(),
+        en: find(/英文|english/i),
+        campus: find(/校區|分校|campus/i),
+        mail: find(/mail|信箱/i)
+      };
+      if (col.mail < 0) { toast('找不到 Email 欄（標題需含「Email」或「信箱」）', 'error'); return; }
+      if (col.eid < 0 && col.zh < 0 && col.en < 0) { toast('找不到「員工編號」或「姓名」欄', 'error'); return; }
+      rows = rows.slice(1);
+    } else {
+      col = null;
+    }
+
+    const recs = rows.map((r, i) => {
+      let rec;
+      if (col) {
+        const g = k => col[k] >= 0 ? (r[col[k]] || '') : '';
+        rec = { eid: g('eid'), zh: g('zh'), en: g('en'), campus: _bmCampus(g('campus')), mail: g('mail') };
+      } else {
+        const mi = r.findIndex(_bmIsMail);
+        const others = r.filter((c, j) => j !== mi && c);
+        rec = { eid: '', zh: others[0] || '', en: '', campus: _bmCampus(others.find(c => _bmCampus(c)) || ''), mail: mi >= 0 ? r[mi] : '' };
+      }
+      rec.row = i + (col ? 2 : 1);
+      rec.mail = rec.mail.replace(/^mailto:/i, '').trim();
+      return rec;
+    });
+
+    _bulkMailPlan = recs.map(rec => {
+      const p = { rec, emp: null, status: '', cls: '', ok: false, selected: false, note: '' };
+      if (!rec.mail) { p.status = '沒有 Email'; p.cls = 'bad'; return p; }
+      if (!_bmIsMail(rec.mail)) { p.status = 'Email 格式錯誤'; p.cls = 'bad'; return p; }
+      const hits = bulkMailMatch(rec);
+      if (!hits.length) { p.status = '找不到員工'; p.cls = 'bad'; return p; }
+      if (hits.length > 1) { p.status = '多位符合'; p.cls = 'warn'; p.note = hits.map(e => `${e['員工編號']} ${e['員工姓名']}（${e['校區']}）`).join('、'); return p; }
+      p.emp = hits[0];
+      const old = String(p.emp['Email'] || '').trim();
+      if (old.toLowerCase() === rec.mail.toLowerCase()) { p.status = '相同，不用改'; p.cls = 'same'; return p; }
+      p.status = old ? '更新' : '新增'; p.cls = old ? 'upd' : 'new';
+      p.ok = true; p.selected = true;
+      return p;
+    });
+    // 同一員工出現多次：以最後一筆為準
+    const lastIdx = {};
+    _bulkMailPlan.forEach((p, i) => { if (p.emp) lastIdx[p.emp['員工編號']] = i; });
+    _bulkMailPlan.forEach((p, i) => {
+      if (p.emp && lastIdx[p.emp['員工編號']] !== i) {
+        p.ok = false; p.selected = false; p.status = '被後面的資料取代'; p.cls = 'same';
+      }
+    });
+    renderBulkMailPlan();
+  }
+
+  function renderBulkMailPlan() {
+    const color = { new: '#047857', upd: '#0369A1', same: '#94a3b8', warn: '#B45309', bad: '#C62828' };
+    const th = 'padding:6px 8px;background:#f1f5f9;border-bottom:2px solid #e2e8f0;text-align:left;';
+    const td = 'padding:6px 8px;border-bottom:1px solid #f1f5f9;';
+    $('bulkMailThead').innerHTML = `<tr>
+      <th style="${th}"><input type="checkbox" onchange="toggleBulkMailAll(this.checked)" checked></th>
+      <th style="${th}">列</th><th style="${th}">檔案中的姓名</th><th style="${th}">校區</th>
+      <th style="${th}">對應員工</th><th style="${th}">目前 Email</th><th style="${th}">新 Email</th><th style="${th}">狀態</th></tr>`;
+    $('bulkMailTbody').innerHTML = _bulkMailPlan.map((p, i) => {
+      const r = p.rec, e = p.emp;
+      const who = e ? `${escMail(e['員工編號'])} <b>${escMail(e['員工姓名'])}</b>${e['英文姓名'] ? ' (' + escMail(e['英文姓名']) + ')' : ''} · ${escMail(e['校區'])}` : (p.note ? `<span style="color:#B45309;">${escMail(p.note)}</span>` : '—');
+      return `<tr style="${p.ok ? '' : 'opacity:.75;'}">
+        <td style="${td}"><input type="checkbox" data-bm="${i}" ${p.selected ? 'checked' : ''} ${p.ok ? '' : 'disabled'} onchange="_bulkMailPlan[${i}].selected=this.checked;updateBulkMailApplyBtn()"></td>
+        <td style="${td}color:#94a3b8;">${r.row}</td>
+        <td style="${td}">${escMail(r.eid ? r.eid + ' ' : '')}${escMail(r.zh)}${r.en ? ' / ' + escMail(r.en) : ''}</td>
+        <td style="${td}">${escMail(r.campus || '')}</td>
+        <td style="${td}">${who}</td>
+        <td style="${td}color:#94a3b8;">${escMail(e ? (e['Email'] || '（未設定）') : '')}</td>
+        <td style="${td}font-family:Arial,sans-serif;">${escMail(r.mail)}</td>
+        <td style="${td}font-weight:700;color:${color[p.cls] || '#475569'};">${escMail(p.status)}</td></tr>`;
+    }).join('');
+    const cnt = k => _bulkMailPlan.filter(p => p.cls === k).length;
+    $('bulkMailSummary').style.display = '';
+    $('bulkMailSummary').innerHTML = `共 <b>${_bulkMailPlan.length}</b> 筆：` +
+      `<span style="color:#047857;">新增 ${cnt('new')}</span> · <span style="color:#0369A1;">更新 ${cnt('upd')}</span> · ` +
+      `<span style="color:#94a3b8;">不用改 ${cnt('same')}</span> · <span style="color:#B45309;">多位符合 ${cnt('warn')}</span> · ` +
+      `<span style="color:#C62828;">找不到／格式錯誤 ${cnt('bad')}</span>` +
+      (cnt('warn') + cnt('bad') ? '<br>「找不到」或「多位符合」的請到員工資料 ✏ 編輯手動填寫，或在檔案中補上員工編號後重新解析。' : '');
+    updateBulkMailApplyBtn();
+  }
+  function toggleBulkMailAll(on) {
+    _bulkMailPlan.forEach(p => { if (p.ok) p.selected = on; });
+    $('bulkMailTbody').querySelectorAll('input[type=checkbox]:not(:disabled)').forEach(cb => { cb.checked = on; });
+    updateBulkMailApplyBtn();
+  }
+  function updateBulkMailApplyBtn() {
+    const n = _bulkMailPlan.filter(p => p.ok && p.selected).length;
+    const btn = $('bulkMailApplyBtn');
+    btn.disabled = n === 0; btn.style.opacity = n === 0 ? '0.5' : '';
+    btn.textContent = n ? `✅ 確認匯入 ${n} 位員工的 Email` : '✅ 確認匯入';
+  }
+  async function applyBulkMail() {
+    const list = _bulkMailPlan.filter(p => p.ok && p.selected);
+    if (!list.length) { toast('沒有可匯入的 Email', 'error'); return; }
+    const preview = list.slice(0, 15).map(p => `${p.emp['員工姓名']}（${p.emp['校區']}）← ${p.rec.mail}`).join('\n') +
+                    (list.length > 15 ? `\n…等 ${list.length} 位` : '');
+    if (!confirm(`確認填入 ${list.length} 位員工的 Email？\n\n${preview}\n\n會立即同步到雲端。`)) return;
+    if (!DATA.ownerBaseline) DATA.ownerBaseline = {};
+    const done = [];
+    list.forEach(p => {
+      const emp = DATA.employees.find(e => e['員工編號'] === p.emp['員工編號']);
+      if (!emp) return;
+      emp['Email'] = p.rec.mail;
+      if (DATA.ownerBaseline[emp['員工編號']]) DATA.ownerBaseline[emp['員工編號']]['Email'] = p.rec.mail;
+      done.push(emp);
+    });
+    closeBulkMail();
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try { await doPersistNow(); } finally { hideLoadingOverlay(); }
+    appendLog({
+      time: nowTimestamp(), user: currentUser ? currentUser.fullName : '系統',
+      text: `批次匯入 Email ${done.length} 位：${done.map(e => `${e['員工編號']} ${e['員工姓名']}`).join('、')}`
+    });
+    [renderOwnerTable, renderPayslip, renderDashboard].forEach(fn => { try { fn(); } catch (_) {} });
+    toast(`✓ 已填入 ${done.length} 位員工的 Email`, 'success');
+    resetBulkMail();
+  }
 
   // 🧪 寄送測試信（V20261018V1930）— 只寄一句測試文字，不含薪資內容，不標記已寄
   const TEST_MAIL_TEXT = '這是Kidcastle莊敬同安校的薪水條系統寄送測試';
@@ -10426,6 +10689,14 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261018V1945', date: '2026-10-18 19:45',
+      changes: [
+        '員工資料頁新增「📧 批次匯入 Email」（「📥 批次新增員工」旁）：上傳 Excel（.xlsx/.xls）、CSV，或從 Excel 複製貼上，一次填入多位員工的 Email；Google 表單回覆下載的檔案也能直接用',
+        '依員工編號、中文姓名（可中英混寫，例如「Summer游晏慈」→ 游晏慈）或英文姓名自動比對，同名時用校區區分；匯入前先預覽新增／更新／找不到，可逐筆勾選',
+        '可下載「員工Email範本.xlsx」（含目前所有員工名單與現有 Email），填好直接上傳'
+      ]
+    },
     {
       version: 'V20261018V1930', date: '2026-10-18 19:30',
       changes: [
