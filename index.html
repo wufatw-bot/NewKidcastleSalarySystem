@@ -2098,6 +2098,8 @@
   .mail-row .st { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap; }
   .mail-row .st.sent { background:#DCFCE7; color:#166534; }
   .mail-row .st.fail { background:#FEE2E2; color:#991B1B; }
+  .mail-row .st.ack  { background:#D1FAE5; color:#065F46; margin-left:4px; }
+  .mail-row .st.wait { background:#FEF3C7; color:#92400E; margin-left:4px; }
   .mail-row .st.busy { background:#FEF3C7; color:#92400E; }
   .mail-row .pv { border:none; background:#f1f5f9; color:#0369A1; border-radius:6px; padding:3px 8px; font-size:11px; cursor:pointer; font-family:inherit; margin-left:4px; }
   .mail-preview { border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; min-height:52vh; }
@@ -2144,7 +2146,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261018V1945</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261018V2030</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -3502,7 +3504,8 @@
     </div>
     <div class="foot" style="flex-wrap:wrap;align-items:center;">
       <span style="flex:1;font-size:12px;color:#64748b;" id="mailSummary">—</span>
-      <button class="btn-mini secondary" onclick="sendTestMails()" id="mailTestBtn" title="只寄一句測試文字，不含薪資內容">🧪 寄送測試信</button>
+      <button class="btn-mini secondary" onclick="sendTestMails()" id="mailTestBtn" title="只寄一句測試文字（附「確認收到，寄送回條」按鈕），不含薪資內容">🧪 寄送測試信</button>
+      <button class="btn-mini secondary" onclick="loadMailReceipts(true)" id="mailReceiptBtn" title="查看哪些員工已在測試信按下「確認收到，寄送回條」">📬 查詢回條</button>
       <button class="btn-mini secondary" onclick="closeMailModal()" id="mailCancelBtn">關閉</button>
       <button class="btn-mini primary" onclick="sendSelectedPayslips()" id="mailSendBtn" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">✉ 確認寄出</button>
     </div>
@@ -6079,6 +6082,7 @@
   let _mailSelected = new Set();
   let _mailSending = false;
   let _mailStatus = {};        // eid → {cls, text}
+  let _mailReceipts = {};      // eid 或 email（小寫）→ 最新一筆測試信回條紀錄 {sentAt, ackAt, to}
 
   function escMail(t) {
     return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -6185,6 +6189,7 @@
       if (first) previewMail(first.eid); else clearMailPreview();
     }
     $('mailOverlay').classList.add('show');
+    loadMailReceipts(false);
   }
   function closeMailModal(e) {
     if (e && e.target !== e.currentTarget) return;
@@ -6220,6 +6225,7 @@
       let badge = '';
       if (st) badge = `<span class="st ${st.cls}" title="${escMail(st.title || '')}">${escMail(st.text)}</span>`;
       else if (r.sentInfo) badge = `<span class="st sent" title="寄至 ${escMail(r.sentInfo.to)}">已寄 ${escMail(String(r.sentInfo.time).slice(5, 16))}</span>`;
+      badge += mailReceiptBadge(r);
       const sub = !ok ? '<small class="warn">⚠ 未設定 Email（員工資料 ④）</small>'
                 : `<small>${escMail(r.email)}${r.hasSal ? '' : ' · <span style="color:#B45309;">本月無薪資紀錄</span>'}</small>`;
       return `<div class="mail-row" data-eid="${r.eid}">
@@ -6606,16 +6612,17 @@
       if (r.eid) { _mailStatus[r.eid] = { cls: 'busy', text: '測試中…' }; renderMailList(); }
       try {
         let j;
-        try { j = await cloudPost('send_test_mail', { key, to: r.email }); }
+        try { j = await cloudPost('send_test_mail', { key, to: r.email, eid: r.eid, name: r.name }); }
         catch (err) {
           if (/key|密碼/i.test(err.message)) {
             key = getMailKey(true);
             if (!key) throw err;
-            j = await cloudPost('send_test_mail', { key, to: r.email });
+            j = await cloudPost('send_test_mail', { key, to: r.email, eid: r.eid, name: r.name });
           } else throw err;
         }
         okCnt++;
         if (r.eid) _mailStatus[r.eid] = { cls: 'sent', text: '✓ 測試已寄' };
+        if (j && j.receiptId) _mailReceipts[mailReceiptKey(r)] = { sentAt: new Date().toISOString(), ackAt: '', to: r.email };
         if (j && j.remaining != null) remain = j.remaining;
       } catch (err) {
         failCnt++;
@@ -6638,6 +6645,68 @@
     if (okCnt) appendLog({ time: nowTimestamp(), user: currentUser.fullName,
       text: `寄送薪水條系統測試信 ${okCnt} 封（寄件人 ${MAIL_SENDER}）${failCnt ? `，失敗 ${failCnt} 封` : ''}` });
     toast(failCnt ? `測試信寄出 ${okCnt} 封，${failCnt} 封失敗` : `✓ 已寄出 ${okCnt} 封測試信`, failCnt ? 'error' : 'success');
+  }
+
+  // 📬 測試信回條（V20261018V2030）— 員工在測試信按「✅ 確認收到，寄送回條」後，Apps Script（Receipt.gs）會記錄回條
+  function mailReceiptKey(r) { return r.eid || String(r.email || '').toLowerCase(); }
+  function mailFmtTime(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ` +
+           `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  function mailReceiptBadge(r) {
+    const rc = _mailReceipts[r.eid] || _mailReceipts[String(r.email || '').toLowerCase()];
+    if (!rc) return '';
+    if (rc.ackAt) return `<span class="st ack" title="測試信寄出 ${escMail(mailFmtTime(rc.sentAt))}，${escMail(mailFmtTime(rc.ackAt))} 回條">✅ 已回條 ${escMail(mailFmtTime(rc.ackAt))}</span>`;
+    return `<span class="st wait" title="測試信寄出 ${escMail(mailFmtTime(rc.sentAt))}，尚未按回條">⏳ 未回條</span>`;
+  }
+  async function loadMailReceipts(ask) {
+    let key = '';
+    if (ask) key = getMailKey(false);
+    else try { key = localStorage.getItem(MAIL_KEY_STORE) || ''; } catch (_) {}
+    if (!key) { if (ask) toast('未輸入寄信密碼，已取消', 'error'); return; }
+    const btn = $('mailReceiptBtn');
+    if (ask) { btn.disabled = true; btn.textContent = '📬 查詢中…'; }
+    try {
+      let j;
+      try { j = await cloudPost('receipt_list', { key }); }
+      catch (err) {
+        if (ask && /key|密碼/i.test(err.message)) {
+          key = getMailKey(true);
+          if (!key) throw err;
+          j = await cloudPost('receipt_list', { key });
+        } else throw err;
+      }
+      // 每位員工只看最新一封測試信（紀錄新的在前）
+      const map = {};
+      (j.receipts || []).filter(x => x.kind === 'test').forEach(x => {
+        const k = x.eid || String(x.to || '').toLowerCase();
+        if (!map[k]) map[k] = { sentAt: x.sentAt, ackAt: x.ackAt || '', to: x.to };
+      });
+      _mailReceipts = map;
+      renderMailList();
+      if (ask) {
+        const rows = _mailRows.filter(r => _mailReceipts[r.eid]);
+        const acked = rows.filter(r => _mailReceipts[r.eid].ackAt);
+        const self = _mailReceipts[MAIL_SENDER.toLowerCase()];
+        const waiting = rows.filter(r => !_mailReceipts[r.eid].ackAt).map(r => r.name);
+        $('mailProgress').style.display = '';
+        $('mailProgressBar').style.width = rows.length ? Math.round(acked.length / rows.length * 100) + '%' : '0%';
+        $('mailProgressTxt').textContent = `📬 回條：目前名單中 ${rows.length} 人已寄測試信，${acked.length} 人已回條` +
+          (waiting.length ? `；未回條：${waiting.slice(0, 20).join('、')}${waiting.length > 20 ? ` …等 ${waiting.length} 人` : ''}` : '') +
+          (self ? `（寄件人自己：${self.ackAt ? '已回條' : '未回條'}）` : '');
+        toast(`📬 已更新回條：${acked.length} / ${rows.length} 人已回條`, 'success');
+      }
+    } catch (err) {
+      console.error('receipt_list failed', err);
+      if (ask) {
+        if (/unknown action|未知|not supported/i.test(err.message)) toast('Apps Script 尚未加入 Receipt.gs（receipt_list），請依 Receipt.gs 開頭說明更新並重新部署', 'error');
+        else toast('查詢回條失敗：' + err.message, 'error');
+      }
+    } finally {
+      if (ask) { btn.disabled = false; btn.textContent = '📬 查詢回條'; }
+    }
   }
 
   // 薪資條計算（畫面薪資條與 Email 薪資條共用，確保金額一致）
@@ -10689,6 +10758,14 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261018V2030', date: '2026-10-18 20:30',
+      changes: [
+        '🧪 測試信新增「✅ 確認收到，寄送回條」按鈕：員工按下後開啟確認頁，再按「確認收到」即送出回條，並寄一封回條通知給寄件人',
+        '「✉ 寄送薪資條」視窗新增「📬 查詢回條」：員工名單旁顯示「✅ 已回條 時間」或「⏳ 未回條」，並列出尚未回條的人；開啟視窗時也會自動更新',
+        '後端新增 Receipt.gs（send_test_mail 附回條按鈕、receipt 確認頁、receipt_list 查詢）；需依 Receipt.gs 開頭說明加到 Apps Script 並重新部署'
+      ]
+    },
     {
       version: 'V20261018V1945', date: '2026-10-18 19:45',
       changes: [
