@@ -3,14 +3,18 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261020V2100（2026-10-20 21:00）
+- 第三部門「吉的堡」改名為「美語部」（登入卡、選單、總覽、備份、匯出、薪資條標題、公式設定頁、變數關係圖、Code.gs 寄信文字）
+- 舊資料校區為「吉的堡」時，載入時自動改為「美語部」；員工編號仍以 KC 開頭
+
 ## V20261020V2030（2026-10-20 20:30）
-- 新增第三校區「🏰 吉的堡」：首頁登入卡、校區下拉選單、總覽三校比較／圓餅圖、備份、薪資條匯總、Email 批次、刪除資料；員工編號自動以 KC 開頭
-- 員工資料新增「🏰 吉的堡項目」：帶班班數／班別、帶班數薪資、Writing 人數＋津貼、V Writing、資優美語、一對一、B Reading（閱讀班）、輔導補課、奇趣線上教材、行政津貼，列入 (B)
-- 吉的堡帶班人數津貼 = 帶班人數 × KC_HEAD_RATE（預設 80）；Writing 人數津貼 = 人數 × KC_WRITING_RATE（預設 40）
+- 新增第三校區「🏰 美語部」：首頁登入卡、校區下拉選單、總覽三校比較／圓餅圖、備份、薪資條匯總、Email 批次、刪除資料；員工編號自動以 KC 開頭
+- 員工資料新增「🏰 美語部項目」：帶班班數／班別、帶班數薪資、Writing 人數＋津貼、V Writing、資優美語、一對一、B Reading（閱讀班）、輔導補課、奇趣線上教材、行政津貼，列入 (B)
+- 美語部帶班人數津貼 = 帶班人數 × KC_HEAD_RATE（預設 80）；Writing 人數津貼 = 人數 × KC_WRITING_RATE（預設 40）
 - 新職位「兼職美語」：本月輸入「自行授課時數」「協助外師時數」；時薪預設 PT_TEACH_RATE 550（範圍 PT_TEACH_MIN～PT_TEACH_MAX = 550～580）、PT_ASSIST_RATE 400；員工資料可個別設定時薪
-- Formula_Settings.html 新增「🏰 吉的堡校區 · 兼職美語」卡片；Employee_Salary_View.html 員工自查薪資條加入吉的堡項目與兼職時薪
-- 吉的堡校區預設只有 boss 帳號（沿用同安校區 boss 目前的密碼）
-- 後端完整版 Code.gs（V20261020V2030）：測試信／請提供中文姓名信的校區文字加入吉的堡，併入 Receipt.gs 的 send_name_request；使用完整版時 Apps Script 專案不要再放 Receipt.gs；貼上後把 MAIL_KEY、ADMIN_KEY 填回原本的值，部署「新版本」
+- Formula_Settings.html 新增「🏰 美語部 · 兼職美語」卡片；Employee_Salary_View.html 員工自查薪資條加入美語部項目與兼職時薪
+- 美語部預設只有 boss 帳號（沿用同安校區 boss 目前的密碼）
+- 後端完整版 Code.gs（V20261020V2030）：測試信／請提供中文姓名信的校區文字加入美語部，併入 Receipt.gs 的 send_name_request；使用完整版時 Apps Script 專案不要再放 Receipt.gs；貼上後把 MAIL_KEY、ADMIN_KEY 填回原本的值，部署「新版本」
 - 前端修改（index.html、Formula_Settings.html、Employee_Salary_View.html、Employee_Number.html、Variable_Map.html）；後端不檢查校區，資料格式不變
 
 ## V20261020V1200（2026-10-20 12:00）

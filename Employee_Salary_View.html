@@ -411,7 +411,7 @@ function renderPayslip() {
     ['混班/混校津貼 Mixed', emp['混班/混校津貼']],
     ['帶班人數津貼 Class', emp['帶班人數津貼']],
     ...itemizedRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細']),
-    // 吉的堡項目（值為 0 時自動隱藏）
+    // 美語部項目（值為 0 時自動隱藏）
     [`帶班數薪資 Class Teaching${emp['帶班班別'] ? '（' + String(emp['帶班班別']).replace(/</g, '&lt;') + '）' : ''}`, emp['帶班數薪資']],
     [`Writing 人數津貼（${Number(emp['Writing人數']) || 0}人 × ${FC('KC_WRITING_RATE')}）`, emp['Writing人數津貼']],
     ['V Writing', emp['VWriting']],
@@ -471,7 +471,7 @@ function renderPayslip() {
 
   $('payslip').innerHTML = `
     <div class="ps-header">
-      <h2>Kidcastle ${emp['校區']}校區 — 薪資條</h2>
+      <h2>Kidcastle ${emp['校區'] === '美語部' ? '美語部' : emp['校區'] + '校區'} — 薪資條</h2>
       <div class="sub">Salary Payslip · ${month} (民國${month.slice(0,3)}年${month.slice(3,5)}月) · 查詢日期 ${today}</div>
     </div>
     <div class="ps-info">
@@ -534,7 +534,7 @@ document.addEventListener('keydown', e => {
   }
 });
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261020V2030</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261020V2100</div>
 <!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
 <style>
   .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }

@@ -208,7 +208,7 @@ const DEFAULTS = {
 };
 const LABELS = {
   OT_RATE:'加班費率', PAY_RATE:'支薪費率', LEAVE_RATE:'請假扣款費率', LATE_FEE:'遲到扣款',
-  KC_HEAD_RATE:'吉的堡帶班人數津貼', KC_WRITING_RATE:'吉的堡 Writing 人數津貼',
+  KC_HEAD_RATE:'美語部帶班人數津貼', KC_WRITING_RATE:'美語部 Writing 人數津貼',
   PT_TEACH_RATE:'兼職美語自行授課預設時薪', PT_TEACH_MIN:'自行授課時薪下限', PT_TEACH_MAX:'自行授課時薪上限', PT_ASSIST_RATE:'兼職美語協助外師時薪',
   ATT_REQUIRE_NO_LEAVE:'全勤條件：無請假', ATT_REQUIRE_NO_LATE:'全勤條件：無遲到',
   ENG_RATE:'美語津貼費率', MATH_RATE:'數學班津貼費率', MIX_RATE:'混班津貼費率', TUTOR_FIXED:'美語輔導津貼',
@@ -336,10 +336,10 @@ function render() {
   </div>
 
   <div class="card" style="--c:#6D28D9">
-    <h2><span class="no">🏰</span> 吉的堡校區 · 兼職美語 Kidcastle</h2>
-    <div class="desc">只套用在校區為「吉的堡」的員工，以及職位為「兼職美語」的員工。其他固定金額（帶班數薪資、V Writing、資優美語、一對一、B Reading、輔導補課、奇趣線上教材、行政）在員工資料的「🏰 吉的堡項目」逐人輸入。</div>
+    <h2><span class="no">🏰</span> 美語部 · 兼職美語 Kidcastle</h2>
+    <div class="desc">只套用在校區為「美語部」的員工，以及職位為「兼職美語」的員工。其他固定金額（帶班數薪資、V Writing、資優美語、一對一、B Reading、輔導補課、奇趣線上教材、行政）在員工資料的「🏰 美語部項目」逐人輸入。</div>
     <div class="f" style="--c:#6D28D9">
-      <div class="name">帶班人數津貼（吉的堡） <small>② 非固定支付</small></div>
+      <div class="name">帶班人數津貼（美語部） <small>② 非固定支付</small></div>
       <div class="expr">${V('帶班人數')} ${O('×')} ${P('KC_HEAD_RATE','元／人')}</div>
       <div class="note">同安／莊敬仍用上方「4 帶班人數津貼（分段）」的規則。</div>
       <div class="try">試算：<input type="number" data-try="kchead" value="40"> 人 → <span class="out" id="o_kchead"></span></div>
@@ -381,7 +381,7 @@ function render() {
     <div class="desc">項目歸屬與加總方式，對應「📄 薪水條」頁面。</div>
     <div class="struct">
       <div class="sbox a"><h4>(A) 約定薪資結構</h4>底薪 + 全勤獎金 + 年資津貼</div>
-      <div class="sbox b"><h4>(B) 非固定支付</h4>主管 + 美語 + 美語輔導 + 數學班 + 帶班人數 + 混班 + 數學(手動) + 留班 + 考試 + 其他 + <b>吉的堡項目</b> + <b>兼職美語（自行授課＋協助外師）</b> + 補貼公會勞保 + 補貼公會健保 + 補貼健保眷屬 + 補貼退休金 + 加班費 + 支薪金額 + <b>考試津貼</b> + <b>預繳津貼</b> + 獎金</div>
+      <div class="sbox b"><h4>(B) 非固定支付</h4>主管 + 美語 + 美語輔導 + 數學班 + 帶班人數 + 混班 + 數學(手動) + 留班 + 考試 + 其他 + <b>美語部項目</b> + <b>兼職美語（自行授課＋協助外師）</b> + 補貼公會勞保 + 補貼公會健保 + 補貼健保眷屬 + 補貼退休金 + 加班費 + 支薪金額 + <b>考試津貼</b> + <b>預繳津貼</b> + 獎金</div>
       <div class="sbox c"><h4>(C) 應代扣項目</h4>勞保自付 + 健保自付 + 健保眷屬扣款 + 退休金提撥 + 請假扣款 + 遲到扣款 + 扣款</div>
       <div class="sbox d"><h4>(D) 現金給付</h4>已用現金支付的部分</div>
     </div>
@@ -634,7 +634,7 @@ function toast(msg, type) {
 
 load();
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261020V2030</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261020V2100</div>
 <!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
 <style>
   .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }
