@@ -197,6 +197,8 @@ function cloudUrl() { try { return localStorage.getItem('kc_cloud_url_v1') || CL
 const DEFAULTS = {
   OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
   KC_HEAD_RATE: 80, KC_WRITING_RATE: 40,
+  KC_CLASS_BASE_N: 4, KC_CLASS_BASE_PAY: 25000, KC_CLASS_STEP: 5000,
+  GRADE_A: 400, GRADE_B: 500, GRADE_C: 600, GRADE_D: 700,
   PT_TEACH_RATE: 550, PT_TEACH_MIN: 550, PT_TEACH_MAX: 580, PT_ASSIST_RATE: 400,
   ATT_REQUIRE_NO_LEAVE: true, ATT_REQUIRE_NO_LATE: true,
   ENG_RATE: 100, MATH_RATE: 100, MIX_RATE: 500, TUTOR_FIXED: 3000,
@@ -209,6 +211,8 @@ const DEFAULTS = {
 const LABELS = {
   OT_RATE:'加班費率', PAY_RATE:'支薪費率', LEAVE_RATE:'請假扣款費率', LATE_FEE:'遲到扣款',
   KC_HEAD_RATE:'美語部帶班人數津貼', KC_WRITING_RATE:'美語部 Writing 人數津貼',
+  KC_CLASS_BASE_N:'帶班數基本班數', KC_CLASS_BASE_PAY:'帶班數基本薪資', KC_CLASS_STEP:'每多一班加給',
+  GRADE_A:'A 職等時薪', GRADE_B:'B 職等時薪', GRADE_C:'C 職等時薪', GRADE_D:'D 職等時薪',
   PT_TEACH_RATE:'兼職美語自行授課預設時薪', PT_TEACH_MIN:'自行授課時薪下限', PT_TEACH_MAX:'自行授課時薪上限', PT_ASSIST_RATE:'兼職美語協助外師時薪',
   ATT_REQUIRE_NO_LEAVE:'全勤條件：無請假', ATT_REQUIRE_NO_LATE:'全勤條件：無遲到',
   ENG_RATE:'美語津貼費率', MATH_RATE:'數學班津貼費率', MIX_RATE:'混班津貼費率', TUTOR_FIXED:'美語輔導津貼',
@@ -337,7 +341,22 @@ function render() {
 
   <div class="card" style="--c:#6D28D9">
     <h2><span class="no">🏰</span> 美語部 · 兼職美語 Kidcastle</h2>
-    <div class="desc">只套用在校區為「美語部」的員工，以及職位為「兼職美語」的員工。其他固定金額（帶班數薪資、V Writing、資優美語、一對一、B Reading、輔導補課、奇趣線上教材、行政）在員工資料的「🏰 美語部項目」逐人輸入。</div>
+    <div class="desc">只套用在校區為「美語部」的員工，以及職位為「兼職美語」的員工。奇趣線上教材、行政為固定金額，在員工資料的「🏰 美語部項目」逐人輸入。</div>
+    <div class="f" style="--c:#6D28D9">
+      <div class="name">帶班數薪資 <small>② 非固定支付</small></div>
+      <div class="expr">${V('帶班班數')} ${O('≤')} ${P('KC_CLASS_BASE_N','班')} ${O('→')} 以此班數計 ${P('KC_CLASS_BASE_PAY','元')}</div>
+      <div class="expr">超過 ${O('→')} 每多 1 班 ${O('+')} ${P('KC_CLASS_STEP','元')}</div>
+      <div class="note">班數 0 = 不發。在員工資料輸入「帶班班數」時自動算出（也可手動改）。</div>
+      <div class="try">試算：<input type="number" data-try="kccls" value="6"> 班 → <span class="out" id="o_kccls"></span></div>
+    </div>
+    <div class="f" style="--c:#6D28D9">
+      <div class="name">授課項目（職等時薪） <small>② 非固定支付</small></div>
+      <div class="expr">${V('V Writing／資優美語／一對一／B Reading／輔導補課 時數')} ${O('×')} ${V('員工職等時薪')}</div>
+      <div class="expr" style="margin-top:4px;">A ${P('GRADE_A','元／時')} B ${P('GRADE_B','元／時')} C ${P('GRADE_C','元／時')} D ${P('GRADE_D','元／時')}</div>
+      <div class="note">職等在員工資料「授課職等」設定（每人一個）；時數每月在主管輸入頁或員工資料「本月薪資」輸入。</div>
+      <div class="try">試算：<input type="number" step="0.5" data-try="kcgh" value="10"> 小時，職等
+        <select data-try="kcgg"><option>A</option><option selected>B</option><option>C</option><option>D</option></select> → <span class="out" id="o_kcg"></span></div>
+    </div>
     <div class="f" style="--c:#6D28D9">
       <div class="name">帶班人數津貼（美語部） <small>② 非固定支付</small></div>
       <div class="expr">${V('帶班人數')} ${O('×')} ${P('KC_HEAD_RATE','元／人')}</div>
@@ -381,7 +400,7 @@ function render() {
     <div class="desc">項目歸屬與加總方式，對應「📄 薪水條」頁面。</div>
     <div class="struct">
       <div class="sbox a"><h4>(A) 約定薪資結構</h4>底薪 + 全勤獎金 + 年資津貼</div>
-      <div class="sbox b"><h4>(B) 非固定支付</h4>主管 + 美語 + 美語輔導 + 數學班 + 帶班人數 + 混班 + 數學(手動) + 留班 + 考試 + 其他 + <b>美語部項目</b> + <b>兼職美語（自行授課＋協助外師）</b> + 補貼公會勞保 + 補貼公會健保 + 補貼健保眷屬 + 補貼退休金 + 加班費 + 支薪金額 + <b>考試津貼</b> + <b>預繳津貼</b> + 獎金</div>
+      <div class="sbox b"><h4>(B) 非固定支付</h4>主管 + 美語 + 美語輔導 + 數學班 + 帶班人數 + 混班 + 數學(手動) + 留班 + 考試 + 其他 + <b>美語部（帶班數薪資＋授課時數×職等＋奇趣線上教材＋行政＋Writing）</b> + <b>兼職美語（自行授課＋協助外師）</b> + 補貼公會勞保 + 補貼公會健保 + 補貼健保眷屬 + 補貼退休金 + 加班費 + 支薪金額 + <b>考試津貼</b> + <b>預繳津貼</b> + 獎金</div>
       <div class="sbox c"><h4>(C) 應代扣項目</h4>勞保自付 + 健保自付 + 健保眷屬扣款 + 退休金提撥 + 請假扣款 + 遲到扣款 + 扣款</div>
       <div class="sbox d"><h4>(D) 現金給付</h4>已用現金支付的部分</div>
     </div>
@@ -454,6 +473,10 @@ function calc() {
   set('o_al', alDays(t('al')) + ' 天');
   set('o_kchead', 'NT$ ' + fmt(Math.round(t('kchead') * cfg.KC_HEAD_RATE)));
   set('o_kcw', 'NT$ ' + fmt(Math.round(t('kcw') * cfg.KC_WRITING_RATE)));
+  const kcN = t('kccls');
+  set('o_kccls', 'NT$ ' + fmt(kcN <= 0 ? 0 : +cfg.KC_CLASS_BASE_PAY + Math.max(0, Math.ceil(kcN) - cfg.KC_CLASS_BASE_N) * cfg.KC_CLASS_STEP));
+  const kcG = (document.querySelector('[data-try="kcgg"]') || {}).value || 'B';
+  set('o_kcg', 'NT$ ' + fmt(Math.round(t('kcgh') * cfg['GRADE_' + kcG])));
   set('o_ptt', 'NT$ ' + fmt(Math.round(t('ptt') * cfg.PT_TEACH_RATE)));
   set('o_pta', 'NT$ ' + fmt(Math.round(t('pta') * cfg.PT_ASSIST_RATE)));
   // class-size quick table
@@ -634,7 +657,7 @@ function toast(msg, type) {
 
 load();
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261020V2100</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261020V2245</div>
 <!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
 <style>
   .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }

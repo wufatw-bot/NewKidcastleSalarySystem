@@ -3,6 +3,13 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261020V2245（2026-10-20 22:45）
+- 美語部帶班數薪資自動計算：班數 ≤ KC_CLASS_BASE_N(4) 以 4 班計 KC_CLASS_BASE_PAY(25,000)；超過每班 +KC_CLASS_STEP(5,000)；0 班 = 0
+- 美語部授課項目（V Writing、資優美語、一對一、B Reading、輔導補課）改為每月「時數」× 員工「職等」時薪（GRADE_A 400、GRADE_B 500、GRADE_C 600、GRADE_D 700）
+- 新欄位：員工「職等」；每月「VWriting時數、資優美語時數、一對一時數、BReading時數、輔導補課時數」；算出的金額存在當月「…金額」
+- 修正：美語部「行政」欄位 key 由「行政津貼」改為「美語部行政」（舊的資料遷移會把「行政津貼」併入其他津貼並刪除）
+- 已更新 Formula_Settings.html、Employee_Salary_View.html、Variable_Map.html；Code.gs 不需改
+
 ## V20261020V2100（2026-10-20 21:00）
 - 第三部門「吉的堡」改名為「美語部」（登入卡、選單、總覽、備份、匯出、薪資條標題、公式設定頁、變數關係圖、Code.gs 寄信文字）
 - 舊資料校區為「吉的堡」時，載入時自動改為「美語部」；員工編號仍以 KC 開頭
