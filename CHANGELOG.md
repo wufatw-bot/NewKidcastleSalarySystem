@@ -3,6 +3,10 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261020V1200（2026-10-20 12:00）
+- 「📧 批次匯入 Email」：原本的「找不到員工」改為「比對不到員工姓名(中文)」；該列新增「✉ 寄信要求完整中文姓名」按鈕，摘要區也有「一次寄給全部比對不到的人」按鈕。信件請對方回覆完整中文姓名與校區，寄件人 wufatw@gmail.com
+- 後端 Receipt.gs 新增 sendNameRequestMail_：Code.gs 的 doPost 再加一行 `if (action === 'send_name_request') return ok(sendNameRequestMail_(body));` 並部署「新版本」
+
 ## V20261018V2030（2026-10-18 20:30）
 - 🧪 測試信新增「✅ 確認收到，寄送回條」按鈕：員工按下後開啟確認頁，再按「確認收到」即送出回條（兩步驟，避免信箱的連結掃描誤觸），並寄一封「【回條】」通知給寄件人 wufatw@gmail.com
 - 「✉ 寄送薪資條」視窗新增「📬 查詢回條」：員工名單旁顯示「✅ 已回條 時間」或「⏳ 未回條」，並列出尚未回條的人；開啟視窗時也會自動更新

@@ -6498,7 +6498,7 @@
       if (!rec.mail) { p.status = '沒有 Email'; p.cls = 'bad'; return p; }
       if (!_bmIsMail(rec.mail)) { p.status = 'Email 格式錯誤'; p.cls = 'bad'; return p; }
       const hits = bulkMailMatch(rec);
-      if (!hits.length) { p.status = '找不到員工'; p.cls = 'bad'; return p; }
+      if (!hits.length) { p.status = '比對不到員工姓名(中文)'; p.cls = 'bad'; p.askName = true; return p; }
       if (hits.length > 1) { p.status = '多位符合'; p.cls = 'warn'; p.note = hits.map(e => `${e['員工編號']} ${e['員工姓名']}（${e['校區']}）`).join('、'); return p; }
       p.emp = hits[0];
       const old = String(p.emp['Email'] || '').trim();
@@ -6537,16 +6537,77 @@
         <td style="${td}">${who}</td>
         <td style="${td}color:#94a3b8;">${escMail(e ? (e['Email'] || '（未設定）') : '')}</td>
         <td style="${td}font-family:Arial,sans-serif;">${escMail(r.mail)}</td>
-        <td style="${td}font-weight:700;color:${color[p.cls] || '#475569'};">${escMail(p.status)}</td></tr>`;
+        <td style="${td}font-weight:700;color:${color[p.cls] || '#475569'};">${escMail(p.status)}${p.askName ? ` <button class="btn-mini secondary" style="margin-left:6px;padding:3px 8px;font-size:11px;" ${p.asked === 'busy' ? 'disabled' : ''} onclick="sendNameRequest(${i})" title="寄信給 ${escMail(r.mail)}，請對方回覆完整中文姓名">${p.asked === 'sent' ? '✓ 已寄出，再寄一次' : p.asked === 'busy' ? '寄送中…' : p.asked === 'fail' ? '✗ 失敗，重試' : '✉ 寄信要求完整中文姓名'}</button>` : ''}</td></tr>`;
     }).join('');
     const cnt = k => _bulkMailPlan.filter(p => p.cls === k).length;
+    const askN = _bulkMailPlan.filter(p => p.askName && p.asked !== 'sent').length;
     $('bulkMailSummary').style.display = '';
     $('bulkMailSummary').innerHTML = `共 <b>${_bulkMailPlan.length}</b> 筆：` +
       `<span style="color:#047857;">新增 ${cnt('new')}</span> · <span style="color:#0369A1;">更新 ${cnt('upd')}</span> · ` +
       `<span style="color:#94a3b8;">不用改 ${cnt('same')}</span> · <span style="color:#B45309;">多位符合 ${cnt('warn')}</span> · ` +
-      `<span style="color:#C62828;">找不到／格式錯誤 ${cnt('bad')}</span>` +
-      (cnt('warn') + cnt('bad') ? '<br>「找不到」或「多位符合」的請到員工資料 ✏ 編輯手動填寫，或在檔案中補上員工編號後重新解析。' : '');
+      `<span style="color:#C62828;">比對不到姓名／格式錯誤 ${cnt('bad')}</span>` +
+      (cnt('warn') + cnt('bad') ? '<br>「比對不到員工姓名(中文)」或「多位符合」的請到員工資料 ✏ 編輯手動填寫，或在檔案中補上員工編號後重新解析。' : '') +
+      (askN ? `<br><button class="btn-mini secondary" style="margin-top:6px;" onclick="sendNameRequestAll()">✉ 一次寄信給全部比對不到姓名的 ${askN} 人，要求完整中文姓名</button>` : '');
     updateBulkMailApplyBtn();
+  }
+
+  // ✉ 比對不到員工姓名(中文) → 寄信請對方提供完整中文姓名（V20261020V1200；需 Receipt.gs 的 send_name_request）
+  async function _sendNameRequestOne(p, key) {
+    p.asked = 'busy';
+    try {
+      let j;
+      try { j = await cloudPost('send_name_request', { key, to: p.rec.mail, given: p.rec.zh || p.rec.en || '' }); }
+      catch (err) {
+        if (/key|密碼/i.test(err.message)) {
+          key = getMailKey(true);
+          if (!key) throw err;
+          j = await cloudPost('send_name_request', { key, to: p.rec.mail, given: p.rec.zh || p.rec.en || '' });
+        } else throw err;
+      }
+      p.asked = 'sent';
+      return { ok: true, key };
+    } catch (err) {
+      p.asked = 'fail'; p.askErr = err.message;
+      console.error('send_name_request failed', p.rec.mail, err);
+      if (/unknown action|未知|not supported/i.test(err.message)) toast('Apps Script 尚未加入 send_name_request，請依 Receipt.gs 開頭說明更新並重新部署', 'error');
+      return { ok: false, key, err };
+    }
+  }
+  async function sendNameRequest(i) {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可寄信', 'error'); return; }
+    const p = _bulkMailPlan[i];
+    if (!p || !p.askName) return;
+    if (!confirm(`寄信給 ${p.rec.mail}？\n\n內容：請對方回覆「完整中文姓名」。\n（檔案中的姓名：${p.rec.zh || p.rec.en || '（空白）'}）`)) return;
+    const key = getMailKey(false);
+    if (!key) { toast('未輸入寄信密碼，已取消', 'error'); return; }
+    p.asked = 'busy'; renderBulkMailPlan();
+    const r = await _sendNameRequestOne(p, key);
+    renderBulkMailPlan();
+    if (r.ok) {
+      appendLog({ time: nowTimestamp(), user: currentUser.fullName, text: `寄信要求完整中文姓名：${p.rec.mail}（檔案姓名：${p.rec.zh || p.rec.en || '空白'}）` });
+      toast('✓ 已寄出，請對方回信後再補上姓名', 'success');
+    } else toast('寄送失敗：' + r.err.message, 'error');
+  }
+  async function sendNameRequestAll() {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可寄信', 'error'); return; }
+    const list = _bulkMailPlan.filter(p => p.askName && p.asked !== 'sent');
+    if (!list.length) { toast('沒有需要寄送的人', 'error'); return; }
+    const preview = list.slice(0, 15).map(p => `・${p.rec.zh || p.rec.en || '（姓名空白）'} <${p.rec.mail}>`).join('\n') + (list.length > 15 ? `\n…等共 ${list.length} 人` : '');
+    if (!confirm(`寄出 ${list.length} 封信，請對方回覆完整中文姓名？\n\n${preview}`)) return;
+    let key = getMailKey(false);
+    if (!key) { toast('未輸入寄信密碼，已取消', 'error'); return; }
+    let okCnt = 0, failCnt = 0;
+    for (const p of list) {
+      p.asked = 'busy'; renderBulkMailPlan();
+      const r = await _sendNameRequestOne(p, key);
+      key = r.key || key;
+      if (r.ok) okCnt++; else { failCnt++; if (/unknown action|未知|not supported/i.test(r.err.message)) break; }
+      renderBulkMailPlan();
+      await new Promise(res => setTimeout(res, 800));
+    }
+    renderBulkMailPlan();
+    if (okCnt) appendLog({ time: nowTimestamp(), user: currentUser.fullName, text: `批次寄信要求完整中文姓名 ${okCnt} 封${failCnt ? `，失敗 ${failCnt} 封` : ''}` });
+    toast(failCnt ? `已寄出 ${okCnt} 封，${failCnt} 封失敗` : `✓ 已寄出 ${okCnt} 封`, failCnt ? 'error' : 'success');
   }
   function toggleBulkMailAll(on) {
     _bulkMailPlan.forEach(p => { if (p.ok) p.selected = on; });
@@ -10758,6 +10819,13 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261020V1200', date: '2026-10-20 12:00',
+      changes: [
+        '「📧 批次匯入 Email」：原本的「找不到員工」改為「比對不到員工姓名(中文)」，並在該列提供「✉ 寄信要求完整中文姓名」按鈕，也可用摘要區的按鈕一次寄給全部比對不到的人',
+        '後端 Receipt.gs 新增 send_name_request（需依檔案開頭說明加一行並部署「新版本」）'
+      ]
+    },
     {
       version: 'V20261018V2030', date: '2026-10-18 20:30',
       changes: [

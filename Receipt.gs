@@ -1,5 +1,5 @@
 /**
- * Kidcastle 薪資系統 — 📬 測試信「確認收到，寄送回條」按鈕（V20261018V2030）
+ * Kidcastle 薪資系統 — 📬 測試信「確認收到，寄送回條」按鈕（V20261020V1200）
  * ---------------------------------------------------------------
  * 測試信裡多一個「✅ 確認收到，寄送回條」按鈕。員工按下後會開啟確認頁，
  * 再按一次「確認收到」就會記錄回條，並寄一封回條通知給寄件人（MAIL_SENDER）。
@@ -15,6 +15,8 @@
  *   3. Code.gs 的 doPost() 裡，把原本 send_test_mail 那一行改成下面這行，並在下面再加 receipt_list：
  *        if (action === 'send_test_mail') return ok(sendTestMailWithReceipt_(body));
  *        if (action === 'receipt_list')   return ok(listReceipts_(body));
+ *   3b.（V20261020V1200 新增）同一處再加一行，用於「批次匯入 Email」比對不到中文姓名時，寄信請對方提供完整中文姓名：
+ *        if (action === 'send_name_request') return ok(sendNameRequestMail_(body));
  *   4. 部署 → 管理部署作業 → 鉛筆 → 版本選「新版本」→ 部署（網址不變）
  *
  * 回條紀錄存在雲端硬碟「KidcastleSalary_Receipts.json」。
@@ -74,6 +76,32 @@ function sendTestMailWithReceipt_(body) {
 
   GmailApp.sendEmail(to, 'Kidcastle 薪水條系統 — 寄送測試', plain, receiptMailOptions_({ htmlBody: html }));
   return { to: to, receiptId: id, remaining: MailApp.getRemainingDailyQuota() };
+}
+
+// ---------- 寄信請對方提供完整中文姓名 ----------
+// Body: { action:'send_name_request', key, to, given? }   given = 檔案中填寫的姓名（可空白）
+// 用於「批次匯入 Email」比對不到員工姓名(中文)時；收件人不限員工資料（因為就是找不到），但需寄信密碼。
+function sendNameRequestMail_(body) {
+  if (!MAIL_KEY || MAIL_KEY === '請改成你自己的寄信密碼') {
+    throw new Error('Apps Script 尚未設定 MAIL_KEY（寄信密碼）');
+  }
+  if (String(body.key || '') !== MAIL_KEY) throw new Error('寄信密碼錯誤 (key)');
+  const to = String(body.to || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) throw new Error('收件人 Email 格式錯誤：' + to);
+  const given = String(body.given || '').trim().slice(0, 40);
+
+  const hello = given ? receiptEsc_(given) + ' 您好，' : '您好，';
+  const ask = '學校薪水條系統在核對您的 Email 時，比對不到您的中文姓名。請直接回覆這封信，告知您的「完整中文姓名」（與身分證／勞健保相同的全名，不要只寫暱稱或英文名），以及任教的校區（同安／莊敬）。';
+  const html =
+    '<div style="font-family:\'Microsoft JhengHei\',\'PingFang TC\',Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;color:#1a202c;">' +
+      '<p style="font-size:15px;line-height:1.7;margin:0 0 12px;">' + hello + '</p>' +
+      '<p style="font-size:14px;line-height:1.8;margin:0 0 12px;">' + receiptEsc_(ask) + '</p>' +
+      '<p style="font-size:14px;line-height:1.8;margin:0 0 12px;">回覆範例：<br>完整中文姓名：王小明　校區：同安</p>' +
+      '<p style="font-size:12px;color:#94a3b8;margin:18px 0 0;">Kidcastle 薪資系統（此信僅用於確認姓名，不含薪資資料）</p>' +
+    '</div>';
+  const plain = (given ? given + ' 您好，\n\n' : '您好，\n\n') + ask + '\n\n回覆範例：\n完整中文姓名：王小明　校區：同安\n';
+  GmailApp.sendEmail(to, 'Kidcastle 薪水條系統 — 請提供您的完整中文姓名', plain, receiptMailOptions_({ htmlBody: html }));
+  return { to: to, remaining: MailApp.getRemainingDailyQuota() };
 }
 
 // ---------- 員工按下按鈕後開啟的網頁 ----------
