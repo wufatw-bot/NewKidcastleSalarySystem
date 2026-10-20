@@ -80,9 +80,9 @@
 
   .cards {
     flex: 1;
-    max-width: 980px; margin: 0 auto; width: 100%;
+    max-width: 1280px; margin: 0 auto; width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 28px;
     align-content: center;
   }
@@ -121,6 +121,14 @@
   }
   .card.school1 .icon { background: linear-gradient(135deg, #4F8BCC, #2E5984); }
   .card.school2 .icon { background: linear-gradient(135deg, #F4A340, #E07B00); }
+  .card.school3 .icon { background: linear-gradient(135deg, #A78BFA, #6D28D9); }
+  .card.school3 .chip { background: #F3E8FF; color: #6B21A8; }
+  .card.school3 .emp-lookup { background: #FAF5FF; border-left-color: #8B5CF6; color: #6B21A8; }
+  .card.school3 .enter { background: linear-gradient(135deg, #A78BFA, #6D28D9); box-shadow: 0 8px 22px rgba(109,40,217,0.35); }
+  .modal.school3 .head { background: linear-gradient(135deg, #A78BFA, #6D28D9); }
+  .modal.school3 .field input:focus { border-color: #8B5CF6; box-shadow: 0 0 0 3px rgba(139,92,246,0.2); }
+  .modal.school3 .btn { background: linear-gradient(135deg, #A78BFA, #6D28D9); box-shadow: 0 8px 22px rgba(109,40,217,0.35); }
+  @media (max-width: 1100px) and (min-width: 721px) { .cards { grid-template-columns: 1fr 1fr; } }
   .card .title { font-size: 22px; font-weight: 700; color: var(--text); }
   .card .code  { font-size: 13px; color: var(--text-soft); letter-spacing: 1px; margin-top: 2px; }
 
@@ -1090,6 +1098,7 @@
   }
   .mgr-table .campus-chip.ta { background: #DBEAFE; color: #1E40AF; }
   .mgr-table .campus-chip.zj { background: #FFF1E5; color: #B45309; }
+  .mgr-table .campus-chip.kc { background: #F3E8FF; color: #6B21A8; }
 
   .mgr-table input[type=number],
   .mgr-table input[type=text] {
@@ -1860,7 +1869,7 @@
 
   .backup-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 14px;
   }
   .backup-col {
@@ -1872,6 +1881,7 @@
   .backup-col.both { border-top-color: #8B5CF6; }
   .backup-col.ta   { border-top-color: #4472C4; }
   .backup-col.zj   { border-top-color: #F4A340; }
+  .backup-col.kc   { border-top-color: #6D28D9; }
   .backup-col h4 {
     font-size: 13px; font-weight: 700; color: #1a202c;
     margin-bottom: 4px;
@@ -2098,6 +2108,8 @@
   .mail-row .st { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; white-space:nowrap; }
   .mail-row .st.sent { background:#DCFCE7; color:#166534; }
   .mail-row .st.fail { background:#FEE2E2; color:#991B1B; }
+  .mail-row .st.ack  { background:#D1FAE5; color:#065F46; margin-left:4px; }
+  .mail-row .st.wait { background:#FEF3C7; color:#92400E; margin-left:4px; }
   .mail-row .st.busy { background:#FEF3C7; color:#92400E; }
   .mail-row .pv { border:none; background:#f1f5f9; color:#0369A1; border-radius:6px; padding:3px 8px; font-size:11px; cursor:pointer; font-family:inherit; margin-left:4px; }
   .mail-preview { border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; min-height:52vh; }
@@ -2144,7 +2156,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261013V2045</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261018V2030</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2209,6 +2221,25 @@
       </div>
       <div class="enter">進入校區二 <span>→</span></div>
     </div>
+
+    <!-- 吉的堡校區 -->
+    <div class="card school3" data-school="3" tabindex="0" role="button" aria-label="進入吉的堡校區">
+      <div class="top">
+        <div class="icon">🏰</div>
+        <div>
+          <div class="title">吉的堡校區</div>
+          <div class="code">SCHOOL&nbsp;THREE&nbsp;·&nbsp;KIDCASTLE</div>
+        </div>
+      </div>
+      <div class="body">
+        <p>進入吉的堡校區之薪資管理後台，含帶班數、Writing、閱讀班等項目與兼職美語時薪。</p>
+        <p>請使用主管或老闆帳號登入。</p>
+      </div>
+      <div class="emp-lookup">
+        <a href="Employee_Number.html" onclick="event.stopPropagation();">查詢員工編號，點此進入</a>
+      </div>
+      <div class="enter">進入校區三 <span>→</span></div>
+    </div>
   </div>
 
   <!-- 員工薪資查詢 (employee self-service) -->
@@ -2225,7 +2256,7 @@
   </div>
 
   <footer class="foot-note">
-    © 2026 Kidcastle Salary System &nbsp;|&nbsp; 二校共同管理平台<br>
+    © 2026 Kidcastle Salary System &nbsp;|&nbsp; 三校共同管理平台<br>
     <span class="v">v1.0 · Homepage · 2026-05-10</span>
   </footer>
 </div>
@@ -2275,6 +2306,7 @@
           <option value="all">全部 / All</option>
           <option value="同安">同安校區</option>
           <option value="莊敬">莊敬校區</option>
+          <option value="吉的堡">吉的堡校區</option>
         </select>
       </div>
       <div class="ctrl" style="margin-left:auto;">
@@ -2349,7 +2381,7 @@
         <h3>📋 校區比較 <span class="badge">本月</span></h3>
         <table class="compare-table" id="campusCompare">
           <thead>
-            <tr><th>項目</th><th>同安</th><th>莊敬</th><th>合計</th></tr>
+            <tr><th>項目</th><th>同安</th><th>莊敬</th><th>吉的堡</th><th>合計</th></tr>
           </thead>
           <tbody></tbody>
           <tfoot></tfoot>
@@ -2391,8 +2423,8 @@
       <div class="backup-grid">
         <!-- 同安 + 莊敬 -->
         <div class="backup-col both">
-          <h4>🏫🎓 同安+莊敬合併</h4>
-          <div class="meta">兩校全部資料於同一份檔案</div>
+          <h4>🏫🎓🏰 全部校區合併</h4>
+          <div class="meta">三校全部資料於同一份檔案</div>
           <div class="btn-stack">
             <button class="backup-btn local" onclick="doBackup('both','local')">
               <span class="ico">💾</span>
@@ -2427,6 +2459,19 @@
             </button>
           </div>
         </div>
+
+        <!-- 吉的堡校 -->
+        <div class="backup-col kc">
+          <h4>🏰 吉的堡校</h4>
+          <div class="meta" id="bkKcCount">— 名員工</div>
+          <div class="btn-stack">
+            <button class="backup-btn local" onclick="doBackup('吉的堡','local')">
+              <span class="ico">💾</span>
+              <span class="lbl">備份到本地</span>
+              <span class="arrow">↓</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- 指定老師備份 -->
@@ -2453,6 +2498,7 @@
           <button class="btn-mini secondary" onclick="bkMultiSelect('all')" style="background:#E0E7FF;color:#3730A3;">✓ 全選</button>
           <button class="btn-mini secondary" onclick="bkMultiSelect('同安')" style="background:#DBEAFE;color:#1E40AF;">🏫 同安全選</button>
           <button class="btn-mini secondary" onclick="bkMultiSelect('莊敬')" style="background:#FFF1E5;color:#B45309;">🎓 莊敬全選</button>
+          <button class="btn-mini secondary" onclick="bkMultiSelect('吉的堡')" style="background:#F3E8FF;color:#6B21A8;">🏰 吉的堡全選</button>
           <button class="btn-mini secondary" onclick="bkMultiSelect('active')" style="background:#DCFCE7;color:#166534;">✓ 在職全選</button>
           <button class="btn-mini secondary" onclick="bkMultiSelect('none')" style="background:#FEE2E2;color:#991B1B;">✕ 清除</button>
           <span style="margin-left:auto;align-self:center;font-size:12px;color:#6D28D9;font-weight:700;">
@@ -2584,9 +2630,10 @@
         <div class="field" id="delRowCampus">
           <label>校區</label>
           <select id="delCampus">
-            <option value="both">同安 + 莊敬</option>
+            <option value="both">全部校區</option>
             <option value="同安">只限同安校區</option>
             <option value="莊敬">只限莊敬校區</option>
+            <option value="吉的堡">只限吉的堡校區</option>
           </select>
         </div>
         <div id="delPreview" style="background:#FEF2F2;border:1px solid #FECACA;padding:10px 12px;border-radius:8px;font-size:13px;color:#7F1D1D;line-height:1.7;max-height:180px;overflow:auto;"></div>
@@ -2648,9 +2695,10 @@
         <div class="field">
           <label>校區範圍</label>
           <select id="clearBonusScopeCampus">
-            <option value="both">同安 + 莊敬</option>
+            <option value="both">全部校區</option>
             <option value="同安">只清同安校區</option>
             <option value="莊敬">只清莊敬校區</option>
+            <option value="吉的堡">只清吉的堡校區</option>
           </select>
         </div>
         <div id="clearBonusPreview" style="background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-top:8px;">
@@ -2785,6 +2833,105 @@
     </div>
   </div>
 
+  <!-- 📥 批次新增員工（Excel / CSV / 文字） -->
+  <div class="small-modal-overlay" id="bulkEmpOverlay" onclick="closeBulkEmp(event)">
+    <div class="small-modal" style="max-width:1080px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#10B981,#047857);">
+        <div class="icon-l">📥</div>
+        <h2>批次新增員工 — Excel / CSV / 文字</h2>
+        <button class="close" onclick="closeBulkEmp()">✕</button>
+      </div>
+      <div class="body" style="max-height:72vh;overflow:auto;">
+        <p style="margin:0 0 12px;color:#065F46;font-size:13px;background:#ECFDF5;padding:8px 12px;border-radius:6px;border-left:3px solid #10B981;line-height:1.7;">
+          ① 上傳 Excel（.xlsx / .xls）或 CSV / 文字檔，或直接把 Excel 表格複製貼到下方文字框。<br>
+          ② 第一列建議是標題（如：<code>員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪</code>），欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同，可直接沿用匯出檔。<br>
+          ③ 沒有標題列時，依序視為：<b>員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪、Email</b>（用 Tab、逗號或「，」分隔，一行一位）。<br>
+          ④ 員工編號留空會自動產生（同安 TA…、莊敬 ZJ…、吉的堡 KC…）；登入帳號／密碼預設為身份證字號（未填則用員工編號）。沒填的欄位用下方預設值與新員工預設薪資。
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini secondary" onclick="downloadBulkEmpTemplate('xlsx')">⬇ 下載 Excel 範本</button>
+          <button class="btn-mini secondary" onclick="downloadBulkEmpTemplate('csv')">⬇ 下載 CSV 範本</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+          <div class="field"><label>預設校區（檔案沒填時）</label>
+            <select id="bulkEmpCampus"><option value="同安">同安</option><option value="莊敬">莊敬</option><option value="吉的堡">吉的堡</option></select></div>
+          <div class="field"><label>預設職位（檔案沒填時）</label>
+            <select id="bulkEmpPos"><option>老師</option><option>主任</option><option>組長</option><option>行政</option><option>兼職美語</option><option>其他</option></select></div>
+          <div class="field"><label>預設到職日（檔案沒填時）</label>
+            <input type="date" id="bulkEmpHire"></div>
+        </div>
+        <div class="field">
+          <label>上傳檔案（.xlsx / .xls / .csv / .txt）</label>
+          <input type="file" id="bulkEmpFile" accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,.txt" onchange="if (this.files.length) document.getElementById('bulkEmpText').value = ''">
+        </div>
+        <div class="field">
+          <label>或直接貼上文字（可從 Excel 複製貼上）</label>
+          <textarea id="bulkEmpText" rows="6" oninput="if (this.value.trim()) document.getElementById('bulkEmpFile').value = ''" placeholder="員工姓名,英文姓名,校區,職位,到職日,身份證字號,底薪&#10;王小明,Tom,同安,老師,2026-11-01,A123456789,29500&#10;李小華,,莊敬,行政,2026/11/01,B223456789," style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini primary" onclick="parseBulkEmp()" style="background:linear-gradient(135deg,#10B981,#047857);">🔍 解析並預覽</button>
+          <button class="btn-mini secondary" onclick="resetBulkEmp()">清除</button>
+        </div>
+        <div id="bulkEmpSummary" style="display:none;background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-bottom:10px;line-height:1.7;"></div>
+        <div style="overflow:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;">
+            <thead id="bulkEmpThead"></thead>
+            <tbody id="bulkEmpTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeBulkEmp()">取消</button>
+        <button class="btn-mini primary" id="bulkEmpApplyBtn" onclick="applyBulkEmp()" disabled style="opacity:.5;background:linear-gradient(135deg,#10B981,#047857);">✅ 確認新增</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📧 批次匯入 Email（Excel / CSV / 文字）V20261018V1945 -->
+  <div class="small-modal-overlay" id="bulkMailOverlay" onclick="closeBulkMail(event)">
+    <div class="small-modal" style="max-width:1080px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">
+        <div class="icon-l">📧</div>
+        <h2>批次匯入 Email — Excel / CSV / 文字</h2>
+        <button class="close" onclick="closeBulkMail()">✕</button>
+      </div>
+      <div class="body" style="max-height:72vh;overflow:auto;">
+        <p style="margin:0 0 12px;color:#0C4A6E;font-size:13px;background:#F0F9FF;padding:8px 12px;border-radius:6px;border-left:3px solid #0EA5E9;line-height:1.7;">
+          ① 上傳 Excel（.xlsx / .xls）或 CSV，或直接從 Excel 複製貼到下方。Google 表單回覆下載成 .xlsx / .csv 也可以直接用。<br>
+          ② 需要有 <b>Email</b> 欄，以及 <b>員工編號</b> 或 <b>姓名</b>（中文或英文皆可）其中一欄；有「校區／分校」欄會用來區分同名員工。<br>
+          ③ 姓名可以中英混寫，例如「Summer游晏慈」會對到「游晏慈」。同一人出現多次以最後一筆為準。<br>
+          ④ 沒有標題列時，每行視為：<b>姓名、Email</b>。按「⬇ 下載員工 Email 範本」可取得目前所有員工的名單，直接填 Email 再上傳最方便。
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini secondary" onclick="downloadBulkMailTemplate()">⬇ 下載員工 Email 範本（.xlsx）</button>
+        </div>
+        <div class="field">
+          <label>上傳檔案（.xlsx / .xls / .csv / .txt）</label>
+          <input type="file" id="bulkMailFile" accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,.txt" onchange="if (this.files.length) document.getElementById('bulkMailText').value = ''">
+        </div>
+        <div class="field">
+          <label>或直接貼上文字（可從 Excel 複製貼上）</label>
+          <textarea id="bulkMailText" rows="5" oninput="if (this.value.trim()) document.getElementById('bulkMailFile').value = ''" placeholder="員工姓名,校區,Email&#10;王小明,同安,tom@example.com&#10;Summer游晏慈,莊敬,summer@example.com" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini primary" onclick="parseBulkMail()" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">🔍 解析並預覽</button>
+          <button class="btn-mini secondary" onclick="resetBulkMail()">清除</button>
+        </div>
+        <div id="bulkMailSummary" style="display:none;background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-bottom:10px;line-height:1.7;"></div>
+        <div style="overflow:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap;">
+            <thead id="bulkMailThead"></thead>
+            <tbody id="bulkMailTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeBulkMail()">取消</button>
+        <button class="btn-mini primary" id="bulkMailApplyBtn" onclick="applyBulkMail()" disabled style="opacity:.5;background:linear-gradient(135deg,#0EA5E9,#0369A1);">✅ 確認匯入</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 主管輸入 -->
   <div class="tab-pane" id="tab-manager">
     <div class="mgr-controls no-print">
@@ -2794,6 +2941,7 @@
           <option value="all">全部 / All</option>
           <option value="同安">同安校區</option>
           <option value="莊敬">莊敬校區</option>
+          <option value="吉的堡">吉的堡校區</option>
         </select>
       </div>
       <div class="ctrl">
@@ -2851,6 +2999,7 @@
           <option value="all">全部 / All</option>
           <option value="同安">同安校區</option>
           <option value="莊敬">莊敬校區</option>
+          <option value="吉的堡">吉的堡校區</option>
         </select>
       </div>
       <div class="ctrl">
@@ -2869,6 +3018,8 @@
         <button class="btn-mini secondary" onclick="reloadFromStorage()" title="從本機儲存同步最新資料（如有其他人/視窗修改）">🔄 重新整理</button>
         <button class="btn-mini secondary" onclick="copyPrevMonthForOwner()" title="把上個月的工時/獎金等複製到最新月份">📋 複製上個月的資料</button>
         <button class="btn-mini secondary" onclick="addEmployee()">➕ 新增員工</button>
+        <button class="btn-mini secondary" onclick="openBulkEmp()" title="從 Excel / CSV / 貼上文字 一次新增多位員工">📥 批次新增員工</button>
+        <button class="btn-mini secondary" onclick="openBulkMail()" title="從 Excel / CSV / Google 表單回覆 一次填入多位員工的 Email">📧 批次匯入 Email</button>
         <button class="btn-mini primary" onclick="openMgrPerms()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);" title="設定主管可以看到 / 編輯哪些欄位">🛡 主管權限設定</button>
         <button class="btn-mini secondary" onclick="openPayslipSettings()" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;" title="設定薪水條上哪些項目即使為 0 也要顯示">⚙ 薪水條顯示項目</button>
         <button class="btn-mini primary" onclick="exportEmployees()">⬇ 匯出 Employee Data.xlsx</button>
@@ -2913,6 +3064,7 @@
           <option value="all">全部 / All</option>
           <option value="同安">同安校區</option>
           <option value="莊敬">莊敬校區</option>
+          <option value="吉的堡">吉的堡校區</option>
         </select>
       </div>
       <div class="ctrl">
@@ -2959,6 +3111,7 @@
         <select id="acctSchool">
           <option value="1">同安校區 School 1</option>
           <option value="2">莊敬校區 School 2</option>
+          <option value="3">吉的堡校區 School 3</option>
         </select>
       </div>
       <div class="ctrl grow">
@@ -3310,9 +3463,13 @@
           style="padding:14px;text-align:left;background:linear-gradient(135deg,#F4A340,#E07B00);">
           🎓 <b>莊敬校</b> · 僅莊敬校區員工
         </button>
+        <button class="btn-mini primary" onclick="exportPayslipSummary('吉的堡')"
+          style="padding:14px;text-align:left;background:linear-gradient(135deg,#A78BFA,#6D28D9);">
+          🏰 <b>吉的堡校</b> · 僅吉的堡校區員工
+        </button>
         <button class="btn-mini primary" onclick="exportPayslipSummary('both')"
           style="padding:14px;text-align:left;background:linear-gradient(135deg,#8B5CF6,#6D28D9);">
-          🏫🎓 <b>同安+莊敬校</b> · 兩校全部員工合併
+          🏫🎓🏰 <b>全部校區</b> · 三校全部員工合併
          <!-- 離職證明書 modal -->
 <div class="small-modal-overlay" id="resignCertOverlay" onclick="closeResignCert(event)">
   <div class="small-modal" style="max-width:480px;" onclick="event.stopPropagation()">
@@ -3380,7 +3537,7 @@
       <div class="mail-ctrls">
         <label>月份 <select id="mailMonth"></select></label>
         <label>校區 <select id="mailCampus">
-          <option value="all">全部</option><option value="同安">同安</option><option value="莊敬">莊敬</option>
+          <option value="all">全部</option><option value="同安">同安</option><option value="莊敬">莊敬</option><option value="吉的堡">吉的堡</option>
         </select></label>
         <button type="button" class="btn-mini secondary" onclick="mailSelect('unsent')">✓ 選未寄出</button>
         <button type="button" class="btn-mini secondary" onclick="mailSelect('all')">✓ 全選</button>
@@ -3401,6 +3558,8 @@
     </div>
     <div class="foot" style="flex-wrap:wrap;align-items:center;">
       <span style="flex:1;font-size:12px;color:#64748b;" id="mailSummary">—</span>
+      <button class="btn-mini secondary" onclick="sendTestMails()" id="mailTestBtn" title="只寄一句測試文字（附「確認收到，寄送回條」按鈕），不含薪資內容">🧪 寄送測試信</button>
+      <button class="btn-mini secondary" onclick="loadMailReceipts(true)" id="mailReceiptBtn" title="查看哪些員工已在測試信按下「確認收到，寄送回條」">📬 查詢回條</button>
       <button class="btn-mini secondary" onclick="closeMailModal()" id="mailCancelBtn">關閉</button>
       <button class="btn-mini primary" onclick="sendSelectedPayslips()" id="mailSendBtn" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">✉ 確認寄出</button>
     </div>
@@ -3490,6 +3649,12 @@
         { username: "manager2", password: "mgr5678",       role: "manager", fullName: "李主任 Manager Lee",   email: "lee@kidcastle.com" },
         { username: "teacher1", password: "teach1234",     role: "manager", fullName: "吳老師 Teacher Wu",    email: "wu@kidcastle.com" }
       ]
+    },
+    "3": { // 吉的堡校區 — 預設只有老闆帳號，主管帳號請登入後在帳號管理新增
+      name: "吉的堡校區", code: "School 3", icon: "🏰", cls: "school3",
+      users: [
+        { username: "boss",     password: "kidcastle2026", role: "owner",   fullName: "老闆 / Owner",         email: "boss@kidcastle.com" }
+      ]
     }
   };
   const CREDS_KEY = 'kc_credentials_v1';
@@ -3499,7 +3664,15 @@
       const s = localStorage.getItem(CREDS_KEY);
       if (s) {
         const parsed = JSON.parse(s);
-        if (parsed && parsed["1"] && parsed["2"]) return parsed;
+        if (parsed && parsed["1"] && parsed["2"]) {
+          // 舊版只有兩校：補上吉的堡校區，老闆帳號沿用同安校區目前的密碼
+          if (!parsed["3"]) {
+            parsed["3"] = JSON.parse(JSON.stringify(DEFAULT_CREDS["3"]));
+            const boss = (parsed["1"].users || []).find(x => x.username === 'boss');
+            if (boss) parsed["3"].users = [JSON.parse(JSON.stringify(boss))];
+          }
+          return parsed;
+        }
       }
     } catch(e) { console.warn('loadCreds failed', e); }
     return JSON.parse(JSON.stringify(DEFAULT_CREDS));
@@ -3858,6 +4031,8 @@
   // ==========================================================================
   const FORMULA_DEFAULTS = {
     OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
+    KC_HEAD_RATE: 80, KC_WRITING_RATE: 40,                          // 吉的堡：帶班人數津貼／Writing 人數津貼（每人）
+    PT_TEACH_RATE: 550, PT_TEACH_MIN: 550, PT_TEACH_MAX: 580, PT_ASSIST_RATE: 400,   // 兼職美語時薪
     ATT_REQUIRE_NO_LEAVE: true, ATT_REQUIRE_NO_LATE: true,
     ENG_RATE: 100, MATH_RATE: 100, MIX_RATE: 500, TUTOR_FIXED: 3000,
     CS_BASE: 15, CS_TIER: 20, CS_N1: 500, CS_N2: 1000, CS_S1: 1000, CS_S2: 1500, CS_SUMMER: '7,8',
@@ -3876,6 +4051,74 @@
   function isSummerMonth(monthStr) {
     const mNum = parseInt(String(monthStr || '').slice(-2), 10);
     return String(FC('CS_SUMMER')).split(/[,，\s]+/).map(Number).includes(mNum);
+  }
+
+  // ==========================================================================
+  // 🏰 吉的堡校區（第三校區）與兼職美語
+  // ==========================================================================
+  const KC_CAMPUS = '吉的堡';
+  const CAMPUS_LIST = ['同安', '莊敬', '吉的堡'];
+  const CAMPUS_PREFIX = { '同安': 'TA', '莊敬': 'ZJ', '吉的堡': 'KC' };
+  const CAMPUS_STYLE = {   // 校區標籤顏色（背景／文字）
+    '同安': { bg: '#DBEAFE', fg: '#1E40AF', cls: 'ta', chart: '#4472C4', icon: '🏫' },
+    '莊敬': { bg: '#FFF1E5', fg: '#B45309', cls: 'zj', chart: '#F4A340', icon: '🎓' },
+    '吉的堡': { bg: '#F3E8FF', fg: '#6B21A8', cls: 'kc', chart: '#8B5CF6', icon: '🏰' }
+  };
+  const campusStyle = c => CAMPUS_STYLE[c] || CAMPUS_STYLE['同安'];
+  const campusPrefix = c => CAMPUS_PREFIX[c] || 'TA';
+  // 吉的堡專屬固定金額（員工資料，列入 (B) 非固定支付）
+  const KC_MONEY_ITEMS = [
+    { key: '帶班數薪資',   label: '帶班數薪資',         en: 'Class Teaching' },
+    { key: 'VWriting',     label: 'V Writing',          en: 'V Writing' },
+    { key: '資優美語',     label: '資優美語',           en: 'Gifted English' },
+    { key: '一對一',       label: '一對一',             en: 'One-on-One' },
+    { key: 'BReading',     label: 'B Reading（閱讀班）', en: 'B Reading' },
+    { key: '輔導補課',     label: '輔導補課',           en: 'Make-up Tutoring' },
+    { key: '奇趣線上教材', label: '奇趣線上教材',       en: 'Online Materials' },
+    { key: '行政津貼',     label: '行政津貼',           en: 'Admin' }
+  ];
+  const KC_MONEY_KEYS = KC_MONEY_ITEMS.map(i => i.key);
+  // 人數 × 費率 類（費率在公式設定頁可改）
+  const KC_LINEAR_ITEMS = [
+    { countKey: 'Writing人數', moneyKey: 'Writing人數津貼', rateKey: 'KC_WRITING_RATE', label: 'Writing 人數津貼', en: 'Writing Headcount' }
+  ];
+  // 吉的堡金額項目（加總進 B）與 Excel 匯出欄位
+  const KC_ALLOW_KEYS = [...KC_MONEY_KEYS, ...KC_LINEAR_ITEMS.map(i => i.moneyKey)];
+  const KC_EMP_EXPORT_KEYS = ['帶班班數', '帶班班別', '帶班數薪資',
+    ...KC_LINEAR_ITEMS.flatMap(i => [i.countKey, i.moneyKey]),
+    ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數薪資').map(i => i.key), '自行授課時薪', '協助外師時薪'];
+  const kcExportVal = (e, k) => k === '帶班班別' ? (e[k] || '') : (Number(e[k]) || 0);
+  // 帶班人數津貼：吉的堡 = 帶班人數 × KC_HEAD_RATE（每人）；同安／莊敬沿用分段公式
+  function classSizeAllowanceFor(emp, headcount, monthStr) {
+    if (emp && emp['校區'] === KC_CAMPUS) return Math.round((Number(headcount) || 0) * Number(FC('KC_HEAD_RATE')));
+    return computeClassSizeAllowance(headcount, monthStr);
+  }
+  // 兼職美語時薪：員工資料有填就用員工的（例如 550～580），沒填用公式設定頁的預設值
+  function partTimeRates(emp) {
+    const own = k => Number(emp && emp[k]) || 0;
+    return {
+      teach: own('自行授課時薪') || Number(FC('PT_TEACH_RATE')),
+      assist: own('協助外師時薪') || Number(FC('PT_ASSIST_RATE'))
+    };
+  }
+  function partTimePay(emp, sal) {
+    const r = partTimeRates(emp);
+    const teachH = Number(sal && sal['自行授課時數']) || 0, assistH = Number(sal && sal['協助外師時數']) || 0;
+    return { teachH, assistH, teachRate: r.teach, assistRate: r.assist,
+             teach: Math.round(teachH * r.teach), assist: Math.round(assistH * r.assist) };
+  }
+  // 薪資條用：吉的堡 + 兼職美語的 (B) 列（值為 0 的列在薪資條會自動隱藏）
+  function kcPayslipRows(emp, sal, bilingual) {
+    const L = (zh, en) => bilingual ? `${zh} ${en}` : zh;
+    const pt = partTimePay(emp, sal);
+    const cls = [emp['帶班班數'] ? emp['帶班班數'] + '個班' : '', emp['帶班班別'] || ''].filter(Boolean).join(' ');
+    return [
+      [L('帶班數薪資' + (cls ? `（${cls}）` : ''), 'Class Teaching'), emp['帶班數薪資']],
+      ...KC_LINEAR_ITEMS.map(i => [L(`${i.label}（${Number(emp[i.countKey]) || 0}人 × ${FC(i.rateKey)}）`, i.en), emp[i.moneyKey]]),
+      ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數薪資').map(i => [L(i.label, i.en), emp[i.key]]),
+      [L(`自行授課（${pt.teachH}時 × ${pt.teachRate}）`, 'Teaching'), sal['員工編號'] ? pt.teach : 0],
+      [L(`協助外師（${pt.assistH}時 × ${pt.assistRate}）`, 'Assisting'), sal['員工編號'] ? pt.assist : 0]
+    ];
   }
 
   const DEFAULT_DATA = {"employees":[{"員工編號":"TA001","員工姓名":"陳明霞","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2010-08-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":8500,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":1998,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA002","員工姓名":"廖月櫻","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2012-03-15","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":6000,"分校人數超額獎金":7200,"美語津貼":5500,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":4000,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":0,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA003","員工姓名":"鄭錦雪","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2011-09-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":8500,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA004","員工姓名":"翁麗美","英文姓名":null,"校區":"同安","職位":"主任","到職日":"2008-02-01","在職狀態":"在職","底薪":32500,"全勤獎金":500,"年資津貼":4000,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA005","員工姓名":"郭子綺","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2018-07-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":5000,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA006","員工姓名":"林錦雲","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2017-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":5000,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA007","員工姓名":"陳渝潔","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2019-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":1500,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA008","員工姓名":"吳鈺蘋","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2020-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA009","員工姓名":"陳允謙","英文姓名":"Charles","校區":"同安","職位":"老師","到職日":"2024-11-11","在職狀態":"在職","底薪":29500,"全勤獎金":0,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":5000,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA010","員工姓名":"陳敬翔","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2024-11-11","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA011","員工姓名":"蕭宜帆","英文姓名":null,"校區":"同安","職位":"主任","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2001,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA012","員工姓名":"廖繹雯","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2001,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA013","員工姓名":"謝明學","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2002,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA014","員工姓名":"蔡明孝","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2023-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2002,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA015","員工姓名":"吳芳芝","英文姓名":null,"校區":"同安","職位":"行政","到職日":"2022-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2003,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA016","員工姓名":"呂學龍","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2021-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2003,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA017","員工姓名":"楊蕙瑀","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2025-02-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ001","員工姓名":"李如蘋","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2009-03-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":1600,"美語津貼":1100,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ002","員工姓名":"蕭羽儂","英文姓名":"Jessica","校區":"莊敬","職位":"主任","到職日":"2014-01-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":0,"主管津貼":10000,"分校人數超額獎金":0,"美語津貼":5000,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":3000,"勞保自付":738,"健保自付":2044,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ003","員工姓名":"黃玉華","英文姓名":null,"校區":"莊敬","職位":"主任","到職日":"2014-01-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":4000,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":9758,"帶班人數津貼":10240,"其他津貼":3500,"勞保自付":1349,"健保自付":0,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ004","員工姓名":"洪子彤","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2018-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ005","員工姓名":"吳湘晴","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2020-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ006","員工姓名":"胡瑄曼","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2021-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ007","員工姓名":"蕭文華","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2022-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ008","員工姓名":"游晏慈","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ009","員工姓名":"何宥蓉","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ010","員工姓名":"何革融","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null}],"salary":[{"月份":"11504","員工編號":"TA001","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA002","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA003","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA004","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA005","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA006","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA007","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA008","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA009","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA010","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA011","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA012","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA013","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA014","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA015","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA016","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA017","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ001","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ002","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ003","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ004","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ005","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ006","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ007","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ008","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ009","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ010","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null}]};
@@ -4488,9 +4731,10 @@
   //   項目：把某個項目歸零（本月項目可限月份；可限員工、校區）
   //   執行前自動備份整份資料到雲端硬碟 Kidcastle_Backups；備份失敗就不刪除
   // ==========================================================================
-  const DEL_MONTH_ITEMS = ['加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','考試津貼','預繳津貼','安親人數','混班數','全勤','備註'];
+  const DEL_MONTH_ITEMS = ['加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','考試津貼','預繳津貼','安親人數','混班數','自行授課時數','協助外師時數','全勤','備註'];
   const DEL_EMP_ITEMS = ['年資津貼','主管津貼','美語津貼','美語輔導津貼','數學班津貼','帶班人數津貼','混班津貼','數學津貼',
-                         '留班獎金','考試獎金','其他津貼','補貼公會投保勞保','補貼公會健保自付','補貼健保眷屬','補貼退休金','現金給付'];
+                         '留班獎金','考試獎金','其他津貼','補貼公會投保勞保','補貼公會健保自付','補貼健保眷屬','補貼退休金','現金給付',
+                         ...KC_EMP_EXPORT_KEYS.filter(k => k !== '帶班班別')];
   function openDelDataPwd() {
     if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可使用此功能', 'error'); return; }
     $('delDataPwdInput').value = '';
@@ -5072,6 +5316,428 @@
     }
   }
 
+  // =========================================================================
+  // 📥 批次新增員工 — 從 Excel / CSV / 貼上文字 一次新增多位員工
+  // =========================================================================
+  // 沒有標題列時，依此順序對應欄位
+  const BULK_EMP_DEFAULT_COLS = ['員工姓名','英文姓名','校區','職位','到職日','身份證字號','底薪','Email'];
+  // 範本欄位
+  const BULK_EMP_TEMPLATE_COLS = ['員工編號','員工姓名','英文姓名','校區','職位','到職日','身份證字號','Email',
+                                  '底薪','全勤獎金','年資津貼','主管津貼','投保級距','勞保自付','健保自付','退休金提撥',
+                                  '銀行名稱','銀行帳號','備註'];
+  const BULK_EMP_TEXT_FIELDS = ['員工編號','員工姓名','英文姓名','校區','職位','到職日','離職日','在職狀態','身份證字號',
+                                '投保級距','請假類別','登入帳號','登入密碼','Email','銀行名稱','銀行帳號','備註'];
+  // 常見別名（比對時忽略大小寫與空白）
+  const BULK_EMP_ALIASES = {
+    '姓名':'員工姓名','中文姓名':'員工姓名','中文名':'員工姓名','name':'員工姓名','chinesename':'員工姓名',
+    '英文名':'英文姓名','英文名字':'英文姓名','englishname':'英文姓名',
+    '編號':'員工編號','員工id':'員工編號','employeeid':'員工編號','empid':'員工編號',
+    '校':'校區','學校':'校區','分校':'校區','campus':'校區','school':'校區',
+    '職稱':'職位','position':'職位','title':'職位',
+    '到職':'到職日','到職日期':'到職日','hiredate':'到職日','startdate':'到職日',
+    '離職':'離職日','離職日期':'離職日',
+    '身分證字號':'身份證字號','身分證':'身份證字號','身份證':'身份證字號','idno':'身份證字號','idnumber':'身份證字號',
+    '狀態':'在職狀態','status':'在職狀態',
+    'email':'Email','e-mail':'Email','mail':'Email','信箱':'Email','電子郵件':'Email','電子信箱':'Email',
+    '帳號':'登入帳號','密碼':'登入密碼',
+    'basesalary':'底薪','salary':'底薪','本薪':'底薪',
+    '混班人數':'混班校數',
+    '銀行':'銀行名稱','帳戶':'銀行帳號','銀行帳戶':'銀行帳號'
+  };
+  let _bulkEmpPlan = [];
+  let _bulkEmpExtraCols = [];
+
+  function bulkEmpKnownFields() {
+    const set = new Set(BULK_EMP_TEXT_FIELDS);
+    OWN_SECTIONS.forEach(sec => sec.fields.forEach(f => {
+      if (f.type === 'premium_pair') { set.add(f.deductKey); set.add(f.subsidyKey); }
+      else if (f.type !== 'leave_info') set.add(f.key);
+    }));
+    ['分校人數超額獎金','分校人數超額人數','美語輔導人數','數學人數','留班比率','已休日數','現金給付']
+      .forEach(k => set.add(k));
+    return set;
+  }
+  function bulkEmpMapHeader(h, known) {
+    const raw = String(h == null ? '' : h).trim();
+    if (!raw) return null;
+    const noSp = raw.replace(/\s+/g, '');
+    const cands = [raw, noSp, noSp.replace(/[（(].*$/, ''), raw.split(/\s+/)[0]];
+    for (const c of cands) {
+      if (known.has(c)) return c;
+      const a = BULK_EMP_ALIASES[c.toLowerCase()];
+      if (a) return a;
+    }
+    return null;
+  }
+  function bulkEmpEsc(v) {
+    return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function bulkEmpYmd(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  // 日期：Excel 日期 / 序號、2026-11-01、2026/11/1、115/11/01（民國）、20261101、1151101
+  function bulkEmpDate(v) {
+    if (v == null || v === '') return { val: '' };
+    if (v instanceof Date && !isNaN(v)) return { val: bulkEmpYmd(v) };
+    if (typeof v === 'number' && v > 20000 && v < 80000 && typeof XLSX !== 'undefined') {
+      const p = XLSX.SSF.parse_date_code(v);
+      if (p) return { val: p.y + '-' + String(p.m).padStart(2, '0') + '-' + String(p.d).padStart(2, '0') };
+    }
+    const s = String(v).trim();
+    let y, m, d, mt;
+    if ((mt = s.match(/^(\d{2,4})\s*[\/\-.年]\s*(\d{1,2})\s*[\/\-.月]\s*(\d{1,2})\s*日?$/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+    else if ((mt = s.match(/^(\d{4})(\d{2})(\d{2})$/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+    else if ((mt = s.match(/^(\d{3})(\d{2})(\d{2})$/))) { y = +mt[1]; m = +mt[2]; d = +mt[3]; }
+    else return { error: `日期格式無法辨識「${s}」` };
+    if (y < 1911) y += 1911;   // 民國年
+    const dt = new Date(y, m - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return { error: `日期不存在「${s}」` };
+    return { val: bulkEmpYmd(dt) };
+  }
+  function bulkEmpCampus(v) {
+    const s = String(v == null ? '' : v).trim().toUpperCase();
+    if (!s) return '';
+    if (/^(同安|TA)/.test(s)) return '同安';
+    if (/^(莊敬|庄敬|ZJ)/.test(s)) return '莊敬';
+    if (/^(吉的堡|KC|kidcastle)/i.test(s)) return '吉的堡';
+    return null;
+  }
+  // 分隔文字（Tab / 逗號 / 全形逗號 / 分號 / 空白），支援 "..." 引號
+  function bulkEmpParseText(text) {
+    text = String(text || '').replace(/^﻿/, '').replace(/\r\n?/g, '\n');
+    const lines = text.split('\n').filter(l => l.trim());
+    if (!lines.length) return [];
+    let delim = null;
+    for (const c of ['\t', ',', '，', ';']) { if (lines.some(l => l.includes(c))) { delim = c; break; } }
+    if (!delim) return lines.map(l => l.trim().split(/\s+/));
+    const rows = [];
+    let row = [], cell = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else inQ = false; }
+        else cell += ch;
+      } else if (ch === '"' && cell === '') inQ = true;
+      else if (ch === delim) { row.push(cell); cell = ''; }
+      else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    row.push(cell); rows.push(row);
+    return rows;
+  }
+  // CSV 先試 UTF-8，若有亂碼改用 Big5（台灣版 Excel 預設另存的 CSV）
+  function bulkEmpDecode(buf) {
+    const u8 = new TextDecoder('utf-8').decode(buf);
+    if (!u8.includes('�')) return u8;
+    try { return new TextDecoder('big5').decode(buf); } catch (_) { return u8; }
+  }
+  async function bulkEmpReadFile(file) {
+    const buf = await file.arrayBuffer();
+    if (/\.(csv|tsv|txt)$/i.test(file.name)) return bulkEmpParseText(bulkEmpDecode(buf));
+    if (typeof XLSX === 'undefined') throw new Error('SheetJS 未載入，無法讀取 Excel');
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    // 優先使用名稱含「員工」的工作表，否則第一張
+    const name = wb.SheetNames.find(n => /員工|employee/i.test(n)) || wb.SheetNames[0];
+    return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+  }
+
+  function openBulkEmp() {
+    if (!currentUser || currentUser.role !== 'owner') {
+      toast('僅老闆可使用此功能', 'error'); return;
+    }
+    const oc = $('ownCampus') && $('ownCampus').value;
+    $('bulkEmpCampus').value = CAMPUS_LIST.includes(oc) ? oc : '同安';
+    if (!$('bulkEmpHire').value) $('bulkEmpHire').value = bulkEmpYmd(new Date());
+    $('bulkEmpOverlay').classList.add('show');
+  }
+  function closeBulkEmp(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('bulkEmpOverlay').classList.remove('show');
+  }
+  function resetBulkEmp() {
+    $('bulkEmpFile').value = '';
+    $('bulkEmpText').value = '';
+    _bulkEmpPlan = [];
+    $('bulkEmpThead').innerHTML = '';
+    $('bulkEmpTbody').innerHTML = '';
+    $('bulkEmpSummary').style.display = 'none';
+    updateBulkEmpApplyBtn();
+  }
+  function downloadBulkEmpTemplate(kind) {
+    const example = { '員工姓名': '王小明', '英文姓名': 'Tom', '校區': '同安', '職位': '老師', '到職日': '2026-11-01',
+                      '身份證字號': 'A123456789', 'Email': 'tom@example.com', '底薪': Number(FC('NEW_BASE')) };
+    if (kind === 'csv') {
+      const q = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+      const lines = [BULK_EMP_TEMPLATE_COLS.map(q).join(','),
+                     BULK_EMP_TEMPLATE_COLS.map(h => q(example[h] == null ? '' : example[h])).join(',')];
+      const blob = new Blob(['﻿' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '新增員工範本.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast('已下載 新增員工範本.csv（範例那一列請改成真實資料或刪除）', 'success');
+      return;
+    }
+    if (typeof XLSX === 'undefined') { toast('SheetJS 未載入', 'error'); return; }
+    const ws = XLSX.utils.aoa_to_sheet([BULK_EMP_TEMPLATE_COLS]);
+    ws['!cols'] = BULK_EMP_TEMPLATE_COLS.map(h => ({ wch: /帳號|Email|身份證/.test(h) ? 18 : 12 }));
+    const help = [
+      ['欄位', '說明', '範例'],
+      ['員工編號', '可留空，系統依校區自動產生（同安 TA…、莊敬 ZJ…、吉的堡 KC…）', ''],
+      ['員工姓名', '必填', example['員工姓名']],
+      ['英文姓名', '選填', example['英文姓名']],
+      ['校區', '同安、莊敬 或 吉的堡；留空用畫面上的預設校區', example['校區']],
+      ['職位', '老師／主任／組長／行政／兼職美語／其他；留空用預設職位', example['職位']],
+      ['到職日', '2026-11-01、2026/11/1 或 民國 115/11/01；留空用預設到職日', example['到職日']],
+      ['身份證字號', '員工首次登入的帳號與密碼', example['身份證字號']],
+      ['Email', '選填，寄送薪資條用', example['Email']],
+      ['底薪 等金額欄位', `留空用新員工預設（底薪 ${FC('NEW_BASE')}、全勤 ${FC('NEW_ATT')}、勞保 ${FC('NEW_LABOR')}、退休金 ${FC('NEW_RETIRE')}）`, example['底薪']],
+      ['其他欄位', '欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同的欄位都可以加上去', '']
+    ];
+    const wsHelp = XLSX.utils.aoa_to_sheet(help);
+    wsHelp['!cols'] = [{ wch: 16 }, { wch: 70 }, { wch: 18 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '新增員工');
+    XLSX.utils.book_append_sheet(wb, wsHelp, '說明');
+    XLSX.writeFile(wb, '新增員工範本.xlsx');
+    toast('已下載 新增員工範本.xlsx', 'success');
+  }
+
+  function bulkEmpNextId(campus, taken) {
+    const prefix = campusPrefix(campus);
+    let max = 0;
+    taken.forEach(id => {
+      if (id.startsWith(prefix)) max = Math.max(max, parseInt(id.slice(2)) || 0);
+    });
+    return prefix + String(max + 1).padStart(3, '0');
+  }
+
+  async function parseBulkEmp() {
+    let rows;
+    try {
+      const f = $('bulkEmpFile').files && $('bulkEmpFile').files[0];
+      const txt = $('bulkEmpText').value;
+      if (f) rows = await bulkEmpReadFile(f);
+      else if (txt.trim()) rows = bulkEmpParseText(txt);
+      else { toast('請上傳檔案或貼上文字', 'error'); return; }
+    } catch (e) {
+      toast('讀取失敗：' + e.message, 'error'); return;
+    }
+    rows = (rows || []).map(r => (r || []).map(c => typeof c === 'string' ? c.trim() : c))
+                       .filter(r => r.some(c => c !== '' && c != null));
+    if (!rows.length) { toast('沒有讀到任何資料', 'error'); return; }
+
+    // 判斷第一列是否為標題
+    const known = bulkEmpKnownFields();
+    const mapped = rows[0].map(h => bulkEmpMapHeader(h, known));
+    const hasHeader = mapped.includes('員工姓名') || mapped.filter(Boolean).length >= 2;
+    let cols, dataRows;
+    const ignored = [];
+    if (hasHeader) {
+      cols = mapped;
+      rows[0].forEach((h, i) => { if (!mapped[i] && String(h).trim()) ignored.push(String(h).trim()); });
+      dataRows = rows.slice(1).map((r, i) => ({ line: i + 2, cells: r }));
+    } else {
+      cols = BULK_EMP_DEFAULT_COLS;
+      dataRows = rows.map((r, i) => ({ line: i + 1, cells: r }));
+    }
+    if (!cols.includes('員工姓名')) { toast('找不到「員工姓名」欄位', 'error'); return; }
+
+    const defCampus = $('bulkEmpCampus').value;
+    const defPos = $('bulkEmpPos').value;
+    const defHire = $('bulkEmpHire').value || bulkEmpYmd(new Date());
+    const posOpts = ['老師','主任','組長','行政','兼職美語','老闆','其他'];
+    const takenIds = new Set(DATA.employees.map(e => String(e['員工編號'])));
+    const existIdNos = new Map(DATA.employees.filter(e => e['身份證字號'])
+      .map(e => [String(e['身份證字號']).trim().toUpperCase(), e]));
+    const existNames = new Map(DATA.employees.map(e => [String(e['員工姓名'] || '').trim(), e]));
+    const batchIdNos = new Set(), batchNames = new Set();
+
+    _bulkEmpPlan = dataRows.map(({ line, cells }) => {
+      const errors = [], warns = [], given = {};
+      cols.forEach((k, i) => {
+        if (!k) return;
+        const v = cells[i];
+        if (v === '' || v == null) return;
+        given[k] = v;
+      });
+      const name = String(given['員工姓名'] || '').trim();
+      const campus = given['校區'] != null ? bulkEmpCampus(given['校區']) : defCampus;
+      if (campus === null) errors.push(`校區須為 同安、莊敬 或 吉的堡（「${given['校區']}」）`);
+      const c = campus || defCampus;
+
+      const emp = {
+        '員工編號': '', '員工姓名': name, '英文姓名': '', '校區': c, '職位': defPos,
+        '到職日': defHire, '離職日': '', '在職狀態': '在職', '身份證字號': '',
+        '底薪': Number(FC('NEW_BASE')), '全勤獎金': Number(FC('NEW_ATT')), '年資津貼': 0, '主管津貼': 0,
+        '分校人數超額獎金': 0, '美語津貼': 0,
+        '數學班津貼': 0, '混班/混校津貼': 0, '帶班人數津貼': 0,
+        '其他津貼': 0, '勞保自付': Number(FC('NEW_LABOR')), '補貼公會投保勞保': 0, '健保自付': 0, '補貼公會健保自付': 0,
+        '退休金提撥': Number(FC('NEW_RETIRE')),
+        '現金給付': 0, '銀行名稱': '', '銀行帳號': '', 'Email': '', '備註': '',
+        '其他津貼明細': []
+      };
+      Object.keys(given).forEach(k => {
+        if (k === '校區') return;
+        let v = given[k];
+        if (k === '到職日' || k === '離職日') {
+          const r = bulkEmpDate(v);
+          if (r.error) errors.push(`${k}：${r.error}`); else emp[k] = r.val;
+        } else if (BULK_EMP_TEXT_FIELDS.includes(k)) {
+          emp[k] = v instanceof Date ? bulkEmpYmd(v) : String(v).trim();
+        } else {
+          const n = typeof v === 'number' ? v : Number(String(v).replace(/[,\s$元]|NT\$?/gi, ''));
+          if (isNaN(n)) errors.push(`${k} 不是數字（「${v}」）`); else emp[k] = n;
+        }
+      });
+
+      if (!name) errors.push('員工姓名為必填');
+      if (!posOpts.includes(emp['職位'])) warns.push(`職位「${emp['職位']}」不在清單（老師／主任／組長／行政／其他）`);
+      if (!['在職','離職','留職停薪'].includes(emp['在職狀態'])) {
+        warns.push(`在職狀態「${emp['在職狀態']}」無法辨識，改為 在職`);
+        emp['在職狀態'] = '在職';
+      }
+
+      // 身份證字號
+      const idNo = String(emp['身份證字號'] || '').trim().toUpperCase();
+      emp['身份證字號'] = idNo;
+      if (idNo) {
+        if (!/^[A-Z][A-Z0-9]\d{8}$/.test(idNo)) warns.push(`身份證字號格式看起來不正確（${idNo}）`);
+        if (existIdNos.has(idNo)) {
+          const o = existIdNos.get(idNo);
+          errors.push(`身份證字號已存在（${o['員工編號']} ${o['員工姓名']}）`);
+        } else if (batchIdNos.has(idNo)) errors.push('身份證字號在本次匯入中重複');
+      }
+      if (name && existNames.has(name)) {
+        const o = existNames.get(name);
+        warns.push(`已有同名員工 ${o['員工編號']}（${o['在職狀態'] || ''}），請確認不是重複`);
+      } else if (name && batchNames.has(name)) warns.push('本次匯入中有同名的員工');
+
+      // 員工編號
+      let eid = String(emp['員工編號'] || '').trim().toUpperCase();
+      let autoId = false;
+      if (eid) {
+        if (takenIds.has(eid)) errors.push(`員工編號 ${eid} 已存在`);
+      } else if (!errors.length) {
+        eid = bulkEmpNextId(c, takenIds);
+        autoId = true;
+      }
+      emp['員工編號'] = eid;
+
+      // 登入帳號／密碼：非老闆 → 身份證字號（未填暫用員工編號）；與 migrateEmployeeRecords 規則一致
+      const cred = emp['職位'] === '老闆' ? eid.toLowerCase() : (idNo || eid);
+      if (!emp['登入帳號']) emp['登入帳號'] = cred;
+      if (!emp['登入密碼']) emp['登入密碼'] = cred;
+
+      const ok = !errors.length;
+      if (ok) {
+        takenIds.add(eid);
+        if (idNo) batchIdNos.add(idNo);
+        if (name) batchNames.add(name);
+      }
+      return { line, emp, errors, warns, autoId, ok, selected: ok };
+    });
+
+    // 預覽表：固定欄位 + 檔案中有填的其他欄位
+    const baseCols = ['員工編號','員工姓名','英文姓名','校區','職位','到職日','身份證字號','底薪'];
+    _bulkEmpExtraCols = cols.filter((k, i) => k && !baseCols.includes(k) && cols.indexOf(k) === i);
+    const th = 'padding:6px 8px;text-align:left;';
+    $('bulkEmpThead').innerHTML = `<tr style="background:#1e293b;color:#fff;">
+      <th style="${th}"><input type="checkbox" id="bulkEmpAll" checked onchange="toggleBulkEmpAll(this.checked)"></th>
+      <th style="${th}">列</th><th style="${th}">狀態</th>
+      ${baseCols.concat(_bulkEmpExtraCols).map(k => `<th style="${th}">${bulkEmpEsc(k)}</th>`).join('')}
+      <th style="${th}">訊息</th></tr>`;
+    $('bulkEmpTbody').innerHTML = _bulkEmpPlan.map((p, i) => {
+      const e = p.emp;
+      const st = !p.ok ? '<span style="color:#DC2626;font-weight:700;">✕ 錯誤</span>'
+               : p.warns.length ? '<span style="color:#B45309;font-weight:700;">⚠ 注意</span>'
+               : '<span style="color:#047857;font-weight:700;">✓ 可新增</span>';
+      const bg = !p.ok ? 'background:#FEF2F2;' : p.warns.length ? 'background:#FFFBEB;' : '';
+      const td = 'padding:5px 8px;';
+      const cell = k => {
+        let v = e[k];
+        if (k === '員工編號') {
+          return `<td style="${td}"><span style="font-family:Courier New,monospace;font-weight:700;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:5px;font-size:11px;">${bulkEmpEsc(v || '—')}</span>${p.autoId ? ' <small style="color:#64748b;">自動</small>' : ''}</td>`;
+        }
+        if (typeof v === 'number') v = v.toLocaleString();
+        return `<td style="${td}">${bulkEmpEsc(v === '' || v == null ? '—' : v)}</td>`;
+      };
+      const msgs = p.errors.map(m => `<div style="color:#DC2626;">✕ ${bulkEmpEsc(m)}</div>`)
+        .concat(p.warns.map(m => `<div style="color:#B45309;">⚠ ${bulkEmpEsc(m)}</div>`)).join('');
+      return `<tr style="border-bottom:1px solid #e2e8f0;${bg}">
+        <td style="${td}"><input type="checkbox" ${p.selected ? 'checked' : ''} ${p.ok ? '' : 'disabled'} onchange="toggleBulkEmpRow(${i}, this.checked)"></td>
+        <td style="${td}color:#64748b;">${p.line}</td><td style="${td}">${st}</td>
+        ${baseCols.concat(_bulkEmpExtraCols).map(cell).join('')}
+        <td style="${td}white-space:normal;min-width:200px;">${msgs || '<span style="color:#94a3b8;">—</span>'}</td></tr>`;
+    }).join('') || '<tr><td colspan="12" style="text-align:center;color:#dc2626;padding:20px;">⚠ 沒有資料列</td></tr>';
+
+    const okN = _bulkEmpPlan.filter(p => p.ok).length;
+    const warnN = _bulkEmpPlan.filter(p => p.ok && p.warns.length).length;
+    const errN = _bulkEmpPlan.length - okN;
+    let sum = `共讀到 <b>${_bulkEmpPlan.length}</b> 列：<b style="color:#047857;">${okN}</b> 位可新增` +
+              (warnN ? `（其中 <b style="color:#B45309;">${warnN}</b> 位請注意）` : '') +
+              (errN ? `，<b style="color:#DC2626;">${errN}</b> 列有錯誤會略過` : '') + '。' +
+              (hasHeader ? '' : '<br>未偵測到標題列，依預設順序對應：' + BULK_EMP_DEFAULT_COLS.join('、'));
+    if (ignored.length) sum += `<br>⚠ 無法辨識、已忽略的欄位：<b>${ignored.map(bulkEmpEsc).join('、')}</b>`;
+    $('bulkEmpSummary').innerHTML = sum;
+    $('bulkEmpSummary').style.display = '';
+    updateBulkEmpApplyBtn();
+  }
+  function toggleBulkEmpRow(i, on) {
+    if (_bulkEmpPlan[i] && _bulkEmpPlan[i].ok) _bulkEmpPlan[i].selected = on;
+    updateBulkEmpApplyBtn();
+  }
+  function toggleBulkEmpAll(on) {
+    _bulkEmpPlan.forEach((p, i) => { if (p.ok) p.selected = on; });
+    $('bulkEmpTbody').querySelectorAll('input[type=checkbox]:not(:disabled)').forEach(cb => { cb.checked = on; });
+    updateBulkEmpApplyBtn();
+  }
+  function updateBulkEmpApplyBtn() {
+    const n = _bulkEmpPlan.filter(p => p.ok && p.selected).length;
+    const btn = $('bulkEmpApplyBtn');
+    btn.disabled = n === 0;
+    btn.style.opacity = n === 0 ? '0.5' : '';
+    btn.textContent = n ? `✅ 確認新增 ${n} 位員工` : '✅ 確認新增';
+  }
+  async function applyBulkEmp() {
+    const toAdd = _bulkEmpPlan.filter(p => p.ok && p.selected);
+    if (!toAdd.length) { toast('沒有可新增的員工', 'error'); return; }
+    // 寫入前再檢查一次（避免預覽後資料已被其他人修改）
+    const dup = toAdd.filter(p => DATA.employees.some(e => e['員工編號'] === p.emp['員工編號']));
+    if (dup.length) {
+      toast(`員工編號 ${dup.map(p => p.emp['員工編號']).join('、')} 已存在，請重新按「解析並預覽」`, 'error');
+      return;
+    }
+    if (!confirm(`確認新增 ${toAdd.length} 位員工？\n\n${toAdd.slice(0, 15).map(p => `${p.emp['員工編號']} ${p.emp['員工姓名']}（${p.emp['校區']}・${p.emp['職位']}）`).join('\n')}${toAdd.length > 15 ? `\n…等 ${toAdd.length} 位` : ''}\n\n會立即同步到雲端。`)) return;
+    if (!DATA.ownerBaseline) DATA.ownerBaseline = {};
+    toAdd.forEach(p => {
+      const emp = JSON.parse(JSON.stringify(p.emp));
+      DATA.employees.push(emp);
+    });
+    migrateEmployeeRecords(DATA);   // 補齊其他預設欄位
+    toAdd.forEach(p => {
+      const emp = DATA.employees.find(e => e['員工編號'] === p.emp['員工編號']);
+      if (emp) DATA.ownerBaseline[emp['員工編號']] = JSON.parse(JSON.stringify(emp));
+    });
+    closeBulkEmp();
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try {
+      await doPersistNow();
+    } finally {
+      hideLoadingOverlay();
+    }
+    appendLog({
+      time: nowTimestamp(),
+      user: currentUser ? currentUser.fullName : '系統',
+      text: `批次新增員工 ${toAdd.length} 位：${toAdd.map(p => `${p.emp['員工編號']} ${p.emp['員工姓名']}`).join('、')}`
+    });
+    [renderOwnerTable, populateManagerSelectors, renderManagerTable, populatePayslipSelectors, renderPayslip, renderDashboard]
+      .forEach(fn => { try { fn(); } catch (_) {} });
+    toast(`✓ 已新增 ${toAdd.length} 位員工`, 'success');
+    resetBulkEmp();
+  }
+
   // Enter key triggers password validate
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && $('migratePwdOverlay') && $('migratePwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'migratePwdInput') {
@@ -5370,20 +6036,25 @@
 
   // -------- 主管/老闆 本月輸入新增欄位（存於當月薪資紀錄 sal）--------
   // kind: 'money' = 金額，列入 (B) 非固定支付並計入實領；'count' = 人數/數量，只做資訊顯示、不計入金額
+  // kind: 'hours' = 時數（兼職美語），金額由 partTimePay() 依時薪計算
   function monthlyExtraFields() {
     return [
       { key: '安親人數',         label: '安親人數',          en: 'After-school (人)', kind: 'count' },
       { key: '考試津貼',         label: '考試津貼',          en: 'Exam Allowance',    kind: 'money' },
       { key: '預繳津貼',         label: '預繳津貼',          en: 'Prepay Allowance',  kind: 'money' },
-      { key: '混班數',           label: '混班數',            en: 'Mixed Classes',     kind: 'count' }
+      { key: '混班數',           label: '混班數',            en: 'Mixed Classes',     kind: 'count' },
+      { key: '自行授課時數',     label: '自行授課時數',      en: 'Teaching Hours',    kind: 'hours', step: 0.5 },
+      { key: '協助外師時數',     label: '協助外師時數',      en: 'Assist Hours',      kind: 'hours', step: 0.5 }
     ];
   }
   function monthlyExtraKeys() { return ['全勤', ...monthlyExtraFields().map(f => f.key)]; }
-  // 本月新增金額合計（考試津貼 + 預繳津貼）
+  // 本月新增金額合計（考試津貼 + 預繳津貼 + 兼職美語時薪；兼職金額由 computeRow 先算好寫入 sal）
   function monthlyExtraMoney(sal) {
     return monthlyExtraFields().filter(f => f.kind === 'money')
-      .reduce((t, f) => t + (Number(sal && sal[f.key]) || 0), 0);
+      .reduce((t, f) => t + (Number(sal && sal[f.key]) || 0), 0)
+      + (Number(sal && sal['自行授課薪資']) || 0) + (Number(sal && sal['協助外師薪資']) || 0);
   }
+
   // 全勤：本月可手動指定「全勤 / 非全勤」；留空 = 自動（依公式設定頁的全勤條件）
   // 請假時數合計 = 結構性請假時數（員工資料，每月固定）+ 當月請假時數（月度紀錄）
   // 注意：全勤判斷只看「當月請假時數」，結構性時數是約定的固定少上時數，不算缺勤
@@ -5418,12 +6089,16 @@
     const lateD = lateCnt * Number(FC('LATE_FEE'));
 
     const attBonus = attendanceBonus(emp, sal);
-    const extraMoney = monthlyExtraMoney(sal);   // 考試津貼 + 預繳津貼（本月輸入）
+    const pt = partTimePay(emp, sal);   // 兼職美語：自行授課／協助外師 時數 × 時薪
+    sal['自行授課薪資'] = pt.teach;
+    sal['協助外師薪資'] = pt.assist;
+    const extraMoney = monthlyExtraMoney(sal);   // 考試津貼 + 預繳津貼 + 兼職美語（本月輸入）
 
     const allowKeys = ['年資津貼','主管津貼',
                        '美語津貼','美語輔導津貼','數學班津貼',
                        '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬',
+                       ...KC_ALLOW_KEYS];
     const allowSum = allowKeys.reduce((s, k) => s + (Number(emp[k]) || 0), 0);
 
     const bonus = Number(sal['獎金']) || 0;
@@ -5556,6 +6231,7 @@
   let _mailSelected = new Set();
   let _mailSending = false;
   let _mailStatus = {};        // eid → {cls, text}
+  let _mailReceipts = {};      // eid 或 email（小寫）→ 最新一筆測試信回條紀錄 {sentAt, ackAt, to}
 
   function escMail(t) {
     return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -5662,6 +6338,7 @@
       if (first) previewMail(first.eid); else clearMailPreview();
     }
     $('mailOverlay').classList.add('show');
+    loadMailReceipts(false);
   }
   function closeMailModal(e) {
     if (e && e.target !== e.currentTarget) return;
@@ -5697,6 +6374,7 @@
       let badge = '';
       if (st) badge = `<span class="st ${st.cls}" title="${escMail(st.title || '')}">${escMail(st.text)}</span>`;
       else if (r.sentInfo) badge = `<span class="st sent" title="寄至 ${escMail(r.sentInfo.to)}">已寄 ${escMail(String(r.sentInfo.time).slice(5, 16))}</span>`;
+      badge += mailReceiptBadge(r);
       const sub = !ok ? '<small class="warn">⚠ 未設定 Email（員工資料 ④）</small>'
                 : `<small>${escMail(r.email)}${r.hasSal ? '' : ' · <span style="color:#B45309;">本月無薪資紀錄</span>'}</small>`;
       return `<div class="mail-row" data-eid="${r.eid}">
@@ -5840,6 +6518,407 @@
     if (e.key === 'Escape' && $('mailOverlay') && $('mailOverlay').classList.contains('show')) closeMailModal();
   });
 
+  // ==========================================================================
+  // 📧 批次匯入 Email（V20261018V1945）— 從 Excel / CSV / 貼上文字 填入員工 Email
+  //   比對順序：員工編號 → 中文姓名（可包含，例如「Summer游晏慈」→「游晏慈」）→ 英文姓名
+  //   同名時用校區區分；同一員工出現多次以最後一筆為準
+  // ==========================================================================
+  let _bulkMailPlan = [];
+  function openBulkMail() {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可使用此功能', 'error'); return; }
+    $('bulkMailOverlay').classList.add('show');
+  }
+  function closeBulkMail(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('bulkMailOverlay').classList.remove('show');
+  }
+  function resetBulkMail() {
+    $('bulkMailFile').value = ''; $('bulkMailText').value = '';
+    _bulkMailPlan = [];
+    $('bulkMailThead').innerHTML = ''; $('bulkMailTbody').innerHTML = '';
+    $('bulkMailSummary').style.display = 'none';
+    updateBulkMailApplyBtn();
+  }
+  function downloadBulkMailTemplate() {
+    if (typeof XLSX === 'undefined') { toast('SheetJS 未載入', 'error'); return; }
+    const rows = [['員工編號', '員工姓名', '英文姓名', '校區', 'Email']];
+    DATA.employees
+      .filter(e => e['在職狀態'] !== '離職')
+      .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])))
+      .forEach(e => rows.push([e['員工編號'] || '', e['員工姓名'] || '', e['英文姓名'] || '', e['校區'] || '', e['Email'] || '']));
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 30 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '員工Email');
+    XLSX.writeFile(wb, '員工Email範本.xlsx');
+    toast('已下載 員工Email範本.xlsx：在 Email 欄填好後上傳即可', 'success');
+  }
+  async function bulkMailReadFile(file) {
+    const buf = await file.arrayBuffer();
+    if (/\.(csv|tsv|txt)$/i.test(file.name)) return bulkEmpParseText(bulkEmpDecode(buf));
+    if (typeof XLSX === 'undefined') throw new Error('SheetJS 未載入，無法讀取 Excel');
+    const wb = XLSX.read(buf, { type: 'array' });
+    const name = wb.SheetNames.find(n => /mail|信箱|員工|form|回覆/i.test(n)) || wb.SheetNames[0];
+    return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
+  }
+  const _bmZh = v => String(v || '').replace(/[A-Za-z0-9\s.\-_'’()（）]+/g, '');
+  const _bmEn = v => String(v || '').replace(/[^A-Za-z]/g, '').toLowerCase();
+  const _bmCampus = v => { v = String(v || ''); return CAMPUS_LIST.find(c => v.includes(c)) || ''; };
+  const _bmIsMail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim());
+
+  function bulkMailMatch(rec) {
+    const emps = DATA.employees;
+    if (rec.eid) {
+      const e = emps.find(x => String(x['員工編號']).toUpperCase() === rec.eid.toUpperCase());
+      if (e) return [e];
+    }
+    const fZh = _bmZh(rec.zh), fEn = [_bmEn(rec.en), _bmEn(rec.zh)].filter(Boolean);
+    let hits = [];
+    if (fZh.length >= 2) {
+      hits = emps.filter(e => {
+        const z = _bmZh(e['員工姓名']);
+        return z.length >= 2 && (z === fZh || fZh.includes(z) || z.includes(fZh));
+      });
+    }
+    if (!hits.length && fEn.length) {
+      hits = emps.filter(e => {
+        const en = _bmEn(e['英文姓名']), nm = _bmEn(e['員工姓名']);
+        return fEn.some(x => x && (x === en || x === nm));
+      });
+    }
+    if (hits.length > 1 && rec.campus) {
+      const c = hits.filter(e => e['校區'] === rec.campus);
+      if (c.length) hits = c;
+    }
+    if (hits.length > 1) {
+      const active = hits.filter(e => e['在職狀態'] !== '離職');
+      if (active.length) hits = active;
+    }
+    return hits;
+  }
+
+  async function parseBulkMail() {
+    let rows = [];
+    try {
+      const f = $('bulkMailFile').files[0];
+      if (f) rows = await bulkMailReadFile(f);
+      else rows = bulkEmpParseText($('bulkMailText').value);
+    } catch (err) { toast('讀取失敗：' + err.message, 'error'); return; }
+    rows = rows.map(r => r.map(c => String(c == null ? '' : c).trim())).filter(r => r.some(Boolean));
+    if (!rows.length) { toast('沒有資料，請上傳檔案或貼上文字', 'error'); return; }
+
+    // 找標題列
+    const head = rows[0];
+    const hasHead = head.some(c => /mail|信箱|姓名|編號|name/i.test(c)) && !head.some(_bmIsMail);
+    const find = re => head.findIndex(c => re.test(c));
+    let col;
+    if (hasHead) {
+      col = {
+        eid: find(/員工編號|^編號$|^id$/i),
+        zh: (() => { let i = find(/中文/); if (i < 0) i = head.findIndex(c => /姓名|名字|^name$/i.test(c) && !/英文|english/i.test(c)); return i; })(),
+        en: find(/英文|english/i),
+        campus: find(/校區|分校|campus/i),
+        mail: find(/mail|信箱/i)
+      };
+      if (col.mail < 0) { toast('找不到 Email 欄（標題需含「Email」或「信箱」）', 'error'); return; }
+      if (col.eid < 0 && col.zh < 0 && col.en < 0) { toast('找不到「員工編號」或「姓名」欄', 'error'); return; }
+      rows = rows.slice(1);
+    } else {
+      col = null;
+    }
+
+    const recs = rows.map((r, i) => {
+      let rec;
+      if (col) {
+        const g = k => col[k] >= 0 ? (r[col[k]] || '') : '';
+        rec = { eid: g('eid'), zh: g('zh'), en: g('en'), campus: _bmCampus(g('campus')), mail: g('mail') };
+      } else {
+        const mi = r.findIndex(_bmIsMail);
+        const others = r.filter((c, j) => j !== mi && c);
+        rec = { eid: '', zh: others[0] || '', en: '', campus: _bmCampus(others.find(c => _bmCampus(c)) || ''), mail: mi >= 0 ? r[mi] : '' };
+      }
+      rec.row = i + (col ? 2 : 1);
+      rec.mail = rec.mail.replace(/^mailto:/i, '').trim();
+      return rec;
+    });
+
+    _bulkMailPlan = recs.map(rec => {
+      const p = { rec, emp: null, status: '', cls: '', ok: false, selected: false, note: '' };
+      if (!rec.mail) { p.status = '沒有 Email'; p.cls = 'bad'; return p; }
+      if (!_bmIsMail(rec.mail)) { p.status = 'Email 格式錯誤'; p.cls = 'bad'; return p; }
+      const hits = bulkMailMatch(rec);
+      if (!hits.length) { p.status = '比對不到員工姓名(中文)'; p.cls = 'bad'; p.askName = true; return p; }
+      if (hits.length > 1) { p.status = '多位符合'; p.cls = 'warn'; p.note = hits.map(e => `${e['員工編號']} ${e['員工姓名']}（${e['校區']}）`).join('、'); return p; }
+      p.emp = hits[0];
+      const old = String(p.emp['Email'] || '').trim();
+      if (old.toLowerCase() === rec.mail.toLowerCase()) { p.status = '相同，不用改'; p.cls = 'same'; return p; }
+      p.status = old ? '更新' : '新增'; p.cls = old ? 'upd' : 'new';
+      p.ok = true; p.selected = true;
+      return p;
+    });
+    // 同一員工出現多次：以最後一筆為準
+    const lastIdx = {};
+    _bulkMailPlan.forEach((p, i) => { if (p.emp) lastIdx[p.emp['員工編號']] = i; });
+    _bulkMailPlan.forEach((p, i) => {
+      if (p.emp && lastIdx[p.emp['員工編號']] !== i) {
+        p.ok = false; p.selected = false; p.status = '被後面的資料取代'; p.cls = 'same';
+      }
+    });
+    renderBulkMailPlan();
+  }
+
+  function renderBulkMailPlan() {
+    const color = { new: '#047857', upd: '#0369A1', same: '#94a3b8', warn: '#B45309', bad: '#C62828' };
+    const th = 'padding:6px 8px;background:#f1f5f9;border-bottom:2px solid #e2e8f0;text-align:left;';
+    const td = 'padding:6px 8px;border-bottom:1px solid #f1f5f9;';
+    $('bulkMailThead').innerHTML = `<tr>
+      <th style="${th}"><input type="checkbox" onchange="toggleBulkMailAll(this.checked)" checked></th>
+      <th style="${th}">列</th><th style="${th}">檔案中的姓名</th><th style="${th}">校區</th>
+      <th style="${th}">對應員工</th><th style="${th}">目前 Email</th><th style="${th}">新 Email</th><th style="${th}">狀態</th></tr>`;
+    $('bulkMailTbody').innerHTML = _bulkMailPlan.map((p, i) => {
+      const r = p.rec, e = p.emp;
+      const who = e ? `${escMail(e['員工編號'])} <b>${escMail(e['員工姓名'])}</b>${e['英文姓名'] ? ' (' + escMail(e['英文姓名']) + ')' : ''} · ${escMail(e['校區'])}` : (p.note ? `<span style="color:#B45309;">${escMail(p.note)}</span>` : '—');
+      return `<tr style="${p.ok ? '' : 'opacity:.75;'}">
+        <td style="${td}"><input type="checkbox" data-bm="${i}" ${p.selected ? 'checked' : ''} ${p.ok ? '' : 'disabled'} onchange="_bulkMailPlan[${i}].selected=this.checked;updateBulkMailApplyBtn()"></td>
+        <td style="${td}color:#94a3b8;">${r.row}</td>
+        <td style="${td}">${escMail(r.eid ? r.eid + ' ' : '')}${escMail(r.zh)}${r.en ? ' / ' + escMail(r.en) : ''}</td>
+        <td style="${td}">${escMail(r.campus || '')}</td>
+        <td style="${td}">${who}</td>
+        <td style="${td}color:#94a3b8;">${escMail(e ? (e['Email'] || '（未設定）') : '')}</td>
+        <td style="${td}font-family:Arial,sans-serif;">${escMail(r.mail)}</td>
+        <td style="${td}font-weight:700;color:${color[p.cls] || '#475569'};">${escMail(p.status)}${p.askName ? ` <button class="btn-mini secondary" style="margin-left:6px;padding:3px 8px;font-size:11px;" ${p.asked === 'busy' ? 'disabled' : ''} onclick="sendNameRequest(${i})" title="寄信給 ${escMail(r.mail)}，請對方回覆完整中文姓名">${p.asked === 'sent' ? '✓ 已寄出，再寄一次' : p.asked === 'busy' ? '寄送中…' : p.asked === 'fail' ? '✗ 失敗，重試' : '✉ 寄信要求完整中文姓名'}</button>` : ''}</td></tr>`;
+    }).join('');
+    const cnt = k => _bulkMailPlan.filter(p => p.cls === k).length;
+    const askN = _bulkMailPlan.filter(p => p.askName && p.asked !== 'sent').length;
+    $('bulkMailSummary').style.display = '';
+    $('bulkMailSummary').innerHTML = `共 <b>${_bulkMailPlan.length}</b> 筆：` +
+      `<span style="color:#047857;">新增 ${cnt('new')}</span> · <span style="color:#0369A1;">更新 ${cnt('upd')}</span> · ` +
+      `<span style="color:#94a3b8;">不用改 ${cnt('same')}</span> · <span style="color:#B45309;">多位符合 ${cnt('warn')}</span> · ` +
+      `<span style="color:#C62828;">比對不到姓名／格式錯誤 ${cnt('bad')}</span>` +
+      (cnt('warn') + cnt('bad') ? '<br>「比對不到員工姓名(中文)」或「多位符合」的請到員工資料 ✏ 編輯手動填寫，或在檔案中補上員工編號後重新解析。' : '') +
+      (askN ? `<br><button class="btn-mini secondary" style="margin-top:6px;" onclick="sendNameRequestAll()">✉ 一次寄信給全部比對不到姓名的 ${askN} 人，要求完整中文姓名</button>` : '');
+    updateBulkMailApplyBtn();
+  }
+
+  // ✉ 比對不到員工姓名(中文) → 寄信請對方提供完整中文姓名（V20261020V1200；需 Receipt.gs 的 send_name_request）
+  async function _sendNameRequestOne(p, key) {
+    p.asked = 'busy';
+    try {
+      let j;
+      try { j = await cloudPost('send_name_request', { key, to: p.rec.mail, given: p.rec.zh || p.rec.en || '' }); }
+      catch (err) {
+        if (/key|密碼/i.test(err.message)) {
+          key = getMailKey(true);
+          if (!key) throw err;
+          j = await cloudPost('send_name_request', { key, to: p.rec.mail, given: p.rec.zh || p.rec.en || '' });
+        } else throw err;
+      }
+      p.asked = 'sent';
+      return { ok: true, key };
+    } catch (err) {
+      p.asked = 'fail'; p.askErr = err.message;
+      console.error('send_name_request failed', p.rec.mail, err);
+      if (/unknown action|未知|not supported/i.test(err.message)) toast('Apps Script 尚未加入 send_name_request，請依 Receipt.gs 開頭說明更新並重新部署', 'error');
+      return { ok: false, key, err };
+    }
+  }
+  async function sendNameRequest(i) {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可寄信', 'error'); return; }
+    const p = _bulkMailPlan[i];
+    if (!p || !p.askName) return;
+    if (!confirm(`寄信給 ${p.rec.mail}？\n\n內容：請對方回覆「完整中文姓名」。\n（檔案中的姓名：${p.rec.zh || p.rec.en || '（空白）'}）`)) return;
+    const key = getMailKey(false);
+    if (!key) { toast('未輸入寄信密碼，已取消', 'error'); return; }
+    p.asked = 'busy'; renderBulkMailPlan();
+    const r = await _sendNameRequestOne(p, key);
+    renderBulkMailPlan();
+    if (r.ok) {
+      appendLog({ time: nowTimestamp(), user: currentUser.fullName, text: `寄信要求完整中文姓名：${p.rec.mail}（檔案姓名：${p.rec.zh || p.rec.en || '空白'}）` });
+      toast('✓ 已寄出，請對方回信後再補上姓名', 'success');
+    } else toast('寄送失敗：' + r.err.message, 'error');
+  }
+  async function sendNameRequestAll() {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可寄信', 'error'); return; }
+    const list = _bulkMailPlan.filter(p => p.askName && p.asked !== 'sent');
+    if (!list.length) { toast('沒有需要寄送的人', 'error'); return; }
+    const preview = list.slice(0, 15).map(p => `・${p.rec.zh || p.rec.en || '（姓名空白）'} <${p.rec.mail}>`).join('\n') + (list.length > 15 ? `\n…等共 ${list.length} 人` : '');
+    if (!confirm(`寄出 ${list.length} 封信，請對方回覆完整中文姓名？\n\n${preview}`)) return;
+    let key = getMailKey(false);
+    if (!key) { toast('未輸入寄信密碼，已取消', 'error'); return; }
+    let okCnt = 0, failCnt = 0;
+    for (const p of list) {
+      p.asked = 'busy'; renderBulkMailPlan();
+      const r = await _sendNameRequestOne(p, key);
+      key = r.key || key;
+      if (r.ok) okCnt++; else { failCnt++; if (/unknown action|未知|not supported/i.test(r.err.message)) break; }
+      renderBulkMailPlan();
+      await new Promise(res => setTimeout(res, 800));
+    }
+    renderBulkMailPlan();
+    if (okCnt) appendLog({ time: nowTimestamp(), user: currentUser.fullName, text: `批次寄信要求完整中文姓名 ${okCnt} 封${failCnt ? `，失敗 ${failCnt} 封` : ''}` });
+    toast(failCnt ? `已寄出 ${okCnt} 封，${failCnt} 封失敗` : `✓ 已寄出 ${okCnt} 封`, failCnt ? 'error' : 'success');
+  }
+  function toggleBulkMailAll(on) {
+    _bulkMailPlan.forEach(p => { if (p.ok) p.selected = on; });
+    $('bulkMailTbody').querySelectorAll('input[type=checkbox]:not(:disabled)').forEach(cb => { cb.checked = on; });
+    updateBulkMailApplyBtn();
+  }
+  function updateBulkMailApplyBtn() {
+    const n = _bulkMailPlan.filter(p => p.ok && p.selected).length;
+    const btn = $('bulkMailApplyBtn');
+    btn.disabled = n === 0; btn.style.opacity = n === 0 ? '0.5' : '';
+    btn.textContent = n ? `✅ 確認匯入 ${n} 位員工的 Email` : '✅ 確認匯入';
+  }
+  async function applyBulkMail() {
+    const list = _bulkMailPlan.filter(p => p.ok && p.selected);
+    if (!list.length) { toast('沒有可匯入的 Email', 'error'); return; }
+    const preview = list.slice(0, 15).map(p => `${p.emp['員工姓名']}（${p.emp['校區']}）← ${p.rec.mail}`).join('\n') +
+                    (list.length > 15 ? `\n…等 ${list.length} 位` : '');
+    if (!confirm(`確認填入 ${list.length} 位員工的 Email？\n\n${preview}\n\n會立即同步到雲端。`)) return;
+    if (!DATA.ownerBaseline) DATA.ownerBaseline = {};
+    const done = [];
+    list.forEach(p => {
+      const emp = DATA.employees.find(e => e['員工編號'] === p.emp['員工編號']);
+      if (!emp) return;
+      emp['Email'] = p.rec.mail;
+      if (DATA.ownerBaseline[emp['員工編號']]) DATA.ownerBaseline[emp['員工編號']]['Email'] = p.rec.mail;
+      done.push(emp);
+    });
+    closeBulkMail();
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try { await doPersistNow(); } finally { hideLoadingOverlay(); }
+    appendLog({
+      time: nowTimestamp(), user: currentUser ? currentUser.fullName : '系統',
+      text: `批次匯入 Email ${done.length} 位：${done.map(e => `${e['員工編號']} ${e['員工姓名']}`).join('、')}`
+    });
+    [renderOwnerTable, renderPayslip, renderDashboard].forEach(fn => { try { fn(); } catch (_) {} });
+    toast(`✓ 已填入 ${done.length} 位員工的 Email`, 'success');
+    resetBulkMail();
+  }
+
+  // 🧪 寄送測試信（V20261018V1930）— 只寄一句測試文字，不含薪資內容，不標記已寄
+  const TEST_MAIL_TEXT = '這是Kidcastle莊敬同安吉的堡校的薪水條系統寄送測試';
+  async function sendTestMails() {
+    if (_mailSending) return;
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可寄送測試信', 'error'); return; }
+    const picked = _mailRows.filter(r => _mailSelected.has(r.eid) && isValidEmail(r.email));
+    const targets = picked.length ? picked : [{ eid: null, name: '寄件人（自己）', email: MAIL_SENDER }];
+    const list = targets.slice(0, 15).map(r => `・${r.name} <${r.email}>`).join('\n') + (targets.length > 15 ? `\n…等共 ${targets.length} 人` : '');
+    if (!confirm(`寄出 ${targets.length} 封測試信？\n內容：「${TEST_MAIL_TEXT}」（不含薪資資料）\n\n${list}` +
+                 (picked.length ? '' : '\n\n（左側沒有勾選員工，所以只寄給寄件人自己）'))) return;
+    let key = getMailKey(false);
+    if (!key) { toast('未輸入寄信密碼，已取消', 'error'); return; }
+
+    _mailSending = true;
+    $('mailCancelBtn').disabled = true; $('mailTestBtn').disabled = true;
+    $('mailProgress').style.display = '';
+    let okCnt = 0, failCnt = 0, done = 0, remain = '';
+    const setProg = () => {
+      $('mailProgressBar').style.width = Math.round(done / targets.length * 100) + '%';
+      $('mailProgressTxt').textContent = `測試信寄送中 ${done} / ${targets.length} · 成功 ${okCnt} · 失敗 ${failCnt}`;
+    };
+    setProg(); renderMailList();
+    for (const r of targets) {
+      if (r.eid) { _mailStatus[r.eid] = { cls: 'busy', text: '測試中…' }; renderMailList(); }
+      try {
+        let j;
+        try { j = await cloudPost('send_test_mail', { key, to: r.email, eid: r.eid, name: r.name }); }
+        catch (err) {
+          if (/key|密碼/i.test(err.message)) {
+            key = getMailKey(true);
+            if (!key) throw err;
+            j = await cloudPost('send_test_mail', { key, to: r.email, eid: r.eid, name: r.name });
+          } else throw err;
+        }
+        okCnt++;
+        if (r.eid) _mailStatus[r.eid] = { cls: 'sent', text: '✓ 測試已寄' };
+        if (j && j.receiptId) _mailReceipts[mailReceiptKey(r)] = { sentAt: new Date().toISOString(), ackAt: '', to: r.email };
+        if (j && j.remaining != null) remain = j.remaining;
+      } catch (err) {
+        failCnt++;
+        if (r.eid) _mailStatus[r.eid] = { cls: 'fail', text: '✗ 測試失敗', title: err.message };
+        console.error('send_test_mail failed', r.email, err);
+        if (/unknown action|未知|not supported/i.test(err.message)) {
+          toast('Apps Script 尚未加入 send_test_mail，請先更新 Code.gs 並重新部署', 'error');
+          done++; setProg(); break;
+        }
+        if (!r.eid) toast('測試信失敗：' + err.message, 'error');
+      }
+      done++; setProg(); renderMailList();
+      await new Promise(res => setTimeout(res, 800));
+    }
+    _mailSending = false;
+    $('mailCancelBtn').disabled = false; $('mailTestBtn').disabled = false;
+    $('mailProgressTxt').textContent = `測試信完成：成功 ${okCnt} 封、失敗 ${failCnt} 封` +
+      (remain !== '' ? ` · 今日剩餘寄信額度 ${remain}` : '') + (failCnt ? '（滑鼠移到「✗ 測試失敗」可看原因）' : '');
+    renderMailList();
+    if (okCnt) appendLog({ time: nowTimestamp(), user: currentUser.fullName,
+      text: `寄送薪水條系統測試信 ${okCnt} 封（寄件人 ${MAIL_SENDER}）${failCnt ? `，失敗 ${failCnt} 封` : ''}` });
+    toast(failCnt ? `測試信寄出 ${okCnt} 封，${failCnt} 封失敗` : `✓ 已寄出 ${okCnt} 封測試信`, failCnt ? 'error' : 'success');
+  }
+
+  // 📬 測試信回條（V20261018V2030）— 員工在測試信按「✅ 確認收到，寄送回條」後，Apps Script（Receipt.gs）會記錄回條
+  function mailReceiptKey(r) { return r.eid || String(r.email || '').toLowerCase(); }
+  function mailFmtTime(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ` +
+           `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+  function mailReceiptBadge(r) {
+    const rc = _mailReceipts[r.eid] || _mailReceipts[String(r.email || '').toLowerCase()];
+    if (!rc) return '';
+    if (rc.ackAt) return `<span class="st ack" title="測試信寄出 ${escMail(mailFmtTime(rc.sentAt))}，${escMail(mailFmtTime(rc.ackAt))} 回條">✅ 已回條 ${escMail(mailFmtTime(rc.ackAt))}</span>`;
+    return `<span class="st wait" title="測試信寄出 ${escMail(mailFmtTime(rc.sentAt))}，尚未按回條">⏳ 未回條</span>`;
+  }
+  async function loadMailReceipts(ask) {
+    let key = '';
+    if (ask) key = getMailKey(false);
+    else try { key = localStorage.getItem(MAIL_KEY_STORE) || ''; } catch (_) {}
+    if (!key) { if (ask) toast('未輸入寄信密碼，已取消', 'error'); return; }
+    const btn = $('mailReceiptBtn');
+    if (ask) { btn.disabled = true; btn.textContent = '📬 查詢中…'; }
+    try {
+      let j;
+      try { j = await cloudPost('receipt_list', { key }); }
+      catch (err) {
+        if (ask && /key|密碼/i.test(err.message)) {
+          key = getMailKey(true);
+          if (!key) throw err;
+          j = await cloudPost('receipt_list', { key });
+        } else throw err;
+      }
+      // 每位員工只看最新一封測試信（紀錄新的在前）
+      const map = {};
+      (j.receipts || []).filter(x => x.kind === 'test').forEach(x => {
+        const k = x.eid || String(x.to || '').toLowerCase();
+        if (!map[k]) map[k] = { sentAt: x.sentAt, ackAt: x.ackAt || '', to: x.to };
+      });
+      _mailReceipts = map;
+      renderMailList();
+      if (ask) {
+        const rows = _mailRows.filter(r => _mailReceipts[r.eid]);
+        const acked = rows.filter(r => _mailReceipts[r.eid].ackAt);
+        const self = _mailReceipts[MAIL_SENDER.toLowerCase()];
+        const waiting = rows.filter(r => !_mailReceipts[r.eid].ackAt).map(r => r.name);
+        $('mailProgress').style.display = '';
+        $('mailProgressBar').style.width = rows.length ? Math.round(acked.length / rows.length * 100) + '%' : '0%';
+        $('mailProgressTxt').textContent = `📬 回條：目前名單中 ${rows.length} 人已寄測試信，${acked.length} 人已回條` +
+          (waiting.length ? `；未回條：${waiting.slice(0, 20).join('、')}${waiting.length > 20 ? ` …等 ${waiting.length} 人` : ''}` : '') +
+          (self ? `（寄件人自己：${self.ackAt ? '已回條' : '未回條'}）` : '');
+        toast(`📬 已更新回條：${acked.length} / ${rows.length} 人已回條`, 'success');
+      }
+    } catch (err) {
+      console.error('receipt_list failed', err);
+      if (ask) {
+        if (/unknown action|未知|not supported/i.test(err.message)) toast('Apps Script 尚未加入 Receipt.gs（receipt_list），請依 Receipt.gs 開頭說明更新並重新部署', 'error');
+        else toast('查詢回條失敗：' + err.message, 'error');
+      }
+    } finally {
+      if (ask) { btn.disabled = false; btn.textContent = '📬 查詢回條'; }
+    }
+  }
+
   // 薪資條計算（畫面薪資條與 Email 薪資條共用，確保金額一致）
   function getPayslipData(emp, sal) {
     // 先依目前公式重新計算加班費／支薪金額／請假扣款／遲到扣款，避免顯示舊的快取值
@@ -5872,6 +6951,7 @@
       ['留班獎金 Retention Bonus', emp['留班獎金']],
       ['考試獎金 Exam Bonus', emp['考試獎金']],
       ...itemizedPayslipRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細']),
+      ...kcPayslipRows(emp, sal, true),                 // 吉的堡項目＋兼職美語
       ['補貼公會投保勞保 Guild Labor Ins Subsidy', emp['補貼公會投保勞保']],
       ['補貼公會健保自付 Guild Health Ins Subsidy', emp['補貼公會健保自付']],
       ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']],
@@ -6127,6 +7207,7 @@
       ['留班獎金',      emp['留班獎金']],
       ['考試獎金',      emp['考試獎金']],
       ...itemizedPayslipRows('其他津貼', emp['其他津貼'], emp['其他津貼明細']),
+      ...kcPayslipRows(emp, sal, false),   // 吉的堡項目＋兼職美語
       ['補貼公會投保勞保', emp['補貼公會投保勞保']],
       ['補貼公會健保自付', emp['補貼公會健保自付']],
       ['補貼健保眷屬',     emp['補貼健保眷屬']],
@@ -6253,6 +7334,15 @@
         ['留班獎金',          '留班獎金 Retention Bonus'],
         ['考試獎金',          '考試獎金 Exam Bonus'],
         ['其他津貼',          '其他津貼 Others'],
+        ['帶班數薪資',        '帶班數薪資 Class Teaching（吉的堡）'],
+        ['Writing 人數津貼',  'Writing 人數津貼（吉的堡）'],
+        ['V Writing',         'V Writing（吉的堡）'],
+        ['資優美語',          '資優美語（吉的堡）'],
+        ['一對一',            '一對一（吉的堡）'],
+        ['B Reading',         'B Reading 閱讀班（吉的堡）'],
+        ['輔導補課',          '輔導補課（吉的堡）'],
+        ['奇趣線上教材',      '奇趣線上教材（吉的堡）'],
+        ['行政津貼',          '行政津貼（吉的堡）'],
         ['補貼公會投保勞保',  '補貼公會投保勞保 Guild Labor'],
         ['補貼公會健保自付',  '補貼公會健保自付 Guild Health'],
         ['補貼退休金',        '補貼退休金 Retirement Subsidy']
@@ -6265,6 +7355,8 @@
         ['加班時數',   '加班時數 OT Hours'],
         ['支薪金額',   '支薪金額 Paid Hours Pay'],
         ['支薪時數',   '支薪時數 Paid Hours'],
+        ['自行授課',   '自行授課 Teaching（兼職美語）'],
+        ['協助外師',   '協助外師 Assisting（兼職美語）'],
         ['考試津貼',   '考試津貼 Exam Allowance'],
         ['預繳津貼',   '預繳津貼 Prepay Allowance'],
         ['獎金',       '獎金 Bonus'],
@@ -6469,9 +7561,7 @@
     XLSX.utils.book_append_sheet(wb, ws, '薪資條匯總 Summary');
 
     // File name
-    const scopeLabel = scope === 'both' ? '同安+莊敬合併'
-                    : scope === '同安' ? '同安校'
-                    : '莊敬校';
+    const scopeLabel = scope === 'both' ? '全部校區合併' : scope + '校';
     const dateStr = new Date().toISOString().substr(0, 10);
     const filename = `Kidcastle_薪資條匯總_${scopeLabel}_${month}_${dateStr}.xlsx`;
     XLSX.writeFile(wb, filename);
@@ -6544,7 +7634,7 @@
     { key: '全勤',     type: 'att' },
     ...monthlyExtraFields().map(f => f.kind === 'money'
       ? { key: f.key, type: 'num', min: 0, max: 999999, step: 1 }
-      : { key: f.key, type: 'num', min: 0, max: 9999,   step: 1 }),
+      : { key: f.key, type: 'num', min: 0, max: 9999,   step: f.step || 1 }),
     { key: '備註',     type: 'text' }
   ].filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
 
@@ -6620,7 +7710,7 @@
         o['員工編號'] === emp['員工編號'] && String(o['月份']) === String(month)
       ) || {};
       const r = computeRow(emp, sal);
-      const campusClass = emp['校區'] === '同安' ? 'ta' : 'zj';
+      const campusClass = campusStyle(emp['校區']).cls;
 
       const inputs = visibleFields.map(f => {
         const ro = colPerm(f.key) === 'view' ? ' disabled title="老闆設定為「只能看」" style="cursor:not-allowed;opacity:.75;"' : '';
@@ -7183,7 +8273,7 @@
     let totalGross = 0, totalNet = 0, totalBonus = 0, totalDeduct = 0, totalAllow = 0, totalBase = 0;
     let totalOT = 0, totalLeave = 0, totalLate = 0;
     const perEmp = []; // for chart top earners
-    const byCampus = { 同安: { gross: 0, count: 0, net: 0 }, 莊敬: { gross: 0, count: 0, net: 0 } };
+    const byCampus = Object.fromEntries(CAMPUS_LIST.map(c => [c, { gross: 0, count: 0, net: 0 }]));
     const byPosition = {};
 
     active.forEach(emp => {
@@ -7295,8 +8385,8 @@
     }
 
     // Campus pie (gross salary)
-    const campusLabels = ['同安校區', '莊敬校區'];
-    const campusValues = [stats.byCampus.同安.gross, stats.byCampus.莊敬.gross];
+    const campusLabels = CAMPUS_LIST.map(c => c + '校區');
+    const campusValues = CAMPUS_LIST.map(c => stats.byCampus[c].gross);
     if (_chartCampus) _chartCampus.destroy();
     _chartCampus = new Chart($('chartCampus'), {
       type: 'doughnut',
@@ -7304,7 +8394,7 @@
         labels: campusLabels,
         datasets: [{
           data: campusValues,
-          backgroundColor: ['#4472C4', '#F4A340'],
+          backgroundColor: CAMPUS_LIST.map(c => campusStyle(c).chart),
           borderColor: '#fff', borderWidth: 3
         }]
       },
@@ -7313,7 +8403,7 @@
         plugins: {
           legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 }},
           tooltip: { callbacks: {
-            label: c => `${c.label}: NT$ ${Number(c.raw).toLocaleString()} (${stats.byCampus[c.label.slice(0,2)].count} 人)`
+            label: c => `${c.label}: NT$ ${Number(c.raw).toLocaleString()} (${stats.byCampus[c.label.replace(/校區$/, '')].count} 人)`
           }}
         }
       }
@@ -7353,7 +8443,7 @@
         datasets: [{
           label: '實領薪資',
           data: top.map(t => t.net),
-          backgroundColor: top.map(t => t.emp['校區'] === '同安' ? '#4472C4' : '#F4A340'),
+          backgroundColor: top.map(t => campusStyle(t.emp['校區']).chart),
           borderRadius: 6
         }]
       },
@@ -7375,35 +8465,22 @@
     });
 
     // Campus comparison table
+    const bc = CAMPUS_LIST.map(c => stats.byCampus[c]);
+    const sum = f => bc.reduce((t, x) => t + x[f], 0);
     const cmpRows = [
-      ['在職人數',
-        stats.byCampus.同安.count,
-        stats.byCampus.莊敬.count,
-        stats.byCampus.同安.count + stats.byCampus.莊敬.count],
-      ['應發薪資合計',
-        stats.byCampus.同安.gross,
-        stats.byCampus.莊敬.gross,
-        stats.byCampus.同安.gross + stats.byCampus.莊敬.gross],
-      ['實領薪資合計',
-        stats.byCampus.同安.net,
-        stats.byCampus.莊敬.net,
-        stats.byCampus.同安.net + stats.byCampus.莊敬.net],
-      ['平均應發',
-        stats.byCampus.同安.count ? Math.round(stats.byCampus.同安.gross / stats.byCampus.同安.count) : 0,
-        stats.byCampus.莊敬.count ? Math.round(stats.byCampus.莊敬.gross / stats.byCampus.莊敬.count) : 0,
-        '—']
+      ['在職人數',     ...bc.map(x => x.count), sum('count')],
+      ['應發薪資合計', ...bc.map(x => x.gross), sum('gross')],
+      ['實領薪資合計', ...bc.map(x => x.net),   sum('net')],
+      ['平均應發',     ...bc.map(x => x.count ? Math.round(x.gross / x.count) : 0), '—']
     ];
     const cmpTable = $('campusCompare');
     cmpTable.querySelector('tbody').innerHTML = cmpRows.map(r => `<tr>
       <td>${r[0]}</td>
-      <td class="num">${typeof r[1] === 'number' ? fmtNT(r[1]) : r[1]}</td>
-      <td class="num">${typeof r[2] === 'number' ? fmtNT(r[2]) : r[2]}</td>
-      <td class="num">${typeof r[3] === 'number' ? fmtNT(r[3]) : r[3]}</td>
+      ${r.slice(1).map(v => `<td class="num">${typeof v === 'number' ? fmtNT(v) : v}</td>`).join('')}
     </tr>`).join('');
     cmpTable.querySelector('tfoot').innerHTML = `<tr>
       <td>總薪資負擔</td>
-      <td>${fmtNT(stats.byCampus.同安.gross)}</td>
-      <td>${fmtNT(stats.byCampus.莊敬.gross)}</td>
+      ${bc.map(x => `<td>${fmtNT(x.gross)}</td>`).join('')}
       <td>${fmtNT(stats.totalGross)}</td>
     </tr>`;
 
@@ -7456,7 +8533,7 @@
     const multiList = $('bkMultiList');
     if (multiList) {
       multiList.innerHTML = emps.map(e => {
-        const campusColor = e['校區'] === '同安' ? '#DBEAFE;color:#1E40AF' : '#FFF1E5;color:#B45309';
+        const campusColor = `${campusStyle(e['校區']).bg};color:${campusStyle(e['校區']).fg}`;
         const inactive = e['在職狀態'] !== '在職';
         return `<label style="display:flex;align-items:center;gap:6px;padding:4px 8px;font-size:12px;cursor:pointer;border-radius:5px;transition:background .12s;${inactive ? 'opacity:0.55;' : ''}" onmouseover="this.style.background='#F5F3FF'" onmouseout="this.style.background=''">
           <input type="checkbox" class="bk-multi-chk" value="${e['員工編號']}" data-campus="${e['校區']}" data-active="${e['在職狀態']==='在職'?'1':'0'}" onchange="updateBkMultiCount()">
@@ -7476,6 +8553,10 @@
     if ($('bkZjCount')) {
       const zjCount = DATA.employees.filter(e => e['校區'] === '莊敬').length;
       $('bkZjCount').textContent = `${zjCount} 名員工`;
+    }
+    if ($('bkKcCount')) {
+      const kcCount = DATA.employees.filter(e => e['校區'] === KC_CAMPUS).length;
+      $('bkKcCount').textContent = `${kcCount} 名員工`;
     }
 
     updateBackupFilenameHint();
@@ -7502,9 +8583,8 @@
       const ids = campus.slice(5).split(',');
       return `Kidcastle_多位老師_${ids.length}人_${dateStr}.xlsx`;
     }
-    const campusLabel = campus === 'both' ? '同安_莊敬合併'
-                       : campus === '同安' ? '同安校'
-                       : campus === '莊敬' ? '莊敬校'
+    const campusLabel = campus === 'both' ? '全部校區合併'
+                       : CAMPUS_LIST.includes(campus) ? campus + '校'
                        : campus;
     return `Kidcastle_${campusLabel}_${period.label}_${dateStr}.xlsx`;
   }
@@ -7546,7 +8626,8 @@
       ['混班人數', false], ['混班津貼', true],
       ['數學人數', false], ['數學津貼', false],
       ['留班比率', false], ['留班獎金', true],
-      ['考試獎金', true], ['其他津貼', true]
+      ['考試獎金', true], ['其他津貼', true],
+      ...KC_EMP_EXPORT_KEYS.map(k => [k, true])
     ],
     '扣款 / 補貼': [
       ['投保級距', true],
@@ -7564,7 +8645,8 @@
     '月度薪資': [
       ['月份', true], ['上班時數', false], ['加班時數', true], ['加班費', true], ['支薪時數', true], ['支薪金額', true],
       ['請假時數', true], ['請假扣款', true], ['遲到次數', true], ['遲到扣款', true],
-      ['獎金', true], ['扣款', true]
+      ['獎金', true], ['扣款', true],
+      ['自行授課時數', true], ['協助外師時數', true], ['自行授課薪資', true], ['協助外師薪資', true]
     ]
   };
   const BK_FIELD_KEY = 'kc_backup_fields_v1';
@@ -7640,7 +8722,7 @@
       if (mode === 'all') chk.checked = true;
       else if (mode === 'none') chk.checked = false;
       else if (mode === 'active') chk.checked = chk.dataset.active === '1';
-      else if (mode === '同安' || mode === '莊敬') chk.checked = chk.dataset.campus === mode;
+      else if (CAMPUS_LIST.includes(mode)) chk.checked = chk.dataset.campus === mode;
     });
     updateBkMultiCount();
   }
@@ -7713,7 +8795,7 @@
                const ep = DATA.employees.find(e => e['員工編號']===id);
                return id + (ep ? '_'+ep['員工姓名'] : '');
              }).join(', '))
-          : (campusScope === 'both' ? '同安 + 莊敬' : campusScope + '校')],
+          : (campusScope === 'both' ? '全部校區' : campusScope + '校')],
       ['備份期間 Period', period.label],
       ['員工筆數 Employees', filteredEmps.length],
       ['薪資筆數 Salary Records', filteredSals.length],
@@ -7742,6 +8824,7 @@
                         '數學人數','數學津貼',
                         '留班比率','留班獎金',
                         '考試獎金','其他津貼',
+                        ...KC_EMP_EXPORT_KEYS,
                         '勞保自付','補貼公會投保勞保',
                         '健保自付','補貼公會健保自付',
                         '健保眷屬自付','補貼健保眷屬',
@@ -7773,8 +8856,9 @@
                         '數學人數','數學津貼',
                         '留班比率','留班獎金',
                         '考試獎金','其他津貼',
+                        ...KC_EMP_EXPORT_KEYS,
                         '津貼合計',
-                        '獎金','扣款', ...monthlyExtraKeys(), '應發薪資',
+                        '獎金','扣款', ...monthlyExtraKeys(), '自行授課薪資', '協助外師薪資', '應發薪資',
                         '勞保自付','補貼公會投保勞保',
                         '健保自付','補貼公會健保自付',
                         '健保眷屬自付','補貼健保眷屬',
@@ -7783,7 +8867,7 @@
     const allowKeys = ['年資津貼','主管津貼',
                        '美語津貼','美語輔導津貼','數學班津貼',
                        '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬', ...KC_ALLOW_KEYS];
     const salRows = [salHeaders];
     filteredSals.slice()
       .sort((a, b) => {
@@ -7817,9 +8901,11 @@
           Number(emp['數學人數']) || 0, Number(emp['數學津貼']) || 0,
           Number(emp['留班比率']) || 0, Number(emp['留班獎金']) || 0,
           Number(emp['考試獎金']) || 0, Number(emp['其他津貼']) || 0,
+          ...KC_EMP_EXPORT_KEYS.map(k => kcExportVal(emp, k)),
           allowSumLocal,
           Number(s['獎金']) || 0, Number(s['扣款']) || 0,
           ...monthlyExtraKeys().map(k => k === '全勤' ? (s[k] || '自動') : (Number(s[k]) || 0)),
+          Number(s['自行授課薪資']) || 0, Number(s['協助外師薪資']) || 0,
           r.gross,
           labor, Number(emp['補貼公會投保勞保']) || 0,
           health, Number(emp['補貼公會健保自付']) || 0,
@@ -7946,8 +9032,8 @@
         { key: '員工姓名', type: 'text' },
         { key: '英文姓名', type: 'text' },
         { key: '身份證字號', type: 'text' },
-        { key: '校區',     type: 'select', options: ['同安','莊敬'] },
-        { key: '職位',     type: 'select', options: ['老師','主任','組長','行政','老闆','其他'] },
+        { key: '校區',     type: 'select', options: CAMPUS_LIST },
+        { key: '職位',     type: 'select', options: ['老師','主任','組長','行政','兼職美語','老闆','其他'] },
         { key: '到職日',   type: 'date' },
         { key: '離職日',   type: 'date' }
       ]
@@ -7974,6 +9060,24 @@
         { key: '留班獎金',     type: 'money' },   // 已移除自動計算，自由輸入
         { key: '考試獎金',     type: 'money' },
         { key: '其他津貼',     type: 'money' }
+      ]
+    },
+    {
+      // 吉的堡校區員工、或職位為「兼職美語」時才顯示（見 syncKcSection）
+      title: '吉的堡項目 Kidcastle Items',
+      cls: 'kc',
+      badge: '🏰',
+      fields: [
+        { key: '帶班班數',     type: 'money', label: '帶班班數（班）' },
+        { key: '帶班班別',     type: 'text',  label: '帶班班別（例：C2/T2/B2/S1）' },
+        { key: '帶班數薪資',   type: 'money', label: '帶班數薪資（元）' },
+        ...KC_LINEAR_ITEMS.flatMap(i => [
+          { key: i.countKey, type: 'money', label: i.countKey.replace('人數', ' 人數') + '（人）' },
+          { key: i.moneyKey, type: 'money', get label() { return `${i.label}（元）— ${FC(i.rateKey)} 元/人`; } }
+        ]),
+        ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數薪資').map(i => ({ key: i.key, type: 'money', label: i.label })),
+        { key: '自行授課時薪', type: 'money', get label() { return `兼職美語・自行授課時薪（0 = 預設 ${FC('PT_TEACH_RATE')}，可設 ${FC('PT_TEACH_MIN')}～${FC('PT_TEACH_MAX')}）`; } },
+        { key: '協助外師時薪', type: 'money', get label() { return `兼職美語・協助外師時薪（0 = 預設 ${FC('PT_ASSIST_RATE')}）`; } }
       ]
     },
     {
@@ -8078,7 +9182,7 @@
     const keys = ['年資津貼','主管津貼',
                   '美語津貼','美語輔導津貼','數學班津貼',
                   '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼',
-                  '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
+                  '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬', ...KC_ALLOW_KEYS];
     return keys.reduce((s, k) => s + (Number(emp[k]) || 0), 0);
   }
 
@@ -8114,7 +9218,7 @@
     tbody.innerHTML = emps.map(e => {
       const stat = e['在職狀態'] || '在職';
       const statCls = stat === '在職' ? 'active' : (stat === '留職停薪' ? 'leave' : 'resigned');
-      const campusChip = e['校區'] === '同安' ? 'ta' : 'zj';
+      const campusChip = campusStyle(e['校區']).cls;
       const isActive = stat === '在職';
       const actionBtn = isActive
         ? `<button class="resign" onclick="toggleStatus('${e['員工編號']}')" title="設為離職">⏸ 離職</button>`
@@ -8315,6 +9419,7 @@
     { title: '④ 員工登入帳號 Login', keys: ['登入帳號','登入密碼','Email'] },
     { title: '⑤ 特休管理 Annual Leave', keys: ['特休資訊','可休日數_手動','已休日數'] },
     { title: '⑥ 備註 Notes', keys: ['備註'] },
+    { title: '🏰 吉的堡項目 Kidcastle', keys: ['帶班班數','帶班班別','帶班數薪資', ...KC_LINEAR_ITEMS.map(i => i.moneyKey), ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數薪資').map(i => i.key), '自行授課時薪','協助外師時薪'] },
     { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款', ...monthlyExtraKeys().map(k => 'mgr:' + k), 'mgr:備註'].filter(k => !REMOVED_INPUT_KEYS.includes(k.slice(4))) }
   ];
   const MGR_PERM_LABELS = {
@@ -8332,7 +9437,7 @@
     d['員工編號'] = 'view';
     d['特休資訊'] = 'view';
     d['mgr:支薪時數'] = 'view';   // 支薪時數預設只有老闆能改，可在權限設定開放給主管
-    ['底薪','年資津貼','主管津貼'].forEach(k => d[k] = 'hidden');
+    ['底薪','年資津貼','主管津貼','自行授課時薪','協助外師時薪'].forEach(k => d[k] = 'hidden');
     MGR_PERM_GROUPS[2].keys.forEach(k => d[k] = 'hidden');
     MGR_PERM_GROUPS[3].keys.forEach(k => d[k] = 'hidden');
     return d;
@@ -8344,6 +9449,7 @@
     '健保眷屬自付': '健保眷屬扣款', '補貼健保眷屬': '健保眷屬扣款',
     '退休金提撥': '退休金', '補貼退休金': '退休金',
     '美語人數': '美語津貼', '數學班人數': '數學班津貼', '帶班人數': '帶班人數津貼', '混班校數': '混班津貼',
+    ...Object.fromEntries(KC_LINEAR_ITEMS.map(i => [i.countKey, i.moneyKey])),
     '其他津貼明細': '其他津貼'
   };
   function getMgrPerm(key) {
@@ -8569,7 +9675,7 @@
   function openAddEmployee() {
     const next = nextEmpId(DATA.employees);
     const draft = {
-      '員工編號': next, '員工姓名': '', '英文姓名': '', '校區': '同安', '職位': '老師',
+      '員工編號': next, '員工姓名': '', '英文姓名': '', '校區': ($('ownCampus') && CAMPUS_LIST.includes($('ownCampus').value)) ? $('ownCampus').value : '同安', '職位': '老師',
       '到職日': new Date().toISOString().substr(0,10), '離職日': '', '在職狀態': '在職',
       '底薪': Number(FC('NEW_BASE')), '全勤獎金': Number(FC('NEW_ATT')), '年資津貼': 0, '主管津貼': 0,
       '分校人數超額獎金': 0, '美語津貼': 0,
@@ -8596,7 +9702,7 @@
     // Default prefix based on owner's current campus; fall back to TA
     const campus = $('ownCampus') && $('ownCampus').value && $('ownCampus').value !== 'all'
       ? $('ownCampus').value : '同安';
-    const prefix = campus === '同安' ? 'TA' : 'ZJ';
+    const prefix = campusPrefix(campus);
     const nums = emps
       .filter(e => String(e['員工編號']).startsWith(prefix))
       .map(e => parseInt(String(e['員工編號']).slice(2)) || 0);
@@ -8674,11 +9780,12 @@
         const hcKey = spec.countKey;
         const hcVal = Number(emp[hcKey]) || 0;
         const monthStr = _drawerMonth || '';
-        const computed = computeClassSizeAllowance(hcVal, monthStr);
+        const computed = classSizeAllowanceFor(emp, hcVal, monthStr);
         // 顯示分段提示
         const isSummer = isSummerMonth(monthStr);
         const _b = FC('CS_BASE'), _t = FC('CS_TIER');
-        const hint = isSummer
+        const hint = emp['校區'] === KC_CAMPUS ? `吉的堡：每人 × ${FC('KC_HEAD_RATE')} 元`
+          : isSummer
           ? `暑期(${FC('CS_SUMMER')}月)：≤ ${_b}人 = 0；${Number(_b)+1}~${_t}人 × ${FC('CS_S1')}；超 ${_t} 人後續 × ${FC('CS_S2')}`
           : `平時：≤ ${_b}人 = 0；${Number(_b)+1}~${_t}人 × ${FC('CS_N1')}；超 ${_t} 人後續 × ${FC('CS_N2')}`;
         if (mVal !== computed) emp[moneyKey] = computed;
@@ -8803,6 +9910,7 @@
                 <div style="width:100%;font-size:11px;color:#1E40AF;font-weight:600;margin-bottom:2px;">📋 將本欄備註複製到（限老闆）</div>
                 <button type="button" class="bulk-note-btn" data-scope="all" style="padding:5px 12px;background:#fff;border:1.5px solid #3B82F6;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📋 複製到所有員工</button>
                 <button type="button" class="bulk-note-btn" data-scope="同安" style="padding:5px 12px;background:#fff;border:1.5px solid #1E40AF;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🏫 複製到同安員工</button>
+                <button type="button" class="bulk-note-btn" data-scope="吉的堡" style="padding:5px 12px;background:#fff;border:1.5px solid #6D28D9;color:#6B21A8;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🏰 複製到吉的堡員工</button>
                 <button type="button" class="bulk-note-btn" data-scope="莊敬" style="padding:5px 12px;background:#fff;border:1.5px solid #B45309;color:#92400E;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🎓 複製到莊敬員工</button>
                 <div style="width:100%;font-size:11px;color:#0F766E;font-weight:600;margin:8px 0 2px;padding-top:6px;border-top:1px dashed #99F6E4;">📅 將本欄備註複製到本員工的（限老闆）</div>
                 <button type="button" class="bulk-note-btn" data-scope="next-month" style="padding:5px 12px;background:#fff;border:1.5px solid #14B8A6;color:#0F766E;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📅 複製到下個月份</button>
@@ -8906,6 +10014,7 @@
         <div class="lbl">預估月薪（用本月基準資料估算）</div>
         <div class="val" id="drawerNet">—</div>
       </div>`;
+    syncKcSection();
   }
 
   // ── 本月薪資 Monthly — 加班/請假/遲到/獎金/扣款/本月備註（寫入當月薪資紀錄 sal，非員工基本資料 emp）──
@@ -8920,7 +10029,7 @@
     { key: '扣款',     label: '扣款 Deduction',          min: 0,       max: 999999, step: 1 },
     ...monthlyExtraFields().map(f => ({
       key: f.key, label: `${f.label} ${f.en}`,
-      min: 0, max: f.kind === 'money' ? 999999 : 9999, step: 1
+      min: 0, max: f.kind === 'money' ? 999999 : 9999, step: f.step || 1
     }))
   ];
   const DRAWER_MONTHLY_FIELDS = DRAWER_MONTHLY_FIELDS_ALL.filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
@@ -8931,7 +10040,12 @@
     const emp = findEmployee(_editingEid);
     if (emp) computeRow(emp, sal);   // refresh sal['加班費'] 等自動計算欄位
     const otPay = Number(sal['加班費']) || 0;
-    const fieldsHtml = DRAWER_MONTHLY_FIELDS.map(f => {
+    // 兼職美語時數只給吉的堡／兼職美語員工（或本月已有時數）顯示
+    const ptKeys = monthlyExtraFields().filter(f => f.kind === 'hours').map(f => f.key);
+    const showPt = emp && (emp['校區'] === KC_CAMPUS || emp['職位'] === '兼職美語');
+    const fieldsHtml = DRAWER_MONTHLY_FIELDS
+      .filter(f => !ptKeys.includes(f.key) || showPt || (Number(sal[f.key]) || 0) !== 0)
+      .map(f => {
       const v = sal[f.key] == null ? 0 : sal[f.key];
       return `<div class="field-cell" data-mcol="${f.key}">
         <label>${f.label}</label>
@@ -9209,8 +10323,32 @@
     '美語人數':   { moneyKey: '美語津貼',       compute: (n)=> n * Number(FC('ENG_RATE')) },
     '數學班人數': { moneyKey: '數學班津貼',     compute: (n)=> n * Number(FC('MATH_RATE')) },
     '混班校數':   { moneyKey: '混班津貼',       compute: (n)=> n * Number(FC('MIX_RATE')) },
-    '帶班人數':   { moneyKey: '帶班人數津貼',   compute: (n)=> computeClassSizeAllowance(n, _drawerMonth || '') }
+    '帶班人數':   { moneyKey: '帶班人數津貼',   compute: (n)=> classSizeAllowanceFor({ '校區': drawerCampus() }, n, _drawerMonth || '') },
+    ...Object.fromEntries(KC_LINEAR_ITEMS.map(i => [i.countKey, { moneyKey: i.moneyKey, compute: (n)=> Math.round(n * Number(FC(i.rateKey))) }]))
   };
+  // 抽屜目前選的校區（還沒儲存也算），用來決定帶班人數津貼用哪個公式
+  function drawerCampus() {
+    const el = $('drawerBody') && $('drawerBody').querySelector('select[data-key="校區"]');
+    if (el) return el.value;
+    const emp = findEmployee(_editingEid);
+    return emp ? emp['校區'] : '';
+  }
+  // 吉的堡項目區塊：吉的堡員工、兼職美語、或已有吉的堡金額時才顯示
+  function syncKcSection() {
+    const body = $('drawerBody'); if (!body) return;
+    const sec = body.querySelector('.form-section.kc'); if (!sec) return;
+    const pick = k => { const el = body.querySelector(`[data-key="${k}"]`); return el ? el.value : ''; };
+    const hasVal = Array.from(sec.querySelectorAll('[data-key]')).some(el => el.value && el.value !== '0');
+    sec.hidden = !(pick('校區') === KC_CAMPUS || pick('職位') === '兼職美語' || hasVal);
+  }
+  document.addEventListener('change', e => {
+    const k = e.target && e.target.dataset && e.target.dataset.key;
+    if (!(k === '校區' || k === '職位') || !e.target.closest('#drawerBody')) return;
+    syncKcSection();
+    // 換校區時重算帶班人數津貼（吉的堡每人計、其他校分段）
+    const hc = $('drawerBody').querySelector('[data-key="帶班人數"]');
+    if (k === '校區' && hc) hc.dispatchEvent(new Event('input', { bubbles: true }));
+  });
 
   // Live update preview while editing
   document.addEventListener('input', e => {
@@ -9241,7 +10379,7 @@
       let newVal;
       if (formula === 'classSize') {
         // 帶班人數津貼 — 分段公式 + 月份判斷
-        newVal = computeClassSizeAllowance(hc, _drawerMonth || '');
+        newVal = classSizeAllowanceFor({ '校區': drawerCampus() }, hc, _drawerMonth || '');
       } else {
         // 線性公式：人數 × rate
         const rate = Number(e.target.dataset.rate) || 0;
@@ -9452,7 +10590,11 @@
     // Validate required
     if (!form['員工編號']) { toast('員工編號為必填', 'error'); return; }
     if (!form['員工姓名']) { toast('員工姓名為必填', 'error'); return; }
-    if (!['同安','莊敬'].includes(form['校區'])) { toast('校區須為 同安 或 莊敬', 'error'); return; }
+    if (!CAMPUS_LIST.includes(form['校區'])) { toast('校區須為 同安、莊敬 或 吉的堡', 'error'); return; }
+    const ptRate = Number(form['自行授課時薪']) || 0;
+    if (ptRate && (ptRate < Number(FC('PT_TEACH_MIN')) || ptRate > Number(FC('PT_TEACH_MAX')))) {
+      toast(`自行授課時薪須在 ${FC('PT_TEACH_MIN')}～${FC('PT_TEACH_MAX')} 之間（0 = 用預設 ${FC('PT_TEACH_RATE')}）；範圍可在公式設定頁調整`, 'error'); return;
+    }
 
     // Defense: managers cannot modify structural fields — revert any tampered changes
     if (currentUser && currentUser.role === 'manager' && _editingEid) {
@@ -9584,6 +10726,7 @@
                      '數學人數','數學津貼',
                      '留班比率','留班獎金',
                      '考試獎金','其他津貼',
+                     ...KC_EMP_EXPORT_KEYS,
                      '勞保自付','補貼公會投保勞保',
                      '健保自付','補貼公會健保自付',
                      '健保眷屬自付','補貼健保眷屬',
@@ -9761,8 +10904,9 @@
                      '數學人數','數學津貼',
                      '留班比率','留班獎金',
                      '考試獎金','其他津貼',
+                     ...KC_EMP_EXPORT_KEYS,
                      '津貼合計',
-                     '獎金','扣款', ...monthlyExtraKeys(), '應發薪資',
+                     '獎金','扣款', ...monthlyExtraKeys(), '自行授課薪資', '協助外師薪資', '應發薪資',
                      '勞保自付','補貼公會投保勞保',
                      '健保自付','補貼公會健保自付',
                      '健保眷屬自付','補貼健保眷屬',
@@ -9771,7 +10915,7 @@
     const allowKeys = ['年資津貼','主管津貼',
                        '美語津貼','美語輔導津貼','數學班津貼',
                        '帶班人數津貼','混班津貼','數學津貼','留班獎金','考試獎金','其他津貼',
-                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬'];
+                       '補貼公會投保勞保','補貼公會健保自付','補貼退休金','補貼健保眷屬', ...KC_ALLOW_KEYS];
 
     const rows = [headers];
     // Sort by month, then by employee ID
@@ -9806,9 +10950,11 @@
         Number(emp['數學人數']) || 0, Number(emp['數學津貼']) || 0,
         Number(emp['留班比率']) || 0, Number(emp['留班獎金']) || 0,
         Number(emp['考試獎金']) || 0, Number(emp['其他津貼']) || 0,
+        ...KC_EMP_EXPORT_KEYS.map(k => kcExportVal(emp, k)),
         allowSum,
         Number(sal['獎金']) || 0, Number(sal['扣款']) || 0,
         ...monthlyExtraKeys().map(k => k === '全勤' ? (sal[k] || '自動') : (Number(sal[k]) || 0)),
+        Number(sal['自行授課薪資']) || 0, Number(sal['協助外師薪資']) || 0,
         r.gross,
         labor, Number(emp['補貼公會投保勞保']) || 0,
         health, Number(emp['補貼公會健保自付']) || 0,
@@ -9889,6 +11035,58 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261020V2030', date: '2026-10-20 20:30',
+      changes: [
+        '新增第三校區「🏰 吉的堡」：首頁登入卡、所有校區下拉選單、總覽校區比較與圓餅圖、備份、薪資條匯總、Email 批次、刪除資料都加入吉的堡；員工編號自動以 KC 開頭',
+        '員工資料新增「🏰 吉的堡項目」區塊（吉的堡員工或職位為「兼職美語」才顯示）：帶班班數／班別、帶班數薪資、Writing 人數與津貼、V Writing、資優美語、一對一、B Reading（閱讀班）、輔導補課、奇趣線上教材、行政津貼，全部列入 (B) 非固定支付',
+        '吉的堡的帶班人數津貼改為「帶班人數 × 每人費率」（預設 80 元）；同安／莊敬仍用分段公式。Writing 人數津貼預設 40 元／人',
+        '新增職位「兼職美語」：每月輸入「自行授課時數」「協助外師時數」，金額 = 時數 × 時薪；自行授課預設 550（可設 550～580）、協助外師預設 400，可在公式設定頁調整，也可每位員工個別設定',
+        '吉的堡留班費、全勤、滿兩年年資、勞保自付、健保眷屬、現金給付沿用既有欄位（留班獎金、全勤獎金、年資津貼、勞保自付額、健保眷屬扣款、現金給付）',
+        '吉的堡校區預設只有老闆帳號（密碼與同安校區相同），主管帳號請在「🔐 帳號管理」選吉的堡校區新增',
+        '後端 Code.gs（V20261020V2030）：測試信文字加入吉的堡、併入 send_name_request；貼上後填回 MAIL_KEY／ADMIN_KEY 並部署「新版本」'
+      ]
+    },
+    {
+      version: 'V20261020V1200', date: '2026-10-20 12:00',
+      changes: [
+        '「📧 批次匯入 Email」：原本的「找不到員工」改為「比對不到員工姓名(中文)」，並在該列提供「✉ 寄信要求完整中文姓名」按鈕，也可用摘要區的按鈕一次寄給全部比對不到的人',
+        '後端 Receipt.gs 新增 send_name_request（需依檔案開頭說明加一行並部署「新版本」）'
+      ]
+    },
+    {
+      version: 'V20261018V2030', date: '2026-10-18 20:30',
+      changes: [
+        '🧪 測試信新增「✅ 確認收到，寄送回條」按鈕：員工按下後開啟確認頁，再按「確認收到」即送出回條，並寄一封回條通知給寄件人',
+        '「✉ 寄送薪資條」視窗新增「📬 查詢回條」：員工名單旁顯示「✅ 已回條 時間」或「⏳ 未回條」，並列出尚未回條的人；開啟視窗時也會自動更新',
+        '後端新增 Receipt.gs（send_test_mail 附回條按鈕、receipt 確認頁、receipt_list 查詢）；需依 Receipt.gs 開頭說明加到 Apps Script 並重新部署'
+      ]
+    },
+    {
+      version: 'V20261018V1945', date: '2026-10-18 19:45',
+      changes: [
+        '員工資料頁新增「📧 批次匯入 Email」（「📥 批次新增員工」旁）：上傳 Excel（.xlsx/.xls）、CSV，或從 Excel 複製貼上，一次填入多位員工的 Email；Google 表單回覆下載的檔案也能直接用',
+        '依員工編號、中文姓名（可中英混寫，例如「Summer游晏慈」→ 游晏慈）或英文姓名自動比對，同名時用校區區分；匯入前先預覽新增／更新／找不到，可逐筆勾選',
+        '可下載「員工Email範本.xlsx」（含目前所有員工名單與現有 Email），填好直接上傳'
+      ]
+    },
+    {
+      version: 'V20261018V1930', date: '2026-10-18 19:30',
+      changes: [
+        '「✉ 寄送薪資條」視窗新增「🧪 寄送測試信」按鈕：內容只有「這是Kidcastle莊敬同安校的薪水條系統寄送測試」，不含任何薪資資料、不附 PDF，也不會標記為「已寄」',
+        '測試信寄給左側勾選的員工；沒有勾選時寄給寄件人 wufatw@gmail.com 自己',
+        '後端（Code.gs）新增 send_test_mail 動作；移除薪資條 Email 底部的員工薪資查詢連結'
+      ]
+    },
+    {
+      version: 'V20261014V1300', date: '2026-10-14 13:00',
+      changes: [
+        '新增「📥 批次新增員工」（員工資料頁，「➕ 新增員工」旁）：可上傳 Excel（.xlsx/.xls）、CSV／文字檔，或直接從 Excel 複製貼上，一次新增多位員工',
+        '欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同（也接受 姓名、身分證、Email 等常見寫法）；沒有標題列時依序為 員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪、Email',
+        '員工編號留空會自動產生（同安 TA…、莊敬 ZJ…）；到職日支援 2026-11-01、2026/11/1、民國 115/11/01；CSV 支援 UTF-8 與 Big5',
+        '新增前會先預覽：檢查必填、校區、日期、數字、重複的員工編號／身份證字號、同名員工，可逐筆勾選；可下載 Excel／CSV 範本'
+      ]
+    },
     {
       version: 'V20261013V2045', date: '2026-10-13 20:45',
       changes: [
@@ -10135,6 +11333,10 @@
     { id: 'MATH_RATE', label: '數學班津貼費率', col: 0, g: 'P', desc: '每位數學班學生的津貼', formula: '預設 100 元／人', where: [W_FORM], who: '老闆' },
     { id: 'MIX_RATE', label: '混班津貼費率', col: 0, g: 'P', desc: '每個混班校區的津貼', formula: '預設 500 元／校', where: [W_FORM], who: '老闆' },
     { id: 'TUTOR_FIXED', label: '美語輔導固定額', col: 0, g: 'P', desc: '美語輔導津貼每月固定金額', formula: '預設 3,000 元／月', where: [W_FORM], who: '老闆' },
+    { id: 'KC_HEAD_RATE', label: '吉的堡帶班人數費率', col: 0, g: 'P', desc: '吉的堡校區帶班人數津貼每人金額', formula: '預設 80 元／人', where: [W_FORM], who: '老闆' },
+    { id: 'KC_WRITING_RATE', label: 'Writing 人數費率', col: 0, g: 'P', desc: '吉的堡 Writing 人數津貼每人金額', formula: '預設 40 元／人', where: [W_FORM], who: '老闆' },
+    { id: 'PT_TEACH_RATE', label: '自行授課時薪', col: 0, g: 'P', desc: '兼職美語自行授課的預設時薪與可設範圍（員工資料可個別設定）', formula: '預設 550 元／小時\n可設 550～580', where: [W_FORM, W_OWNER('自行授課時薪')], who: '老闆' },
+    { id: 'PT_ASSIST_RATE', label: '協助外師時薪', col: 0, g: 'P', desc: '兼職美語協助外師的預設時薪（員工資料可個別設定）', formula: '預設 400 元／小時', where: [W_FORM, W_OWNER('協助外師時薪')], who: '老闆' },
     { id: 'CS_PARAMS', label: '帶班人數分段', col: 0, g: 'P', desc: '帶班人數津貼的分段公式參數（平時／暑期 7、8 月不同費率）', formula: '基準 15 人、分段 20 人\n平時：每人 500／1,000\n暑期：每人 1,000／1,500', where: [W_FORM], who: '老闆' },
     { id: 'UNLOCK_DAY', label: '薪資條開放日', col: 0, g: 'P', desc: '員工每月幾號起可以查詢當月薪資條', formula: '預設每月 17 日（遇假日順延，開放 7 天）', where: [W_FORM, { text: '老闆設定面板（ReadWindowAdmin.html）', go: { url: 'ReadWindowAdmin.html' } }], who: '老闆' },
     // ② 每月輸入
@@ -10142,6 +11344,8 @@
     { id: '支薪時數', col: 1, g: 'M', desc: '當月另外支薪的時數', where: [W_MGR('支薪時數'), W_SAL('支薪時數')], who: '主管、老闆' },
     { id: '請假時數', col: 1, g: 'M', desc: '當月請假時數', where: [W_MGR('請假時數'), W_SAL('請假時數')], who: '主管、老闆' },
     { id: '遲到次數', col: 1, g: 'M', desc: '當月遲到次數', where: [W_MGR('遲到次數'), W_SAL('遲到次數')], who: '主管、老闆' },
+    { id: '自行授課時數', col: 1, g: 'M', desc: '兼職美語：當月自行授課時數', where: [W_MGR('自行授課時數'), W_SAL('自行授課時數')], who: '主管、老闆' },
+    { id: '協助外師時數', col: 1, g: 'M', desc: '兼職美語：當月協助外師時數', where: [W_MGR('協助外師時數'), W_SAL('協助外師時數')], who: '主管、老闆' },
     { id: '本月備註', col: 1, g: 'M', desc: '只顯示在當月薪資條的備註', where: [W_MGR('備註'), W_SAL('備註')], who: '主管、老闆' },
     { id: '獎金', col: 1, g: 'L', desc: '當月獎金（輸入畫面已停用；有舊值時老闆可在本月薪資修改或清除）', where: [W_SAL('獎金')], who: '老闆' },
     { id: '扣款', col: 1, g: 'L', desc: '當月其他扣款（已停用欄位）', where: [W_SAL('扣款')], who: '老闆' },
@@ -10152,6 +11356,7 @@
     { id: '數學班人數', col: 1, g: 'H', desc: '數學班學生人數', where: [W_OWNER('數學班人數')], who: '老闆' },
     { id: '帶班人數', col: 1, g: 'H', desc: '帶班學生人數（可有小數）', where: [W_OWNER('帶班人數')], who: '老闆' },
     { id: '混班校數', col: 1, g: 'H', desc: '混班／混校的校區數', where: [W_OWNER('混班校數')], who: '老闆' },
+    { id: 'Writing人數', label: 'Writing 人數', col: 1, g: 'H', desc: '吉的堡 Writing 學生人數', where: [W_OWNER('Writing人數')], who: '老闆' },
     { id: '結構性請假時數', col: 1, g: 'H', desc: '每月固定的請假時數（例如固定少上班的時數）', where: [W_OWNER('結構性請假時數')], who: '老闆' },
     // ③ 員工固定金額
     { id: '底薪', col: 2, g: 'F', desc: '每月底薪', where: [W_OWNER('底薪'), W_OWNTAB], who: '老闆' },
@@ -10162,6 +11367,8 @@
     { id: '留班獎金', col: 2, g: 'F', desc: '自由輸入的留班獎金', where: [W_OWNER('留班獎金')], who: '老闆' },
     { id: '考試獎金', col: 2, g: 'F', desc: '考試相關獎金（員工固定項目）', where: [W_OWNER('考試獎金')], who: '老闆' },
     { id: '其他津貼', col: 2, g: 'F', desc: '可逐項輸入名目／金額／說明，自動加總；明細會寫進薪資條備註', where: [W_OWNER('其他津貼')], who: '老闆' },
+    { id: '帶班數薪資', col: 2, g: 'F', desc: '吉的堡：依帶班班數的薪資（例 4 個班 C2/T2/B2/S1），班數與班別寫在薪資條上', where: [W_OWNER('帶班數薪資')], who: '老闆' },
+    { id: '吉的堡固定項目', label: '吉的堡固定項目', col: 2, g: 'F', desc: '吉的堡逐人輸入的固定金額：V Writing、資優美語、一對一、B Reading（閱讀班）、輔導補課、奇趣線上教材、行政津貼，列入 B', where: [W_OWNER('VWriting')], who: '老闆' },
     { id: '勞保自付', col: 2, g: 'I', desc: '勞保（選「🔴 扣薪」時由員工付，列入 C）', where: [W_OWNER('勞保自付額')], who: '老闆' },
     { id: '健保自付', col: 2, g: 'I', desc: '健保（選「🔴 扣薪」時由員工付，列入 C）', where: [W_OWNER('健保自付額')], who: '老闆' },
     { id: '健保眷屬自付', col: 2, g: 'I', desc: '健保眷屬（扣薪模式）', where: [W_OWNER('健保眷屬扣款')], who: '老闆' },
@@ -10176,12 +11383,14 @@
     { id: '全勤獎金實發', label: '全勤獎金（實發）', col: 3, g: 'C', desc: '本月實際發放的全勤獎金', formula: '手動指定「全勤」→ 全勤獎金金額\n手動指定「非全勤」→ 0\n自動 → 符合全勤條件才發', deps: ['全勤獎金設定', '全勤指定', '請假時數', '遲到次數', 'ATT_RULE'], where: [W_PS], who: '自動' },
     { id: '美語津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '美語津貼 = 美語人數 × 美語津貼費率', deps: ['美語人數', 'ENG_RATE'], where: [W_OWNER('美語津貼')], who: '自動（老闆可改）' },
     { id: '數學班津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '數學班津貼 = 數學班人數 × 數學班津貼費率', deps: ['數學班人數', 'MATH_RATE'], where: [W_OWNER('數學班津貼')], who: '自動（老闆可改）' },
-    { id: '帶班人數津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '人數 ≤ 基準 → 0\n基準＋1～分段 → (人數−基準) × 第一段費率\n超過分段 → 再加 (人數−分段) × 第二段費率\n（7、8 月用暑期費率）', deps: ['帶班人數', 'CS_PARAMS'], where: [W_OWNER('帶班人數津貼')], who: '自動（老闆可改）' },
+    { id: '帶班人數津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '人數 ≤ 基準 → 0\n基準＋1～分段 → (人數−基準) × 第一段費率\n超過分段 → 再加 (人數−分段) × 第二段費率\n（7、8 月用暑期費率）\n吉的堡：帶班人數 × 吉的堡帶班人數費率', deps: ['帶班人數', 'CS_PARAMS', 'KC_HEAD_RATE'], where: [W_OWNER('帶班人數津貼')], who: '自動（老闆可改）' },
     { id: '混班津貼', col: 3, g: 'C', desc: '輸入校數時自動帶出（也可手動改）', formula: '混班津貼 = 混班校數 × 混班津貼費率', deps: ['混班校數', 'MIX_RATE'], where: [W_OWNER('混班津貼')], who: '自動（老闆可改）' },
     { id: '美語輔導津貼', col: 3, g: 'C', desc: '固定金額', formula: '美語輔導津貼 = 美語輔導固定額', deps: ['TUTOR_FIXED'], where: [W_OWNER('美語輔導津貼')], who: '自動（老闆可改）' },
+    { id: 'Writing人數津貼', label: 'Writing 人數津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: 'Writing 人數津貼 = Writing 人數 × Writing 人數費率', deps: ['Writing人數', 'KC_WRITING_RATE'], where: [W_OWNER('Writing人數津貼')], who: '自動（老闆可改）' },
+    { id: '兼職美語薪資', label: '兼職美語時薪', col: 3, g: 'C', desc: '自動計算', formula: '自行授課 = 自行授課時數 × 自行授課時薪\n協助外師 = 協助外師時數 × 協助外師時薪\n（員工沒設時薪就用公式設定頁預設）', deps: ['自行授課時數', '協助外師時數', 'PT_TEACH_RATE', 'PT_ASSIST_RATE'], where: [W_SAL('自行授課時數'), W_PS], who: '自動' },
     // ⑤ 小計
     { id: 'A', label: '(A) 約定薪資', col: 4, g: 'S', desc: '薪資條第一區', formula: 'A = 底薪 + 全勤獎金（實發）+ 年資津貼', deps: ['底薪', '全勤獎金實發', '年資津貼'], where: [W_PS], who: '自動' },
-    { id: 'B', label: '(B) 非固定支付', col: 4, g: 'S', desc: '薪資條第二區', formula: 'B = 主管 + 美語 + 美語輔導 + 數學班\n  + 帶班人數 + 混班 + 數學(手動) + 留班\n  + 考試獎金 + 其他津貼 + 補貼（勞健保／退休金）\n  + 加班費 + 支薪金額 + 考試津貼 + 預繳津貼 + 獎金', deps: ['主管津貼', '美語津貼', '美語輔導津貼', '數學班津貼', '帶班人數津貼', '混班津貼', '數學津貼', '留班獎金', '考試獎金', '其他津貼', '補貼勞健保退休', '加班費', '支薪金額', '考試津貼', '預繳津貼', '獎金'], where: [W_PS], who: '自動' },
+    { id: 'B', label: '(B) 非固定支付', col: 4, g: 'S', desc: '薪資條第二區', formula: 'B = 主管 + 美語 + 美語輔導 + 數學班\n  + 帶班人數 + 混班 + 數學(手動) + 留班\n  + 考試獎金 + 其他津貼 + 補貼（勞健保／退休金）\n  + 吉的堡項目 + Writing + 兼職美語時薪\n  + 加班費 + 支薪金額 + 考試津貼 + 預繳津貼 + 獎金', deps: ['主管津貼', '美語津貼', '美語輔導津貼', '數學班津貼', '帶班人數津貼', '混班津貼', '數學津貼', '留班獎金', '考試獎金', '其他津貼', '補貼勞健保退休', '帶班數薪資', '吉的堡固定項目', 'Writing人數津貼', '兼職美語薪資', '加班費', '支薪金額', '考試津貼', '預繳津貼', '獎金'], where: [W_PS], who: '自動' },
     { id: 'C', label: '(C) 應代扣', col: 4, g: 'S', desc: '薪資條第三區', formula: 'C = 勞保自付 + 健保自付 + 健保眷屬\n  + 退休金提撥 + 請假扣款 + 遲到扣款 + 扣款', deps: ['勞保自付', '健保自付', '健保眷屬自付', '退休金提撥', '請假扣款', '遲到扣款', '扣款'], where: [W_PS], who: '自動' },
     { id: 'D', label: '(D) 現金給付', col: 4, g: 'S', desc: '薪資條第四區', formula: 'D = 現金給付', deps: ['現金給付'], where: [W_PS], who: '自動' },
     // ⑥ 結果

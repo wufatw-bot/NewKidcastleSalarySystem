@@ -181,7 +181,8 @@ let DATA = null;
 let currentEmp = null;
 // 公式參數：與 index.html／Formula_Settings.html 相同，雲端 DATA.formulaConfig 有設定時以雲端為準
 const FORMULA_DEFAULTS = { OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
-  ATT_REQUIRE_NO_LEAVE: true, ATT_REQUIRE_NO_LATE: true, UNLOCK_DAY: 17 };
+  ATT_REQUIRE_NO_LEAVE: true, ATT_REQUIRE_NO_LATE: true, UNLOCK_DAY: 17,
+  KC_WRITING_RATE: 40, PT_TEACH_RATE: 550, PT_ASSIST_RATE: 400 };
 function FC(k) {
   const c = DATA && DATA.formulaConfig;
   if (c && c[k] !== undefined && c[k] !== null && c[k] !== '') return c[k];
@@ -409,7 +410,17 @@ function renderPayslip() {
     ['數學班津貼 Math', emp['數學班津貼']],
     ['混班/混校津貼 Mixed', emp['混班/混校津貼']],
     ['帶班人數津貼 Class', emp['帶班人數津貼']],
-    ...itemizedRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細'])
+    ...itemizedRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細']),
+    // 吉的堡項目（值為 0 時自動隱藏）
+    [`帶班數薪資 Class Teaching${emp['帶班班別'] ? '（' + String(emp['帶班班別']).replace(/</g, '&lt;') + '）' : ''}`, emp['帶班數薪資']],
+    [`Writing 人數津貼（${Number(emp['Writing人數']) || 0}人 × ${FC('KC_WRITING_RATE')}）`, emp['Writing人數津貼']],
+    ['V Writing', emp['VWriting']],
+    ['資優美語 Gifted English', emp['資優美語']],
+    ['一對一 One-on-One', emp['一對一']],
+    ['B Reading（閱讀班）', emp['BReading']],
+    ['輔導補課 Make-up Tutoring', emp['輔導補課']],
+    ['奇趣線上教材 Online Materials', emp['奇趣線上教材']],
+    ['行政津貼 Admin', emp['行政津貼']]
   ];
   const subA = fixed.reduce((s,[,v])=>s+(Number(v)||0), 0);
 
@@ -418,6 +429,14 @@ function renderPayslip() {
     [`支薪金額 Paid Hours Pay (×${FC('PAY_RATE')}/hr)`, Math.round((Number(sal['支薪時數'])||0) * Number(FC('PAY_RATE')))],
     ['考試津貼 Exam Allowance', sal['考試津貼']],
     ['預繳津貼 Prepay Allowance', sal['預繳津貼']],
+    // 兼職美語：時數 × 時薪（員工資料有填時薪就用員工的，沒填用公式設定頁預設）
+    ...(() => {
+      const tR = Number(emp['自行授課時薪']) || Number(FC('PT_TEACH_RATE'));
+      const aR = Number(emp['協助外師時薪']) || Number(FC('PT_ASSIST_RATE'));
+      const tH = Number(sal['自行授課時數']) || 0, aH = Number(sal['協助外師時數']) || 0;
+      return [[`自行授課 Teaching（${tH}時 × ${tR}）`, Math.round(tH * tR)],
+              [`協助外師 Assisting（${aH}時 × ${aR}）`, Math.round(aH * aR)]];
+    })(),
     ['獎金 Bonus', sal['獎金']],
     // 以下為人數資訊欄，不計入金額
     ['安親人數 (人)', sal['安親人數']],
@@ -515,7 +534,7 @@ document.addEventListener('keydown', e => {
   }
 });
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261013V2045</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261020V2030</div>
 <!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
 <style>
   .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }

@@ -3,6 +3,34 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261020V2030（2026-10-20 20:30）
+- 新增第三校區「🏰 吉的堡」：首頁登入卡、校區下拉選單、總覽三校比較／圓餅圖、備份、薪資條匯總、Email 批次、刪除資料；員工編號自動以 KC 開頭
+- 員工資料新增「🏰 吉的堡項目」：帶班班數／班別、帶班數薪資、Writing 人數＋津貼、V Writing、資優美語、一對一、B Reading（閱讀班）、輔導補課、奇趣線上教材、行政津貼，列入 (B)
+- 吉的堡帶班人數津貼 = 帶班人數 × KC_HEAD_RATE（預設 80）；Writing 人數津貼 = 人數 × KC_WRITING_RATE（預設 40）
+- 新職位「兼職美語」：本月輸入「自行授課時數」「協助外師時數」；時薪預設 PT_TEACH_RATE 550（範圍 PT_TEACH_MIN～PT_TEACH_MAX = 550～580）、PT_ASSIST_RATE 400；員工資料可個別設定時薪
+- Formula_Settings.html 新增「🏰 吉的堡校區 · 兼職美語」卡片；Employee_Salary_View.html 員工自查薪資條加入吉的堡項目與兼職時薪
+- 吉的堡校區預設只有 boss 帳號（沿用同安校區 boss 目前的密碼）
+- 後端完整版 Code.gs（V20261020V2030）：測試信／請提供中文姓名信的校區文字加入吉的堡，併入 Receipt.gs 的 send_name_request；使用完整版時 Apps Script 專案不要再放 Receipt.gs；貼上後把 MAIL_KEY、ADMIN_KEY 填回原本的值，部署「新版本」
+- 前端修改（index.html、Formula_Settings.html、Employee_Salary_View.html、Employee_Number.html、Variable_Map.html）；後端不檢查校區，資料格式不變
+
+## V20261020V1200（2026-10-20 12:00）
+- 「📧 批次匯入 Email」：原本的「找不到員工」改為「比對不到員工姓名(中文)」；該列新增「✉ 寄信要求完整中文姓名」按鈕，摘要區也有「一次寄給全部比對不到的人」按鈕。信件請對方回覆完整中文姓名與校區，寄件人 wufatw@gmail.com
+- 後端 Receipt.gs 新增 sendNameRequestMail_：Code.gs 的 doPost 再加一行 `if (action === 'send_name_request') return ok(sendNameRequestMail_(body));` 並部署「新版本」
+
+## V20261018V2030（2026-10-18 20:30）
+- 🧪 測試信新增「✅ 確認收到，寄送回條」按鈕：員工按下後開啟確認頁，再按「確認收到」即送出回條（兩步驟，避免信箱的連結掃描誤觸），並寄一封「【回條】」通知給寄件人 wufatw@gmail.com
+- 「✉ 寄送薪資條」視窗新增「📬 查詢回條」：員工名單旁顯示「✅ 已回條 時間」或「⏳ 未回條」，並列出尚未回條的人；開啟視窗時也會自動更新
+- 後端新增 Receipt.gs（不含密碼）：send_test_mail 附回條按鈕、?action=receipt 確認頁、receipt_list 查詢；回條紀錄存在雲端硬碟 KidcastleSalary_Receipts.json，連結有簽章無法偽造
+- ⚠ 需依 Receipt.gs 開頭說明：新增 Receipt 指令碼 → Code.gs 的 doGet／doPost 各加一行（send_test_mail 改呼叫 sendTestMailWithReceipt_）→ 部署「新版本」
+
+## V20261014V1300（2026-10-14 13:00）
+- 新增「📥 批次新增員工」（員工資料頁，「➕ 新增員工」旁）：可上傳 Excel（.xlsx/.xls）、CSV／文字檔，或直接從 Excel 複製貼上，一次新增多位員工
+- 欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同（也接受 姓名、身分證、Email 等常見寫法）；沒有標題列時依序為：員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪、Email
+- 員工編號留空會自動產生（同安 TA…、莊敬 ZJ…）；登入帳號／密碼預設為身份證字號（未填則用員工編號）；沒填的欄位用預設校區／職位／到職日與新員工預設薪資
+- 到職日支援 2026-11-01、2026/11/1、民國 115/11/01；CSV 支援 UTF-8 與 Big5（台灣版 Excel 另存的 CSV）
+- 新增前先預覽：檢查必填、校區、日期、數字、重複的員工編號／身份證字號、同名員工，可逐筆勾選；可下載 Excel／CSV 範本
+- 僅前端（index.html）修改，不需重新部署 Code.gs
+
 ## V20261013V2045（2026-10-13 20:45）
 - 新增獨立網頁 Variable_Map.html：不用登入就能線上查看變數關係圖與「位置總表」，可分享連結
 - 在 Variable_Map.html 按「前往」會打開薪資系統，登入後自動跳到該欄位
