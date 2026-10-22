@@ -370,7 +370,7 @@ function render() {
     </div>
     <div class="f" style="--c:#DB2777">
       <div class="name">美語授課津貼 <small>② 非固定支付</small></div>
-      <div class="expr">${V('美語授課時數')} ${O('×')} ${V('時薪')}</div>
+      <div class="expr">${V('兼職美語授課時數')} ${O('×')} ${V('時薪')}</div>
       <div class="expr" style="margin-top:4px;">預設時薪 ${P('PT_TEACH_RATE','元／小時')}　可設範圍 ${P('PT_TEACH_MIN','元')} ${O('～')} ${P('PT_TEACH_MAX','元')}</div>
       <div class="note">每位員工可在員工資料「美語授課時薪」個別設定（0 = 用預設）；超出範圍時儲存會提醒。</div>
       <div class="try">試算：<input type="number" step="0.5" data-try="ptt" value="20"> 小時 → <span class="out" id="o_ptt"></span></div>
@@ -657,7 +657,7 @@ function toast(msg, type) {
 
 load();
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261022V1650</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261022V2010</div>
 <!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
 <style>
   .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }

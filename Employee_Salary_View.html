@@ -438,7 +438,7 @@ function renderPayslip() {
       const pick = (o, a, b) => Number(o[a]) || Number(o[b]) || 0;
       const tR = pick(emp, '美語授課時薪', '自行授課時薪') || Number(FC('PT_TEACH_RATE'));
       const aR = pick(emp, '與外師共同上課時薪', '協助外師時薪') || Number(FC('PT_ASSIST_RATE'));
-      const tH = pick(sal, '美語授課時數', '自行授課時數'), aH = pick(sal, '與外師共同上課時數', '協助外師時數');
+      const tH = pick(sal, '兼職美語授課時數', '美語授課時數') || pick(sal, '自行授課時數', ''), aH = pick(sal, '與外師共同上課時數', '協助外師時數');
       return [[`美語授課津貼（${tH}時 × ${tR}）`, Math.round(tH * tR)],
               [`與外師共同上課津貼（${aH}時 × ${aR}）`, Math.round(aH * aR)]];
     })(),
@@ -539,7 +539,7 @@ document.addEventListener('keydown', e => {
   }
 });
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261022V1650</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261022V2010</div>
 <!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
 <style>
   .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }

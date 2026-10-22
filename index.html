@@ -1345,6 +1345,11 @@
   body.drawer-pinned.drawer-pin-right { padding-right: var(--drawer-w, 560px); }
   body.drawer-pinned.drawer-pin-left  { padding-left:  var(--drawer-w, 560px); }
   .form-section.kc { border-left-color: #6D28D9; }
+  .pt-pair-row {
+    grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px;
+    padding: 10px 12px; background: #F5F3FF; border: 1px dashed #C4B5FD; border-radius: 9px;
+  }
+  @media (max-width: 720px) { .pt-pair-row { grid-template-columns: 1fr; } }
   .form-section.kc h3 .badge { background: #6D28D9; }
   .drawer-head {
     padding: 18px 22px;
@@ -4187,6 +4192,14 @@
   function classSizeAllowanceFor(emp, headcount, monthStr) {
     return computeClassSizeAllowance(headcount, monthStr);
   }
+  // 時數 ↔ 時薪 成對顯示在員工資料「🏰 美語部項目」：時薪（員工）× 本月時數（當月薪資紀錄）= 津貼
+  const PT_PAIRS = [
+    { id: 'teach',  rateKey: '美語授課時薪',       hoursKey: '兼職美語授課時數',   payKey: '美語授課津貼',       defKey: 'PT_TEACH_RATE',
+      get rateLabel() { return `美語授課時薪（0 = 預設 ${FC('PT_TEACH_RATE')}，可設 ${FC('PT_TEACH_MIN')}～${FC('PT_TEACH_MAX')}）`; } },
+    { id: 'assist', rateKey: '與外師共同上課時薪', hoursKey: '與外師共同上課時數', payKey: '與外師共同上課津貼', defKey: 'PT_ASSIST_RATE',
+      get rateLabel() { return `與外師共同上課時薪（0 = 預設 ${FC('PT_ASSIST_RATE')}）`; } }
+  ];
+  const PT_HOURS_KEYS = PT_PAIRS.map(p => p.hoursKey);
   // 兼職美語時薪：員工資料有填就用員工的（例如 550～580），沒填用公式設定頁的預設值
   function partTimeRates(emp) {
     const own = k => Number(emp && emp[k]) || 0;
@@ -4197,7 +4210,7 @@
   }
   function partTimePay(emp, sal) {
     const r = partTimeRates(emp);
-    const teachH = Number(sal && sal['美語授課時數']) || 0, assistH = Number(sal && sal['與外師共同上課時數']) || 0;
+    const teachH = Number(sal && sal['兼職美語授課時數']) || 0, assistH = Number(sal && sal['與外師共同上課時數']) || 0;
     return { teachH, assistH, teachRate: r.teach, assistRate: r.assist,
              teach: Math.round(teachH * r.teach), assist: Math.round(assistH * r.assist) };
   }
@@ -4250,7 +4263,7 @@
         e['帶班人數'] = 0; e['帶班人數津貼'] = 0;
       }
     });
-    (d.salary || []).forEach(r => renameKeys(r, { '自行授課時數': '美語授課時數', '協助外師時數': '與外師共同上課時數',
+    (d.salary || []).forEach(r => renameKeys(r, { '自行授課時數': '兼職美語授課時數', '美語授課時數': '兼職美語授課時數', '協助外師時數': '與外師共同上課時數',
                                                  '自行授課薪資': '美語授課津貼', '協助外師薪資': '與外師共同上課津貼' }));
     // Ensure owner-saved baseline map exists (per-employee snapshot of last owner-confirmed values)
     if (!d.ownerBaseline || typeof d.ownerBaseline !== 'object') d.ownerBaseline = {};
@@ -4850,7 +4863,7 @@
   //   項目：把某個項目歸零（本月項目可限月份；可限員工、校區）
   //   執行前自動備份整份資料到雲端硬碟 Kidcastle_Backups；備份失敗就不刪除
   // ==========================================================================
-  const DEL_MONTH_ITEMS = ['加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','考試津貼','預繳津貼','安親人數','混班數','美語授課時數','與外師共同上課時數','全勤','備註'];
+  const DEL_MONTH_ITEMS = ['加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','考試津貼','預繳津貼','安親人數','混班數','兼職美語授課時數','與外師共同上課時數','全勤','備註'];
   const DEL_EMP_ITEMS = ['年資津貼','主管津貼','美語津貼','美語輔導津貼','數學班津貼','帶班人數津貼','混班津貼','數學津貼',
                          '留班獎金','考試獎金','其他津貼','補貼公會投保勞保','補貼公會健保自付','補貼健保眷屬','補貼退休金','現金給付',
                          ...KC_EMP_EXPORT_KEYS.filter(k => k !== '帶班班別')];
@@ -6162,7 +6175,7 @@
       { key: '考試津貼',         label: '考試津貼',          en: 'Exam Allowance',    kind: 'money' },
       { key: '預繳津貼',         label: '預繳津貼',          en: 'Prepay Allowance',  kind: 'money' },
       { key: '混班數',           label: '混班數',            en: 'Mixed Classes',     kind: 'count' },
-      { key: '美語授課時數',       label: '美語授課時數',       en: 'English Teaching Hours', kind: 'hours', step: 0.5 },
+      { key: '兼職美語授課時數',       label: '兼職美語授課時數',       en: 'English Teaching Hours', kind: 'hours', step: 0.5 },
       { key: '與外師共同上課時數', label: '與外師共同上課時數', en: 'Co-teaching Hours',      kind: 'hours', step: 0.5 },
       ...KC_HOURLY_ITEMS.map(i => ({ key: i.hoursKey, label: i.label.replace(/（.*）/, '') + ' 時數', en: i.en + ' Hours', kind: 'hours', step: 0.5 }))
     ];
@@ -8768,7 +8781,7 @@
       ['月份', true], ['上班時數', false], ['加班時數', true], ['加班費', true], ['支薪時數', true], ['支薪金額', true],
       ['請假時數', true], ['請假扣款', true], ['遲到次數', true], ['遲到扣款', true],
       ['獎金', true], ['扣款', true],
-      ['美語授課時數', true], ['與外師共同上課時數', true], ...KC_HOURLY_ITEMS.map(i => [i.hoursKey, true]),
+      ['兼職美語授課時數', true], ['與外師共同上課時數', true], ...KC_HOURLY_ITEMS.map(i => [i.hoursKey, true]),
       ...KC_SAL_PAY_KEYS.map(k => [k, true])
     ]
   };
@@ -9200,8 +9213,7 @@
           { key: i.moneyKey, type: 'money', get label() { return `${i.label}（元）— ${FC(i.rateKey)} 元/人`; } }
         ]),
         ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數津貼').map(i => ({ key: i.key, type: 'money', label: i.label })),
-        { key: '美語授課時薪', type: 'money', get label() { return `美語授課時薪（0 = 預設 ${FC('PT_TEACH_RATE')}，可設 ${FC('PT_TEACH_MIN')}～${FC('PT_TEACH_MAX')}）`; } },
-        { key: '與外師共同上課時薪', type: 'money', get label() { return `與外師共同上課時薪（0 = 預設 ${FC('PT_ASSIST_RATE')}）`; } }
+        ...PT_PAIRS.map(p => ({ key: p.rateKey, type: 'pt_pair', pair: p }))   // 時薪 × 本月時數 = 津貼（三格一組）
       ]
     },
     {
@@ -10114,6 +10126,7 @@
         // Hide structural fields (底薪/年資/主管津貼) for everyone except OWNER in EDIT mode
         const isOwnerEditing = currentUser && currentUser.role === 'owner' && _drawerEditMode;
         if (!isMgr && MANAGER_HIDDEN_FIELDS.indexOf(f.key) >= 0 && !isOwnerEditing) return '';
+        if (f.type === 'pt_pair') return renderPtPair(f.pair, emp, isNew);
         const v = emp[f.key];
         const origV = orig[f.key];
         const changed = !isNew && (v == null ? '' : v) !== (origV == null ? '' : origV);
@@ -10274,6 +10287,7 @@
     const ptKeys = monthlyExtraFields().filter(f => f.kind === 'hours').map(f => f.key);
     const showPt = emp && (emp['校區'] === KC_CAMPUS || emp['職位'] === '兼職美語');
     const fieldsHtml = DRAWER_MONTHLY_FIELDS
+      .filter(f => !PT_HOURS_KEYS.includes(f.key))   // 這兩項在「🏰 美語部項目」和時薪放在一起
       .filter(f => !ptKeys.includes(f.key) || showPt || (Number(sal[f.key]) || 0) !== 0)
       .map(f => {
       const v = sal[f.key] == null ? 0 : sal[f.key];
@@ -10557,6 +10571,36 @@
     ...Object.fromEntries(KC_LINEAR_ITEMS.map(i => [i.countKey, { moneyKey: i.moneyKey, compute: (n)=> Math.round(n * Number(FC(i.rateKey))) }])),
     '帶班數':   { moneyKey: '帶班數津貼',     compute: (n)=> kcClassPay(n) }
   };
+  // 時薪 × 本月時數 = 津貼：時薪存在員工資料（data-key），時數存在當月薪資紀錄（data-sal-key，改了立即儲存）
+  function renderPtPair(p, emp, isNew) {
+    const sal = (!isNew && _editingEid && _drawerMonth) ? ensureSalaryRecord(_editingEid, _drawerMonth) : null;
+    const rate = Number(emp[p.rateKey]) || 0;
+    const hours = sal ? (Number(sal[p.hoursKey]) || 0) : 0;
+    const pay = Math.round(hours * (rate || Number(FC(p.defKey))));
+    const hoursInput = sal
+      ? `<input type="number" data-sal-key="${p.hoursKey}" data-pt-pair="${p.id}" min="0" max="9999" step="0.5" value="${hours}">`
+      : `<input type="number" disabled placeholder="儲存員工後才能輸入">`;
+    return `<div class="pt-pair-row">
+      <div class="field-cell" data-field-cell="${p.rateKey}">
+        <label>${p.rateLabel}</label>
+        <input type="number" data-key="${p.rateKey}" data-pt-pair="${p.id}" min="0" step="1" value="${rate}">
+      </div>
+      <div class="field-cell" data-mcol="${p.hoursKey}">
+        <label>× ${p.hoursKey}（${_drawerMonth || '本月'}）</label>
+        ${hoursInput}
+      </div>
+      <div class="field-cell" data-mcol="${p.hoursKey}">
+        <label>= ${p.payKey}（元）</label>
+        <input type="number" data-pt-out="${p.id}" value="${pay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
+      </div></div>`;
+  }
+  function updatePtPair(id) {
+    const p = PT_PAIRS.find(x => x.id === id), body = $('drawerBody'); if (!p || !body) return;
+    const rateEl = body.querySelector(`[data-key="${p.rateKey}"]`), hEl = body.querySelector(`[data-sal-key="${p.hoursKey}"]`);
+    const out = body.querySelector(`[data-pt-out="${p.id}"]`); if (!out) return;
+    const rate = (rateEl && Number(rateEl.value)) || Number(FC(p.defKey));
+    out.value = Math.round(((hEl && Number(hEl.value)) || 0) * rate);
+  }
   // 抽屜目前選的校區（還沒儲存也算），用來決定帶班人數津貼用哪個公式
   function drawerCampus() {
     const el = $('drawerBody') && $('drawerBody').querySelector('select[data-key="校區"]');
@@ -10569,7 +10613,7 @@
     const body = $('drawerBody'); if (!body) return;
     const sec = body.querySelector('.form-section.kc'); if (!sec) return;
     const pick = k => { const el = body.querySelector(`[data-key="${k}"]`); return el ? el.value : ''; };
-    const hasVal = Array.from(sec.querySelectorAll('[data-key]')).some(el => el.value && el.value !== '0');
+    const hasVal = Array.from(sec.querySelectorAll('[data-key], [data-sal-key]')).some(el => el.value && el.value !== '0');
     sec.hidden = !(pick('校區') === KC_CAMPUS || pick('職位') === '兼職美語' || hasVal);
     buildDrawerToc();
   }
@@ -10588,6 +10632,7 @@
     if (!e.target.closest('#drawerBody')) return;
 
     // ── 通用 auto-formula：任何視圖中的人數欄位變更，都自動更新對應津貼 ──
+    if (e.target.dataset && e.target.dataset.ptPair) updatePtPair(e.target.dataset.ptPair);
     const dataKey = e.target.dataset && e.target.dataset.key;
     if (dataKey && ALLOWANCE_AUTO_FORMULA[dataKey]) {
       const spec = ALLOWANCE_AUTO_FORMULA[dataKey];
@@ -11268,6 +11313,15 @@
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
     {
+      version: 'V20261022V2010', date: '2026-10-22 20:10',
+      changes: [
+        '「美語授課時數」改名為「兼職美語授課時數」，與「美語授課時薪」關連：時薪 × 兼職美語授課時數 = 美語授課津貼',
+        '「與外師共同上課時數」與「與外師共同上課時薪」關連：時薪 × 時數 = 與外師共同上課津貼',
+        '員工資料「🏰 美語部項目」中，時薪、本月時數、津貼三格排在同一列，改時薪或時數會立即算出津貼（時數會直接存到當月薪資）；「本月薪資」區塊不再重複這兩個時數欄',
+        '舊名稱「美語授課時數」的資料會自動搬到「兼職美語授課時數」'
+      ]
+    },
+    {
       version: 'V20261022V1800', date: '2026-10-22 18:00',
       changes: [
         '員工資料編輯表單改為可調整的側欄：拖曳側欄邊緣調整寬度（雙擊恢復預設），按住標題列左右拖曳可移到左邊或右邊，也可按「⇆ 換邊」',
@@ -11610,7 +11664,7 @@
     { id: '支薪時數', col: 1, g: 'M', desc: '當月另外支薪的時數', where: [W_MGR('支薪時數'), W_SAL('支薪時數')], who: '主管、老闆' },
     { id: '請假時數', col: 1, g: 'M', desc: '當月請假時數', where: [W_MGR('請假時數'), W_SAL('請假時數')], who: '主管、老闆' },
     { id: '遲到次數', col: 1, g: 'M', desc: '當月遲到次數', where: [W_MGR('遲到次數'), W_SAL('遲到次數')], who: '主管、老闆' },
-    { id: '美語授課時數', col: 1, g: 'M', desc: '當月美語授課時數（美語部／兼職美語）', where: [W_MGR('美語授課時數'), W_SAL('美語授課時數')], who: '主管、老闆' },
+    { id: '兼職美語授課時數', col: 1, g: 'M', desc: '當月兼職美語授課時數（美語部／兼職美語）', where: [W_MGR('兼職美語授課時數'), W_SAL('兼職美語授課時數')], who: '主管、老闆' },
     { id: '與外師共同上課時數', col: 1, g: 'M', desc: '當月與外師共同上課時數（美語部／兼職美語）', where: [W_MGR('與外師共同上課時數'), W_SAL('與外師共同上課時數')], who: '主管、老闆' },
     { id: '授課時數', label: '美語部授課時數', col: 1, g: 'M', desc: '美語部每月授課時數：V Writing、資優美語、一對一、B Reading、輔導補課（各自一欄）', where: [W_MGR('VWriting時數'), W_SAL('VWriting時數')], who: '主管、老闆' },
     { id: '本月備註', col: 1, g: 'M', desc: '只顯示在當月薪資條的備註', where: [W_MGR('備註'), W_SAL('備註')], who: '主管、老闆' },
@@ -11659,7 +11713,7 @@
     { id: '授課金額', label: '美語部授課金額', col: 3, g: 'C', desc: '自動計算', formula: '每個授課項目 = 該項時數 × 職等時薪\n（V Writing、資優美語、一對一、B Reading、輔導補課）', deps: ['授課時數', '職等', 'GRADE_RATES'], where: [W_PS], who: '自動' },
     { id: '美語帶班人數津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '美語帶班人數津貼 = 美語帶班人數 × 美語帶班人數費率', deps: ['美語帶班人數', 'KC_HEAD_RATE'], where: [W_OWNER('美語帶班人數津貼')], who: '自動（老闆可改）' },
     { id: 'Writing人數津貼', label: 'Writing 人數津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: 'Writing 人數津貼 = Writing 人數 × Writing 人數費率', deps: ['Writing人數', 'KC_WRITING_RATE'], where: [W_OWNER('Writing人數津貼')], who: '自動（老闆可改）' },
-    { id: '兼職美語薪資', label: '美語授課／與外師共同上課津貼', col: 3, g: 'C', desc: '自動計算', formula: '美語授課津貼 = 美語授課時數 × 美語授課時薪\n與外師共同上課津貼 = 與外師共同上課時數 × 與外師共同上課時薪\n（員工沒設時薪就用公式設定頁預設）', deps: ['美語授課時數', '與外師共同上課時數', 'PT_TEACH_RATE', 'PT_ASSIST_RATE'], where: [W_SAL('美語授課時數'), W_PS], who: '自動' },
+    { id: '兼職美語薪資', label: '美語授課／與外師共同上課津貼', col: 3, g: 'C', desc: '自動計算', formula: '美語授課津貼 = 兼職美語授課時數 × 美語授課時薪\n與外師共同上課津貼 = 與外師共同上課時數 × 與外師共同上課時薪\n（員工沒設時薪就用公式設定頁預設）', deps: ['兼職美語授課時數', '與外師共同上課時數', 'PT_TEACH_RATE', 'PT_ASSIST_RATE'], where: [W_SAL('兼職美語授課時數'), W_PS], who: '自動' },
     // ⑤ 小計
     { id: 'A', label: '(A) 約定薪資', col: 4, g: 'S', desc: '薪資條第一區', formula: 'A = 底薪 + 全勤獎金（實發）+ 年資津貼', deps: ['底薪', '全勤獎金實發', '年資津貼'], where: [W_PS], who: '自動' },
     { id: 'B', label: '(B) 非固定支付', col: 4, g: 'S', desc: '薪資條第二區', formula: 'B = 主管 + 美語 + 美語輔導 + 數學班\n  + 帶班人數 + 混班 + 數學(手動) + 留班\n  + 考試獎金 + 其他津貼 + 補貼（勞健保／退休金）\n  + 帶班數津貼 + 授課(時數×職等) + 奇趣/行政\n  + 美語帶班人數 + Writing + 美語授課 + 與外師共同上課\n  + 加班費 + 支薪金額 + 考試津貼 + 預繳津貼 + 獎金', deps: ['主管津貼', '美語津貼', '美語輔導津貼', '數學班津貼', '帶班人數津貼', '混班津貼', '數學津貼', '留班獎金', '考試獎金', '其他津貼', '補貼勞健保退休', '帶班數津貼', '美語帶班人數津貼', '授課金額', '美語部固定項目', 'Writing人數津貼', '兼職美語薪資', '加班費', '支薪金額', '考試津貼', '預繳津貼', '獎金'], where: [W_PS], who: '自動' },
