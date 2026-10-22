@@ -1287,6 +1287,65 @@
     display: flex; flex-direction: column;
   }
   .drawer.show { transform: translateX(0); }
+  /* ── 可拉動／可換邊／可釘選的側欄（V20261022V1800）── */
+  .drawer { width: var(--drawer-w, 560px); }
+  .drawer.left { right: auto; left: 0; transform: translateX(-100%); box-shadow: 8px 0 40px rgba(0,0,0,0.3); }
+  .drawer.left.show { transform: translateX(0); }
+  .drawer.resizing, .drawer.moving { transition: none; user-select: none; }
+  .drawer-resize {
+    position: absolute; top: 0; bottom: 0; left: -5px; width: 10px;
+    cursor: ew-resize; z-index: 3; touch-action: none;
+  }
+  .drawer.left .drawer-resize { left: auto; right: -5px; }
+  .drawer-resize::after {
+    content: ''; position: absolute; top: 50%; left: 3px; width: 4px; height: 56px;
+    margin-top: -28px; border-radius: 4px; background: #cbd5e1; opacity: .7; transition: background .15s, opacity .15s;
+  }
+  .drawer-resize:hover::after, .drawer.resizing .drawer-resize::after { background: #E07B00; opacity: 1; }
+  .drawer-head { cursor: grab; touch-action: none; }
+  .drawer.moving .drawer-head { cursor: grabbing; }
+  .drawer-head button, .drawer-head input, .drawer-head select { cursor: pointer; }
+  .drawer-tools {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 6px 14px; background: #FFF7ED; border-bottom: 1px solid #FED7AA;
+    font-size: 11px; color: #9A3412; flex-shrink: 0;
+  }
+  .drawer-tools button {
+    border: 1px solid #FDBA74; background: #fff; color: #9A3412; border-radius: 6px;
+    padding: 3px 9px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .drawer-tools button:hover { background: #FFEDD5; }
+  .drawer-tools button.on { background: #E07B00; border-color: #E07B00; color: #fff; }
+  .drawer-tools .hint { margin-left: auto; opacity: .75; }
+  .drawer-main { flex: 1; min-height: 0; display: flex; }
+  .drawer-main .drawer-body { min-width: 0; position: relative; }
+  .drawer-toc {
+    width: 138px; flex-shrink: 0; overflow-y: auto;
+    padding: 12px 8px; background: #f8fafc; border-right: 1px solid #e2e8f0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .drawer-toc button {
+    text-align: left; border: none; background: transparent; border-radius: 7px;
+    padding: 7px 8px; font-size: 12px; color: #475569; cursor: pointer; font-family: inherit;
+    border-left: 3px solid transparent; line-height: 1.35;
+  }
+  .drawer-toc button:hover { background: #eef2f7; color: #1a202c; }
+  .drawer-toc button.active { background: #fff; color: #1a202c; font-weight: 700; border-left-color: var(--toc-c, #E07B00); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  /* 窄的時候目錄改成上方橫向標籤 */
+  .drawer.narrow .drawer-main { flex-direction: column; }
+  .drawer.narrow .drawer-toc {
+    width: auto; flex-direction: row; overflow-x: auto; overflow-y: hidden;
+    border-right: none; border-bottom: 1px solid #e2e8f0; padding: 6px 10px; flex-shrink: 0;
+  }
+  .drawer.narrow .drawer-toc button { white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; border-radius: 6px 6px 0 0; }
+  .drawer.narrow .drawer-toc button.active { border-bottom-color: var(--toc-c, #E07B00); box-shadow: none; }
+  .drawer.wide .field-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  /* 釘選成側欄：不遮住頁面，頁面內容讓出空間 */
+  body.drawer-pinned .drawer-overlay { display: none !important; }
+  body.drawer-pinned.drawer-pin-right { padding-right: var(--drawer-w, 560px); }
+  body.drawer-pinned.drawer-pin-left  { padding-left:  var(--drawer-w, 560px); }
+  .form-section.kc { border-left-color: #6D28D9; }
+  .form-section.kc h3 .badge { background: #6D28D9; }
   .drawer-head {
     padding: 18px 22px;
     background: linear-gradient(135deg, #F4A340, #E07B00);
@@ -1609,6 +1668,8 @@
 
   @media (max-width: 720px) {
     .drawer { width: 100vw; }
+    .drawer-resize, .drawer-tools .desk-only { display: none; }
+    body.drawer-pinned.drawer-pin-right, body.drawer-pinned.drawer-pin-left { padding: 0; }
     .field-grid { grid-template-columns: 1fr; }
     .own-table { font-size: 11px; }
     .own-table tbody td { padding: 6px 4px; }
@@ -3161,7 +3222,8 @@
 <!-- Edit Employee Drawer (right slide-in) -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
 <div class="drawer" id="drawer">
-  <div class="drawer-head">
+  <div class="drawer-resize" id="drawerResize" title="拖曳調整寬度（雙擊恢復預設）"></div>
+  <div class="drawer-head" id="drawerHead" title="按住標題列左右拖曳，可把側欄移到另一邊">
     <div style="flex:1;min-width:0;">
       <h2 id="drawerTitle">編輯員工資料</h2>
       <div class="sub" id="drawerSub">— · —</div>
@@ -3181,8 +3243,18 @@
     </div>
     <button class="close" onclick="closeDrawer()" aria-label="關閉">✕</button>
   </div>
-  <div class="drawer-body" id="drawerBody">
-    <!-- Form rendered by JS -->
+  <div class="drawer-tools">
+    <button type="button" class="desk-only" onclick="drawerUiFlipSide()" title="把側欄移到另一邊">⇆ 換邊</button>
+    <button type="button" class="desk-only" id="drawerPinBtn" onclick="drawerUiTogglePin()" title="釘選後不遮住頁面，可一邊看表格一邊編輯">📌 釘選側欄</button>
+    <button type="button" class="desk-only" onclick="drawerUiSetWidth(560)" title="恢復預設寬度">↔ 預設寬度</button>
+    <button type="button" class="desk-only" onclick="drawerUiSetWidth(Math.round(window.innerWidth * 0.9))" title="放大到幾乎全螢幕">⤢ 放大</button>
+    <span class="hint desk-only">拖曳邊緣調寬度・拖曳標題列換邊</span>
+  </div>
+  <div class="drawer-main">
+    <nav class="drawer-toc" id="drawerToc" aria-label="表單區塊"></nav>
+    <div class="drawer-body" id="drawerBody">
+      <!-- Form rendered by JS -->
+    </div>
   </div>
   <div class="drawer-foot">
     <button class="btn-mini secondary" onclick="closeDrawer()">取消</button>
@@ -9372,6 +9444,7 @@
     applyDrawerEditMode();
     $('drawerOverlay').classList.add('show');
     $('drawer').classList.add('show');
+    drawerUiApply();
     setTimeout(updateNetPreview, 50);
   }
   function updateDrawerMonthLabel() {
@@ -9745,6 +9818,7 @@
     wireAllItemizers();
     $('drawerOverlay').classList.add('show');
     $('drawer').classList.add('show');
+    drawerUiApply();
     setTimeout(updateNetPreview, 50);
   }
   // alias used by HTML onclick
@@ -9765,9 +9839,113 @@
   function closeDrawer() {
     $('drawerOverlay').classList.remove('show');
     $('drawer').classList.remove('show');
+    document.body.classList.remove('drawer-pinned', 'drawer-pin-left', 'drawer-pin-right');
     _editingEid = null;
     _drawerMonth = null;
   }
+
+  // ==========================================================================
+  // 🗂 編輯側欄：拖曳調寬度、拖曳標題列換邊、釘選成側欄、區塊目錄（設定存在這台電腦）
+  // ==========================================================================
+  const DRAWER_UI_KEY = 'kc_drawer_ui_v1';
+  const DRAWER_MIN_W = 380;
+  let _drawerUi = { w: 560, side: 'right', pinned: false };
+  try { Object.assign(_drawerUi, JSON.parse(localStorage.getItem(DRAWER_UI_KEY) || '{}')); } catch (_) {}
+  function drawerUiSave() { try { localStorage.setItem(DRAWER_UI_KEY, JSON.stringify(_drawerUi)); } catch (_) {} }
+  function drawerUiMaxW() { return Math.max(DRAWER_MIN_W, Math.round(window.innerWidth * 0.95)); }
+  function drawerUiApply() {
+    const d = $('drawer'); if (!d) return;
+    const w = Math.min(drawerUiMaxW(), Math.max(DRAWER_MIN_W, Number(_drawerUi.w) || 560));
+    document.documentElement.style.setProperty('--drawer-w', w + 'px');
+    d.classList.toggle('left', _drawerUi.side === 'left');
+    d.classList.toggle('narrow', w < 640);
+    d.classList.toggle('wide', w >= 900);
+    const open = d.classList.contains('show');
+    const pinned = open && _drawerUi.pinned && window.innerWidth > 720;
+    document.body.classList.toggle('drawer-pinned', pinned);
+    document.body.classList.toggle('drawer-pin-left', pinned && _drawerUi.side === 'left');
+    document.body.classList.toggle('drawer-pin-right', pinned && _drawerUi.side !== 'left');
+    const pb = $('drawerPinBtn'); if (pb) { pb.classList.toggle('on', !!_drawerUi.pinned); pb.textContent = _drawerUi.pinned ? '📌 已釘選' : '📌 釘選側欄'; }
+  }
+  function drawerUiSetWidth(w) { _drawerUi.w = w; drawerUiSave(); drawerUiApply(); }
+  function drawerUiFlipSide() { _drawerUi.side = _drawerUi.side === 'left' ? 'right' : 'left'; drawerUiSave(); drawerUiApply(); }
+  function drawerUiTogglePin() { _drawerUi.pinned = !_drawerUi.pinned; drawerUiSave(); drawerUiApply(); }
+  window.addEventListener('resize', () => { if ($('drawer') && $('drawer').classList.contains('show')) drawerUiApply(); });
+  // 拖曳邊緣：調整寬度
+  (function () {
+    const h = $('drawerResize'); if (!h) return;
+    h.addEventListener('pointerdown', e => {
+      e.preventDefault(); h.setPointerCapture(e.pointerId);
+      const d = $('drawer'); d.classList.add('resizing');
+      const move = ev => {
+        _drawerUi.w = _drawerUi.side === 'left' ? ev.clientX : window.innerWidth - ev.clientX;
+        drawerUiApply();
+      };
+      const up = () => { d.classList.remove('resizing'); h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); drawerUiSave(); drawerUiApply(); };
+      h.addEventListener('pointermove', move); h.addEventListener('pointerup', up);
+    });
+    h.addEventListener('dblclick', () => drawerUiSetWidth(560));
+  })();
+  // 拖曳標題列：放開時靠到比較近的那一邊
+  (function () {
+    const head = $('drawerHead'); if (!head) return;
+    head.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || e.target.closest('button, input, select, a') || window.innerWidth <= 720) return;
+      const d = $('drawer'), x0 = e.clientX; let moved = false;
+      head.setPointerCapture(e.pointerId);
+      const move = ev => {
+        const dx = ev.clientX - x0;
+        if (!moved && Math.abs(dx) < 6) return;
+        moved = true; d.classList.add('moving'); d.style.transform = `translateX(${dx}px)`;
+      };
+      const up = ev => {
+        head.removeEventListener('pointermove', move); head.removeEventListener('pointerup', up);
+        d.classList.remove('moving'); d.style.transform = '';
+        if (!moved) return;
+        const side = ev.clientX < window.innerWidth / 2 ? 'left' : 'right';
+        if (side !== _drawerUi.side) { _drawerUi.side = side; drawerUiSave(); }
+        drawerUiApply();
+      };
+      head.addEventListener('pointermove', move); head.addEventListener('pointerup', up);
+    });
+  })();
+  // 區塊目錄：點一下跳到該區塊；捲動時自動標示目前區塊
+  function buildDrawerToc() {
+    const toc = $('drawerToc'), body = $('drawerBody'); if (!toc || !body) return;
+    const secs = Array.from(body.querySelectorAll('.form-section')).filter(sec => !sec.hidden && sec.querySelector('h3'));
+    const colorOf = sec => getComputedStyle(sec).borderLeftColor;
+    const items = secs.map((sec, i) => {
+      sec.dataset.tocIdx = i;
+      const t = sec.querySelector('h3').textContent.replace(/\s+/g, ' ').trim();
+      return `<button type="button" data-toc="${i}" style="--toc-c:${colorOf(sec)}">${t.replace(/</g, '&lt;')}</button>`;
+    });
+    if (body.querySelector('.net-preview')) items.push('<button type="button" data-toc="net" style="--toc-c:#10B981">💰 預估月薪</button>');
+    toc.innerHTML = items.join('');
+    drawerTocSpy();
+  }
+  function drawerTocSpy() {
+    const toc = $('drawerToc'), body = $('drawerBody'); if (!toc || !body) return;
+    const top = body.getBoundingClientRect().top + 60;
+    let cur = null;
+    body.querySelectorAll('.form-section[data-toc-idx]').forEach(sec => { if (!sec.hidden && sec.getBoundingClientRect().top <= top) cur = sec.dataset.tocIdx; });
+    if (body.scrollTop + body.clientHeight >= body.scrollHeight - 4 && body.querySelector('.net-preview')) cur = 'net';
+    if (cur == null) { const f = body.querySelector('.form-section[data-toc-idx]'); cur = f ? f.dataset.tocIdx : null; }
+    toc.querySelectorAll('button').forEach(b => {
+      const on = b.dataset.toc === String(cur);
+      b.classList.toggle('active', on);
+      if (on && $('drawer').classList.contains('narrow')) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    });
+  }
+  (function () {
+    const toc = $('drawerToc'), body = $('drawerBody'); if (!toc || !body) return;
+    toc.addEventListener('click', e => {
+      const b = e.target.closest('[data-toc]'); if (!b) return;
+      const el = b.dataset.toc === 'net' ? body.querySelector('.net-preview') : body.querySelector(`.form-section[data-toc-idx="${b.dataset.toc}"]`);
+      if (el) body.scrollTo({ top: el.offsetTop - 8, behavior: 'smooth' });
+    });
+    let raf = 0;
+    body.addEventListener('scroll', () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawerTocSpy); });
+  })();
 
   // Renders the "② 薪資組成" section using manager-only layout:
   //  - hides 底薪/年資/主管津貼/全勤獎金 numeric input
@@ -10066,6 +10244,7 @@
         <div class="val" id="drawerNet">—</div>
       </div>`;
     syncKcSection();
+    buildDrawerToc();
   }
 
   // ── 本月薪資 Monthly — 加班/請假/遲到/獎金/扣款/本月備註（寫入當月薪資紀錄 sal，非員工基本資料 emp）──
@@ -10392,6 +10571,7 @@
     const pick = k => { const el = body.querySelector(`[data-key="${k}"]`); return el ? el.value : ''; };
     const hasVal = Array.from(sec.querySelectorAll('[data-key]')).some(el => el.value && el.value !== '0');
     sec.hidden = !(pick('校區') === KC_CAMPUS || pick('職位') === '兼職美語' || hasVal);
+    buildDrawerToc();
   }
   document.addEventListener('change', e => {
     const k = e.target && e.target.dataset && e.target.dataset.key;
@@ -11087,6 +11267,15 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261022V1800', date: '2026-10-22 18:00',
+      changes: [
+        '員工資料編輯表單改為可調整的側欄：拖曳側欄邊緣調整寬度（雙擊恢復預設），按住標題列左右拖曳可移到左邊或右邊，也可按「⇆ 換邊」',
+        '「📌 釘選側欄」：不遮住頁面、頁面自動讓出空間，可一邊看表格一邊編輯；「⤢ 放大」幾乎全螢幕',
+        '新增區塊目錄：側欄寬時在左側、窄時在上方，點一下跳到該區塊，捲動時自動標示目前區塊；側欄夠寬時欄位自動排成 3～4 欄',
+        '寬度、左右位置、釘選設定記在這台電腦，下次開啟沿用；手機上維持全螢幕'
+      ]
+    },
     {
       version: 'V20261022V1650', date: '2026-10-22 16:50',
       changes: [
