@@ -3,6 +3,12 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261022V1650（2026-10-22 16:50）
+- 新增「美語帶班人數」→「美語帶班人數津貼」（美語帶班人數 × KC_HEAD_RATE 80）；共用的「帶班人數津貼」回到分段公式
+- 改名：帶班班數 → 帶班數、帶班數薪資 → 帶班數津貼；自行授課時數／時薪／薪資 → 美語授課時數／時薪／美語授課津貼；協助外師時數／時薪／薪資 → 與外師共同上課時數／時薪／與外師共同上課津貼
+- migrateEmployeeRecords 會把舊欄位名稱的值搬到新名稱（員工資料與每月薪資紀錄）；Employee_Salary_View.html 也能讀舊名稱
+- Code.gs 不需改
+
 ## V20261020V2245（2026-10-20 22:45）
 - 美語部帶班數薪資自動計算：班數 ≤ KC_CLASS_BASE_N(4) 以 4 班計 KC_CLASS_BASE_PAY(25,000)；超過每班 +KC_CLASS_STEP(5,000)；0 班 = 0
 - 美語部授課項目（V Writing、資優美語、一對一、B Reading、輔導補課）改為每月「時數」× 員工「職等」時薪（GRADE_A 400、GRADE_B 500、GRADE_C 600、GRADE_D 700）
