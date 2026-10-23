@@ -4032,6 +4032,10 @@
     // Default tab by role
     activateTab(user.role === 'manager' ? 'manager' : 'payslip');
 
+    // 從美語部進入：所有清單的校區篩選預設為「美語部」（老闆仍可手動切回全部）
+    const defCampus = isKcSession() ? KC_CAMPUS : 'all';
+    ['psCampus', 'mgrCampus', 'ownCampus', 'dashCampus'].forEach(id => { if ($(id)) $(id).value = defCampus; });
+
     populatePayslipSelectors();
     renderPayslip();
     populateManagerSelectors();
@@ -6057,7 +6061,7 @@
             const tbl = th.closest('table');
             if (tbl && tbl.id) {
               const widths = Array.from(tbl.querySelectorAll('thead th')).map(t => t.style.width || '');
-              localStorage.setItem('kc_colw_' + tbl.id, JSON.stringify(widths));
+              localStorage.setItem('kc_colw_' + (tbl.dataset.colwKey || tbl.id), JSON.stringify(widths));
             }
           } catch (_) {}
         }
@@ -6069,7 +6073,7 @@
     // Restore persisted widths
     try {
       if (table.id) {
-        const raw = localStorage.getItem('kc_colw_' + table.id);
+        const raw = localStorage.getItem('kc_colw_' + (table.dataset.colwKey || table.id));
         if (raw) {
           const widths = JSON.parse(raw);
           Array.from(table.querySelectorAll('thead th')).forEach((t, i) => {
@@ -6261,6 +6265,15 @@
   function campusShort(schoolId) {
     if (!schoolId || !CREDENTIALS[schoolId]) return '';
     return String(CREDENTIALS[schoolId].name || '').replace(/校區$/, '');
+  }
+  // 從「🏰 美語部」登入：清單預設只列美語部（美語老師），輸入欄位為 0 時顯示空白
+  function isKcSession() {
+    return !!(currentUser && campusShort(currentUser.schoolId) === KC_CAMPUS);
+  }
+  // 數字輸入框的顯示值：美語部登入時 0／未填 → 空白（存檔時空白仍視為 0）
+  function inputNum(v) {
+    if (isKcSession() && (v == null || v === '' || Number(v) === 0)) return '';
+    return v == null ? 0 : v;
   }
 
   // 計算上個月的民國年月（YYYMM 格式），例如 2026-06 → "11505"
@@ -7775,6 +7788,32 @@
     { key: '備註',     type: 'text' }
   ].filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
 
+  // 美語部登入：美語老師的授課時數欄放最前面
+  function mgrFieldOrder() {
+    if (!isKcSession()) return MGR_FIELDS;
+    const isHours = f => monthlyExtraFields().some(x => x.key === f.key && x.kind === 'hours');
+    return [...MGR_FIELDS.filter(isHours), ...MGR_FIELDS.filter(f => !isHours(f))];
+  }
+  // 表頭依欄位清單產生（與 tbody 每格對齊）；欄位組合沒變就不重畫，保留拖曳調整的欄寬
+  function renderMgrHead(fields) {
+    const tr = document.querySelector('#mgrTable thead tr');
+    if (!tr) return;
+    const sig = fields.map(f => f.key).join('|');
+    if (tr.dataset.sig === sig) return;
+    tr.dataset.sig = sig;
+    const extra = Object.fromEntries(monthlyExtraFields().map(f => [f.key, f.label]));
+    const label = { '請假時數': '當月請假時數', '全勤': '本月全勤', ...extra };
+    const title = {
+      '支薪時數': `支薪金額 = 支薪時數 × ${FC('PAY_RATE')} 元`,
+      '請假時數': `請假扣款 = (結構性請假時數 + 當月請假時數) × ${FC('LEAVE_RATE')} 元`
+    };
+    tr.innerHTML = '<th style="text-align:left;padding-left:12px;">員工</th><th>校區</th>' +
+      fields.map(f => `<th data-col="${f.key}"${title[f.key] ? ` title="${title[f.key]}"` : ''}>${label[f.key] || f.key}</th>`).join('') +
+      '<th>加扣薪小計</th>';
+    $('mgrTable').dataset.colwKey = isKcSession() ? 'mgrTable_kc' : 'mgrTable';
+    makeColumnsResizable($('mgrTable'));
+  }
+
   function getMgrMonth() { return $('mgrMonth').value; }
   function getMgrCampus() { return $('mgrCampus').value; }
   function getMgrSearch() { return ($('mgrSearch').value || '').trim().toLowerCase(); }
@@ -7833,7 +7872,8 @@
     document.querySelectorAll('#mgrTable thead th[data-col]').forEach(th => {
       th.style.display = colPerm(th.dataset.col) === 'hidden' ? 'none' : '';
     });
-    const visibleFields = MGR_FIELDS.filter(f => colPerm(f.key) !== 'hidden');
+    const visibleFields = mgrFieldOrder().filter(f => colPerm(f.key) !== 'hidden');
+    renderMgrHead(visibleFields);
 
     const tbody = $('mgrTbody');
     if (!emps.length) {
@@ -7863,7 +7903,7 @@
           </select></td>`;
         }
         if (f.type === 'num') {
-          const num = v == null ? 0 : v;
+          const num = inputNum(v);
           return `<td><input type="number" class="num${changed}"
             data-eid="${emp['員工編號']}" data-field="${f.key}"
             min="${f.min}" max="${f.max}" step="${f.step}"
@@ -10016,7 +10056,7 @@
         return `
         <div class="field-cell wide" data-field-cell="${moneyKey}">
           <label>${spec.labelMoney}</label>
-          <input type="number" data-key="${moneyKey}" min="0" step="1" value="${mVal}" placeholder="主管自由輸入金額">
+          <input type="number" data-key="${moneyKey}" min="0" step="1" value="${inputNum(mVal)}" placeholder="主管自由輸入金額">
         </div>`;
       }
 
@@ -10036,7 +10076,7 @@
         return `
         <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelHc} <small style="color:#94a3b8;font-weight:normal;">分段</small></label>
-          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-formula="classSize" min="0" step="1" value="${hcVal}">
+          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-formula="classSize" min="0" step="1" value="${inputNum(hcVal)}">
           <small style="color:#94a3b8;font-size:11px;display:block;margin-top:4px;line-height:1.4;">${hint}</small>
         </div>
         <div class="field-cell" data-field-cell="${moneyKey}">
@@ -10053,7 +10093,7 @@
       return `
         <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelHc} <small style="color:#94a3b8;font-weight:normal;">× ${rate}元</small></label>
-          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-rate="${rate}" min="0" step="1" value="${hcVal}">
+          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-rate="${rate}" min="0" step="1" value="${inputNum(hcVal)}">
         </div>
         <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelMoney}</label>
@@ -10076,7 +10116,7 @@
     const structHtml = ['底薪','年資津貼','主管津貼'].map(k => `
       <div class="field-cell" data-field-cell="${k}">
         <label>${k} (元)</label>
-        <input type="number" data-key="${k}" min="0" step="1" value="${Number(emp[k])||0}">
+        <input type="number" data-key="${k}" min="0" step="1" value="${inputNum(emp[k])}">
       </div>`).join('');
     const otherHtml = `
       <div class="field-cell wide" data-field-cell="其他津貼">
@@ -10098,7 +10138,7 @@
       </div>
       <div class="field-cell wide" data-field-cell="考試獎金">
         <label>📝 考試獎金 (元)</label>
-        <input type="number" data-key="考試獎金" min="0" step="1" value="${Number(emp['考試獎金'])||0}" placeholder="0">
+        <input type="number" data-key="考試獎金" min="0" step="1" value="${inputNum(emp['考試獎金'])}" placeholder="0">
       </div>`;
 
     return `<div class="form-section salary">
@@ -10143,7 +10183,7 @@
         } else if (f.type === 'date') {
           inputHtml = `<input type="date" class="${cls}" data-key="${f.key}" value="${v || ''}">`;
         } else if (f.type === 'money') {
-          inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${v == null ? 0 : v}">`;
+          inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${inputNum(v)}">`;
         } else if (f.type === 'textarea') {
           const safe = String(v == null ? '' : v).replace(/</g, '&lt;').replace(/"/g, '&quot;');
           // ── Canned-text quick-insert chips (only for 備註 field) ──
@@ -10188,7 +10228,7 @@
           const amount = mode === 'subsidy' ? sVal : dVal;
           inputHtml = `
             <div class="premium-pair" data-pair="${f.key}" data-current-mode="${mode}" data-deduct-key="${f.deductKey}" data-subsidy-key="${f.subsidyKey}">
-              <input type="number" class="premium-amount" data-pair-amount="${f.key}" min="0" step="1" value="${amount}">
+              <input type="number" class="premium-amount" data-pair-amount="${f.key}" min="0" step="1" value="${inputNum(amount)}">
               <div class="seg-toggle" data-pair-toggle="${f.key}">
                 <button type="button" class="seg-btn ${mode==='deduct'?'active':''}" data-pair-mode-btn="deduct">
                   <span class="seg-ic">🔴</span><span class="seg-tx">扣薪</span>
@@ -10294,7 +10334,7 @@
       .filter(f => !PT_HOURS_KEYS.includes(f.key) && !KC_HOURLY_ITEMS.some(i => i.hoursKey === f.key))   // 美語的時數都放在「🏰 美語部項目」
       .filter(f => !ptKeys.includes(f.key) || showPt || (Number(sal[f.key]) || 0) !== 0)
       .map(f => {
-      const v = sal[f.key] == null ? 0 : sal[f.key];
+      const v = inputNum(sal[f.key]);
       return `<div class="field-cell" data-mcol="${f.key}">
         <label>${f.label}</label>
         <input type="number" data-sal-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${v}">
@@ -10582,12 +10622,12 @@
     const hours = sal ? (Number(sal[p.hoursKey]) || 0) : 0;
     const pay = Math.round(hours * (rate || Number(FC(p.defKey))));
     const hoursInput = sal
-      ? `<input type="number" data-sal-key="${p.hoursKey}" data-pt-pair="${p.id}" min="0" max="9999" step="0.5" value="${hours}">`
+      ? `<input type="number" data-sal-key="${p.hoursKey}" data-pt-pair="${p.id}" min="0" max="9999" step="0.5" value="${inputNum(hours)}">`
       : `<input type="number" disabled placeholder="儲存員工後才能輸入">`;
     return `<div class="pt-pair-row">
       <div class="field-cell" data-field-cell="${p.rateKey}">
         <label>${p.rateLabel}</label>
-        <input type="number" data-key="${p.rateKey}" data-pt-pair="${p.id}" min="0" step="1" value="${rate}">
+        <input type="number" data-key="${p.rateKey}" data-pt-pair="${p.id}" min="0" step="1" value="${inputNum(rate)}">
       </div>
       <div class="field-cell" data-mcol="${p.hoursKey}">
         <label>× ${p.hoursKey}（${_drawerMonth || '本月'}）</label>
@@ -10605,7 +10645,7 @@
     const cells = KC_HOURLY_ITEMS.map(i => {
       const h = sal ? (Number(sal[i.hoursKey]) || 0) : 0;
       const inp = sal
-        ? `<input type="number" data-sal-key="${i.hoursKey}" data-kc-hour="1" min="0" max="9999" step="0.5" value="${h}">`
+        ? `<input type="number" data-sal-key="${i.hoursKey}" data-kc-hour="1" min="0" max="9999" step="0.5" value="${inputNum(h)}">`
         : `<input type="number" disabled placeholder="儲存員工後才能輸入">`;
       return `<div class="field-cell" data-mcol="${i.hoursKey}">
           <label>${i.label.replace(/（.*）/, '')} 時數（${_drawerMonth || '本月'}）</label>
@@ -11350,6 +11390,15 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261023V1310', date: '2026-10-23 13:10',
+      changes: [
+        '從「🏰 美語部」登入：薪水條、主管輸入、老闆輸入、總覽的校區篩選預設為「美語部」，清單以美語老師為主（老闆仍可切回全部）',
+        '從美語部登入時，主管輸入表格的美語授課時數欄（兼職美語、與外師共同上課、V Writing、資優美語、一對一、B Reading、輔導補課）排在最前面',
+        '從美語部登入時，所有輸入欄位（主管輸入表格、員工資料、本月薪資、美語部項目）數值為 0 時顯示空白，不顯示 0；留空儲存仍視為 0',
+        '修正：主管輸入表格的表頭依欄位自動產生，與內容欄位對齊'
+      ]
+    },
     {
       version: 'V20261022V2045', date: '2026-10-22 20:45',
       changes: [
