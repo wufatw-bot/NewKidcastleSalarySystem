@@ -2296,7 +2296,7 @@
         <div class="icon">🏰</div>
         <div>
           <div class="title">美語部</div>
-          <div class="code">ENGLISHSCHOOL&nbsp;THREE&nbsp;·&nbsp;KIDCASTLEnbsp;DEPARTMENT</div>
+          <div class="code">ENGLISH&nbsp;DEPARTMENT</div>
         </div>
       </div>
       <div class="body">
@@ -2902,6 +2902,63 @@
   </div>
 
   <!-- 📥 批次新增員工（Excel / CSV / 文字） -->
+  <!-- 📥 資料匯入：更新既有員工的資料與當月時數 -->
+  <div class="small-modal-overlay" id="dataImpOverlay" onclick="closeDataImport(event)">
+    <div class="small-modal" style="max-width:1120px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#6366F1,#4338CA);">
+        <div class="icon-l">📥</div>
+        <h2>資料匯入 — 更新員工資料與本月時數</h2>
+        <button class="close" onclick="closeDataImport()">✕</button>
+      </div>
+      <div class="body" style="max-height:72vh;overflow:auto;">
+        <p style="margin:0 0 12px;color:#3730A3;font-size:13px;background:#EEF2FF;padding:8px 12px;border-radius:6px;border-left:3px solid #6366F1;line-height:1.75;">
+          ① 先按「⬇ 下載範本」：範本已帶入目前資料，直接在 Excel 修改後上傳即可（也可貼上從 Excel 複製的表格）。<br>
+          ② 用 <b>員工編號</b> 對應員工（沒有員工編號時用身份證字號，再沒有用員工姓名）；員工姓名、身份證字號只用來對應，不會被修改。<br>
+          ③ <b>空白儲存格＝不變</b>；要清成 0 請填 0。時數類（加班、授課時數…）寫入下方選的月份；「本月備註」寫入該月薪資條備註，「備註」是員工資料的備註。<br>
+          ④ 有填人數／班數但沒填津貼時，津貼會依公式自動算好。套用前會先備份整份資料到雲端硬碟 Kidcastle_Backups。
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;align-items:end;margin-bottom:10px;">
+          <div class="field" style="margin:0;"><label>時數寫入月份</label><select id="dataImpMonth"></select></div>
+          <div class="field" style="margin:0;"><label>範本內容</label>
+            <select id="dataImpKind">
+              <option value="monthly">本月時數（加班、請假、美語授課…）</option>
+              <option value="kc">美語部項目（帶班數、職等、時薪…）</option>
+              <option value="all">全部欄位</option>
+            </select></div>
+          <div class="field" style="margin:0;"><label>範本員工</label>
+            <select id="dataImpCampus"><option value="all">全部在職員工</option><option value="同安">同安</option><option value="莊敬">莊敬</option><option value="美語部">美語部</option></select></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn-mini secondary" onclick="downloadDataImportTemplate('xlsx')">⬇ 下載 Excel 範本</button>
+            <button class="btn-mini secondary" onclick="downloadDataImportTemplate('csv')">⬇ CSV</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>上傳檔案（.xlsx / .xls / .csv / .txt）</label>
+          <input type="file" id="dataImpFile" accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,.txt" onchange="if (this.files.length) document.getElementById('dataImpText').value = ''">
+        </div>
+        <div class="field">
+          <label>或直接貼上（第一列必須是欄位名稱）</label>
+          <textarea id="dataImpText" rows="5" oninput="if (this.value.trim()) document.getElementById('dataImpFile').value = ''" placeholder="員工編號,員工姓名,兼職美語授課時數,與外師共同上課時數&#10;KC001,王小明,20,10" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn-mini primary" onclick="parseDataImport()" style="background:linear-gradient(135deg,#6366F1,#4338CA);">🔍 解析並預覽變更</button>
+          <button class="btn-mini secondary" onclick="resetDataImport()">清除</button>
+        </div>
+        <div id="dataImpSummary" style="display:none;background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-bottom:10px;line-height:1.7;"></div>
+        <div style="overflow:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead id="dataImpThead"></thead>
+            <tbody id="dataImpTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeDataImport()">取消</button>
+        <button class="btn-mini primary" id="dataImpApplyBtn" onclick="applyDataImport()" disabled style="opacity:.5;background:linear-gradient(135deg,#6366F1,#4338CA);">✅ 套用變更</button>
+      </div>
+    </div>
+  </div>
+
   <div class="small-modal-overlay" id="bulkEmpOverlay" onclick="closeBulkEmp(event)">
     <div class="small-modal" style="max-width:1080px;" onclick="event.stopPropagation()">
       <div class="head" style="background:linear-gradient(135deg,#10B981,#047857);">
@@ -3088,6 +3145,7 @@
         <button class="btn-mini secondary" onclick="addEmployee()">➕ 新增員工</button>
         <button class="btn-mini secondary" onclick="openBulkEmp()" title="從 Excel / CSV / 貼上文字 一次新增多位員工">📥 批次新增員工</button>
         <button class="btn-mini secondary" onclick="openBulkMail()" title="從 Excel / CSV / Google 表單回覆 一次填入多位員工的 Email">📧 批次匯入 Email</button>
+        <button class="btn-mini primary" onclick="openDataImport()" style="background:linear-gradient(135deg,#6366F1,#4338CA);" title="從 Excel / CSV 一次更新多位員工的資料與本月時數（先預覽再套用）">📥 資料匯入</button>
         <button class="btn-mini primary" onclick="openMgrPerms()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);" title="設定主管可以看到 / 編輯哪些欄位">🛡 主管權限設定</button>
         <button class="btn-mini secondary" onclick="openPayslipSettings()" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;" title="設定薪水條上哪些項目即使為 0 也要顯示">⚙ 薪水條顯示項目</button>
         <button class="btn-mini primary" onclick="exportEmployees()">⬇ 匯出 Employee Data.xlsx</button>
@@ -4031,10 +4089,6 @@
 
     // Default tab by role
     activateTab(user.role === 'manager' ? 'manager' : 'payslip');
-
-    // 從美語部進入：所有清單的校區篩選預設為「美語部」（老闆仍可手動切回全部）
-    const defCampus = isKcSession() ? KC_CAMPUS : 'all';
-    ['psCampus', 'mgrCampus', 'ownCampus', 'dashCampus'].forEach(id => { if ($(id)) $(id).value = defCampus; });
 
     populatePayslipSelectors();
     renderPayslip();
@@ -5876,6 +5930,253 @@
     resetBulkEmp();
   }
 
+  // ==========================================================================
+  // 📥 資料匯入：用 Excel / CSV 更新既有員工的「員工資料」欄位與某月份的「本月」欄位
+  //   對應：員工編號 → 身份證字號 → 員工姓名（唯一）；空白＝不變；先預覽、備份到雲端後才套用
+  // ==========================================================================
+  let _dataImpPlan = [];
+  const DATA_IMP_MATCH_ONLY = ['員工編號', '員工姓名', '身份證字號'];
+  const DATA_IMP_ALIASES = { '行政': '美語部行政', '授課職等': '職等', '本月備註': '本月備註', '員工備註': '備註',
+                             'id': '員工編號', '姓名': '員工姓名', '身分證字號': '身份證字號', '身分證': '身份證字號', '身份證': '身份證字號' };
+  function dataImpFieldDefs() {
+    const defs = new Map();
+    DATA_IMP_MATCH_ONLY.forEach(k => defs.set(k, { key: k, scope: 'match' }));
+    DRAWER_MONTHLY_FIELDS_ALL.forEach(f => defs.set(f.key, { key: f.key, scope: 'sal', type: 'num', min: f.min, max: f.max }));
+    defs.set('全勤', { key: '全勤', scope: 'sal', type: 'select', options: ['', '自動', '全勤', '非全勤'] });
+    defs.set('本月備註', { key: '備註', scope: 'sal', type: 'text', label: '本月備註' });
+    OWN_SECTIONS.forEach(sec => sec.fields.forEach(f => {
+      if (DATA_IMP_MATCH_ONLY.includes(f.key) || ['登入密碼', '特休資訊'].includes(f.key) || ['leave_info', 'kc_hours'].includes(f.type)) return;
+      if (f.type === 'premium_pair') { [f.deductKey, f.subsidyKey].forEach(k => defs.set(k, { key: k, scope: 'emp', type: 'num', min: 0 })); return; }
+      if (f.type === 'pt_pair') { defs.set(f.pair.rateKey, { key: f.pair.rateKey, scope: 'emp', type: 'num', min: 0 }); return; }
+      const type = f.type === 'money' ? 'num' : f.type === 'select' ? 'select' : f.type === 'date' ? 'date' : 'text';
+      defs.set(f.key, { key: f.key, scope: 'emp', type, min: 0, options: f.options });
+    }));
+    return defs;
+  }
+  function dataImpMapHeader(h, defs) {
+    const raw = String(h == null ? '' : h).trim();
+    if (!raw) return null;
+    const noSp = raw.replace(/\s+/g, '');
+    const cands = [raw, noSp, noSp.replace(/[（(].*$/, ''), raw.split(/\s+/)[0], raw.replace(/\s+[A-Za-z].*$/, '').replace(/\s+/g, '')];
+    for (const c of cands) {
+      if (defs.has(c)) return c;
+      const a = DATA_IMP_ALIASES[c] || DATA_IMP_ALIASES[c.toLowerCase()];
+      if (a && defs.has(a)) return a;
+    }
+    return null;
+  }
+  function dataImpParseValue(def, v) {
+    if (v == null || String(v).trim() === '') return { skip: true };
+    if (def.type === 'num') {
+      const n = Number(String(v).replace(/[,，\s]/g, ''));
+      if (isNaN(n)) return { error: `「${v}」不是數字` };
+      if (def.min != null && n < def.min) return { error: `不可小於 ${def.min}` };
+      if (def.max != null && n > def.max) return { error: `不可大於 ${def.max}` };
+      return { val: n };
+    }
+    if (def.type === 'date') return bulkEmpDate(v);
+    const t = String(v).trim();
+    if (def.type === 'select') {
+      if (def.key === '校區') { const c = bulkEmpCampus(t); return c ? { val: c } : { error: `校區須為 ${CAMPUS_LIST.join('、')}` }; }
+      const val = def.key === '職等' ? t.toUpperCase() : (def.key === '全勤' && t === '自動' ? '' : t);
+      if (def.options && !def.options.includes(val)) return { error: `須為 ${def.options.filter(Boolean).join('／')}` };
+      return { val };
+    }
+    return { val: t };
+  }
+  async function dataImpReadFile(file) {
+    const buf = await file.arrayBuffer();
+    if (/\.(csv|tsv|txt)$/i.test(file.name)) return bulkEmpParseText(bulkEmpDecode(buf));
+    if (typeof XLSX === 'undefined') throw new Error('SheetJS 未載入，無法讀取 Excel');
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const name = wb.SheetNames.find(n => /資料匯入|員工|employee|salary|薪資/i.test(n) && !/說明/.test(n)) || wb.SheetNames[0];
+    return XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+  }
+  function dataImpFmt(v) { return v == null || v === '' ? '（空）' : (typeof v === 'number' ? fmtNT(v) : String(v)); }
+  function openDataImport() {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可使用資料匯入', 'error'); return; }
+    const months = [...new Set([getCurrentMonthROC(), getPrevMonthROC(), ...DATA.salary.map(s => String(s['月份']))])].sort().reverse();
+    const def = ($('mgrMonth') && $('mgrMonth').value) || getPrevMonthROC();
+    $('dataImpMonth').innerHTML = months.map(m => `<option value="${m}"${m === def ? ' selected' : ''}>${m}（民國${m.slice(0,3)}年${m.slice(3,5)}月）</option>`).join('');
+    const oc = $('ownCampus') && $('ownCampus').value;
+    if (CAMPUS_LIST.includes(oc)) { $('dataImpCampus').value = oc; if (oc === KC_CAMPUS) $('dataImpKind').value = 'monthly'; }
+    $('dataImpOverlay').classList.add('show');
+  }
+  function closeDataImport(e) { if (e && e.target !== e.currentTarget) return; $('dataImpOverlay').classList.remove('show'); }
+  function resetDataImport() {
+    _dataImpPlan = [];
+    $('dataImpFile').value = ''; $('dataImpText').value = '';
+    $('dataImpSummary').style.display = 'none'; $('dataImpThead').innerHTML = ''; $('dataImpTbody').innerHTML = '';
+    const b = $('dataImpApplyBtn'); b.disabled = true; b.style.opacity = '.5';
+  }
+  function dataImpTemplateCols(kind) {
+    const monthly = ['加班時數', '支薪時數', '請假時數', '遲到次數', '全勤', ...PT_HOURS_KEYS, ...KC_HOURLY_ITEMS.map(i => i.hoursKey), '本月備註'];
+    const kc = ['帶班數', '帶班班別', '帶班數津貼', '職等', '美語帶班人數', '美語帶班人數津貼', 'Writing人數', 'Writing人數津貼',
+                '奇趣線上教材', '美語部行政', ...PT_PAIRS.map(p => p.rateKey)];
+    if (kind === 'monthly') return monthly;
+    if (kind === 'kc') return kc;
+    const defs = dataImpFieldDefs();
+    const empKeys = [...defs.values()].filter(d => d.scope === 'emp').map(d => d.key).filter(k => !kc.includes(k));
+    return [...monthly, ...kc, ...empKeys];
+  }
+  function downloadDataImportTemplate(fmt) {
+    const kind = $('dataImpKind').value, month = $('dataImpMonth').value, campus = $('dataImpCampus').value;
+    const cols = ['員工編號', '員工姓名', '校區', ...dataImpTemplateCols(kind).filter(k => k !== '校區')];
+    const defs = dataImpFieldDefs();
+    const emps = DATA.employees.filter(e => e['在職狀態'] === '在職' && (campus === 'all' || e['校區'] === campus))
+      .sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號'])));
+    const rows = [cols, ...emps.map(e => {
+      const sal = findSalary(e['員工編號'], month) || {};
+      return cols.map(k => {
+        const d = defs.get(k);
+        if (!d || d.scope === 'match' || k === '校區') return e[k] == null ? '' : e[k];
+        const v = d.scope === 'sal' ? sal[d.key] : e[d.key];
+        return v == null ? '' : v;
+      });
+    })];
+    const kindLabel = { monthly: '本月時數', kc: '美語部項目', all: '全部欄位' }[kind];
+    const fname = `資料匯入範本_${kindLabel}_${campus === 'all' ? '全部' : campus}_${month}`;
+    if (fmt === 'csv') {
+      const q = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+      const blob = new Blob(['\ufeff' + rows.map(r => r.map(q).join(',')).join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname + '.csv';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    } else {
+      if (typeof XLSX === 'undefined') { toast('SheetJS 未載入', 'error'); return; }
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = cols.map(h => ({ wch: Math.max(10, h.length * 2 + 2) }));
+      ws['!freeze'] = { xSplit: 2, ySplit: 1 };
+      XLSX.utils.book_append_sheet(wb, ws, '資料匯入');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+        ['說明'], [`時數類欄位寫入 ${month} 月份；空白＝不變，要清成 0 請填 0`],
+        ['用員工編號對應員工；員工姓名、身份證字號只用來對應，不會被修改'],
+        ['不需要的欄位可以整欄刪除；欄位名稱請勿修改'],
+        ['職等：A／B／C／D；全勤：自動／全勤／非全勤；校區：' + CAMPUS_LIST.join('／')]
+      ]), '說明');
+      XLSX.writeFile(wb, fname + '.xlsx');
+    }
+    toast(`已下載範本（${emps.length} 位員工）`, 'success');
+  }
+  async function parseDataImport() {
+    let rows;
+    try {
+      const f = $('dataImpFile').files[0];
+      rows = f ? await dataImpReadFile(f) : bulkEmpParseText($('dataImpText').value);
+    } catch (e) { toast('讀取失敗：' + e.message, 'error'); return; }
+    rows = (rows || []).filter(r => r && r.some(c => String(c == null ? '' : c).trim() !== ''));
+    if (rows.length < 2) { toast('至少需要標題列＋一列資料', 'error'); return; }
+    const defs = dataImpFieldDefs();
+    const header = rows[0].map(h => dataImpMapHeader(h, defs));
+    const unknown = rows[0].filter((h, i) => String(h).trim() && !header[i]).map(h => String(h).trim());
+    if (!header.some(k => k && ['員工編號', '身份證字號', '員工姓名'].includes(k))) { toast('找不到「員工編號」（或身份證字號／員工姓名）欄位', 'error'); return; }
+    const month = $('dataImpMonth').value;
+    const seen = new Map();
+    _dataImpPlan = rows.slice(1).map((cells, ri) => {
+      const rec = {}; header.forEach((k, i) => { if (k) rec[k] = cells[i]; });
+      const id = String(rec['員工編號'] == null ? '' : rec['員工編號']).trim().toUpperCase();
+      const idn = String(rec['身份證字號'] == null ? '' : rec['身份證字號']).trim().toUpperCase();
+      const nm = String(rec['員工姓名'] == null ? '' : rec['員工姓名']).trim();
+      let emp = null, by = '';
+      if (id) { emp = DATA.employees.find(e => String(e['員工編號']).toUpperCase() === id); by = '員工編號'; }
+      if (!emp && idn) { emp = DATA.employees.find(e => String(e['身份證字號'] || '').toUpperCase() === idn); by = '身份證字號'; }
+      if (!emp && nm) {
+        const hits = DATA.employees.filter(e => String(e['員工姓名'] || '').trim() === nm);
+        if (hits.length === 1) { emp = hits[0]; by = '員工姓名'; }
+        else if (hits.length > 1) return { line: ri + 2, label: nm, errors: [`同名員工 ${hits.length} 位，請填員工編號`], changes: [], ok: false };
+      }
+      const label = emp ? `${emp['員工編號']} ${emp['員工姓名']}` : (id || idn || nm || '（空白）');
+      if (!emp) return { line: ri + 2, label, errors: ['找不到員工'], changes: [], ok: false };
+      if (seen.has(emp['員工編號'])) return { line: ri + 2, label, errors: [`與第 ${seen.get(emp['員工編號'])} 列是同一位員工`], changes: [], ok: false };
+      seen.set(emp['員工編號'], ri + 2);
+      const sal = findSalary(emp['員工編號'], month) || {};
+      const changes = [], errors = [], given = new Set();
+      Object.entries(rec).forEach(([k, v]) => {
+        const d = defs.get(k); if (!d || d.scope === 'match') return;
+        const r = dataImpParseValue(d, v);
+        if (r.skip) return;
+        if (r.error) { errors.push(`${k}：${r.error}`); return; }
+        given.add(d.key);
+        const old = d.scope === 'sal' ? sal[d.key] : emp[d.key];
+        const same = d.type === 'num' ? (Number(old) || 0) === r.val : String(old == null ? '' : old) === String(r.val);
+        if (!same) changes.push({ scope: d.scope, key: d.key, label: d.label || k, old, val: r.val });
+      });
+      // 有改人數／班數、但沒給津貼 → 依公式自動算津貼
+      changes.filter(c => c.scope === 'emp' && ALLOWANCE_AUTO_FORMULA[c.key]).forEach(c => {
+        const spec = ALLOWANCE_AUTO_FORMULA[c.key];
+        if (given.has(spec.moneyKey)) return;
+        const val = spec.moneyKey === '帶班人數津貼' ? computeClassSizeAllowance(c.val, month) : spec.compute(Number(c.val) || 0);
+        if ((Number(emp[spec.moneyKey]) || 0) !== val) changes.push({ scope: 'emp', key: spec.moneyKey, label: spec.moneyKey + '（自動）', old: emp[spec.moneyKey], val });
+      });
+      return { line: ri + 2, eid: emp['員工編號'], label, by, changes, errors, ok: !errors.length && changes.length > 0, selected: !errors.length && changes.length > 0 };
+    });
+    renderDataImportPreview(unknown, month);
+  }
+  function renderDataImportPreview(unknown, month) {
+    const plan = _dataImpPlan;
+    const okRows = plan.filter(p => p.ok), errRows = plan.filter(p => p.errors.length), noChg = plan.filter(p => !p.errors.length && !p.changes.length);
+    const nChg = okRows.reduce((t, p) => t + p.changes.length, 0);
+    const sum = $('dataImpSummary');
+    sum.style.display = '';
+    sum.innerHTML = `共 <b>${plan.length}</b> 列：<b style="color:#4338CA;">${okRows.length}</b> 位員工有變更（${nChg} 個欄位），` +
+      `<b>${noChg.length}</b> 位沒有變更，<b style="color:#DC2626;">${errRows.length}</b> 列有問題（不會套用）。時數寫入 <b>${month}</b>。` +
+      (unknown.length ? `<br>⚠ 無法辨識、已略過的欄位：${unknown.map(bulkEmpEsc).join('、')}` : '');
+    $('dataImpThead').innerHTML = `<tr style="background:#EEF2FF;">${['', '列', '員工', '對應方式', '變更內容（舊 → 新）', '狀態'].map(h => `<th style="padding:6px 8px;text-align:left;border-bottom:1px solid #c7d2fe;">${h}</th>`).join('')}</tr>`;
+    $('dataImpTbody').innerHTML = plan.map((p, i) => {
+      const chg = p.changes.map(c => `<span style="display:inline-block;margin:1px 4px 1px 0;padding:1px 7px;border-radius:999px;background:${c.scope === 'sal' ? '#FEF3C7' : '#EEF2FF'};">${bulkEmpEsc(c.label)}：${bulkEmpEsc(dataImpFmt(c.old))} → <b>${bulkEmpEsc(dataImpFmt(c.val))}</b></span>`).join('');
+      const st = p.errors.length ? `<span style="color:#DC2626;">✗ ${p.errors.map(bulkEmpEsc).join('；')}</span>` : p.changes.length ? '<span style="color:#059669;">✓ 可套用</span>' : '<span style="color:#94a3b8;">— 無變更</span>';
+      return `<tr style="border-bottom:1px solid #eef2f7;vertical-align:top;">
+        <td style="padding:6px 8px;"><input type="checkbox" data-imp-row="${i}" ${p.ok ? '' : 'disabled'} ${p.selected ? 'checked' : ''}></td>
+        <td style="padding:6px 8px;color:#94a3b8;">${p.line}</td>
+        <td style="padding:6px 8px;white-space:nowrap;">${bulkEmpEsc(p.label)}</td>
+        <td style="padding:6px 8px;white-space:nowrap;color:#64748b;">${p.by || '—'}</td>
+        <td style="padding:6px 8px;">${chg || '<span style="color:#94a3b8;">—</span>'}</td>
+        <td style="padding:6px 8px;">${st}</td></tr>`;
+    }).join('');
+    $('dataImpTbody').querySelectorAll('[data-imp-row]').forEach(cb => cb.addEventListener('change', () => {
+      _dataImpPlan[+cb.dataset.impRow].selected = cb.checked; dataImpSyncBtn();
+    }));
+    dataImpSyncBtn();
+  }
+  function dataImpSyncBtn() {
+    const n = _dataImpPlan.filter(p => p.ok && p.selected).length, b = $('dataImpApplyBtn');
+    b.disabled = !n; b.style.opacity = n ? '1' : '.5'; b.textContent = n ? `✅ 套用 ${n} 位員工的變更` : '✅ 套用變更';
+  }
+  async function applyDataImport() {
+    const todo = _dataImpPlan.filter(p => p.ok && p.selected);
+    if (!todo.length) return;
+    const month = $('dataImpMonth').value;
+    const nChg = todo.reduce((t, p) => t + p.changes.length, 0);
+    if (!confirm(`確認套用 ${todo.length} 位員工、共 ${nChg} 個欄位的變更？\n時數寫入 ${month}。\n\n會先備份整份資料到雲端硬碟，再寫入雲端。`)) return;
+    showLoadingOverlay('☁ 正在備份資料到雲端硬碟…');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    try {
+      await cloudPost('backup', { folder: 'Kidcastle_Backups', filename: `資料匯入前備份_${stamp}.json`, mime: 'application/json',
+        contentBase64: utf8ToBase64(JSON.stringify(DATA)) });
+    } catch (e) { hideLoadingOverlay(); toast('備份失敗，已取消匯入：' + e.message, 'error'); return; }
+    if (!DATA.ownerBaseline) DATA.ownerBaseline = {};
+    todo.forEach(p => {
+      const emp = findEmployee(p.eid); if (!emp) return;
+      let sal = null;
+      p.changes.forEach(c => {
+        if (c.scope === 'emp') emp[c.key] = c.val;
+        else { sal = sal || ensureSalaryRecord(p.eid, month); sal[c.key] = c.val; }
+      });
+      if (p.changes.some(c => c.scope === 'emp')) DATA.ownerBaseline[p.eid] = JSON.parse(JSON.stringify(emp));
+      const s2 = findSalary(p.eid, month); if (s2) { try { computeRow(emp, s2); } catch (_) {} }
+    });
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try { await doPersistNow(); } finally { hideLoadingOverlay(); }
+    appendLog({
+      time: nowTimestamp(), user: currentUser ? currentUser.fullName : '系統',
+      text: `📥 資料匯入（${month}）：${todo.length} 位員工、${nChg} 個欄位 — ${todo.slice(0, 10).map(p => p.label).join('、')}${todo.length > 10 ? '…' : ''}`
+    });
+    [renderOwnerTable, renderManagerTable, renderPayslip, renderDashboard].forEach(fn => { try { fn(); } catch (_) {} });
+    toast(`✓ 已匯入 ${todo.length} 位員工的資料`, 'success');
+    resetDataImport();
+    closeDataImport();
+  }
+
   // Enter key triggers password validate
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && $('migratePwdOverlay') && $('migratePwdOverlay').classList.contains('show') && document.activeElement && document.activeElement.id === 'migratePwdInput') {
@@ -6061,7 +6362,7 @@
             const tbl = th.closest('table');
             if (tbl && tbl.id) {
               const widths = Array.from(tbl.querySelectorAll('thead th')).map(t => t.style.width || '');
-              localStorage.setItem('kc_colw_' + (tbl.dataset.colwKey || tbl.id), JSON.stringify(widths));
+              localStorage.setItem('kc_colw_' + tbl.id, JSON.stringify(widths));
             }
           } catch (_) {}
         }
@@ -6073,7 +6374,7 @@
     // Restore persisted widths
     try {
       if (table.id) {
-        const raw = localStorage.getItem('kc_colw_' + (table.dataset.colwKey || table.id));
+        const raw = localStorage.getItem('kc_colw_' + table.id);
         if (raw) {
           const widths = JSON.parse(raw);
           Array.from(table.querySelectorAll('thead th')).forEach((t, i) => {
@@ -6265,15 +6566,6 @@
   function campusShort(schoolId) {
     if (!schoolId || !CREDENTIALS[schoolId]) return '';
     return String(CREDENTIALS[schoolId].name || '').replace(/校區$/, '');
-  }
-  // 從「🏰 美語部」登入：清單預設只列美語部（美語老師），輸入欄位為 0 時顯示空白
-  function isKcSession() {
-    return !!(currentUser && campusShort(currentUser.schoolId) === KC_CAMPUS);
-  }
-  // 數字輸入框的顯示值：美語部登入時 0／未填 → 空白（存檔時空白仍視為 0）
-  function inputNum(v) {
-    if (isKcSession() && (v == null || v === '' || Number(v) === 0)) return '';
-    return v == null ? 0 : v;
   }
 
   // 計算上個月的民國年月（YYYMM 格式），例如 2026-06 → "11505"
@@ -7788,32 +8080,6 @@
     { key: '備註',     type: 'text' }
   ].filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
 
-  // 美語部登入：美語老師的授課時數欄放最前面
-  function mgrFieldOrder() {
-    if (!isKcSession()) return MGR_FIELDS;
-    const isHours = f => monthlyExtraFields().some(x => x.key === f.key && x.kind === 'hours');
-    return [...MGR_FIELDS.filter(isHours), ...MGR_FIELDS.filter(f => !isHours(f))];
-  }
-  // 表頭依欄位清單產生（與 tbody 每格對齊）；欄位組合沒變就不重畫，保留拖曳調整的欄寬
-  function renderMgrHead(fields) {
-    const tr = document.querySelector('#mgrTable thead tr');
-    if (!tr) return;
-    const sig = fields.map(f => f.key).join('|');
-    if (tr.dataset.sig === sig) return;
-    tr.dataset.sig = sig;
-    const extra = Object.fromEntries(monthlyExtraFields().map(f => [f.key, f.label]));
-    const label = { '請假時數': '當月請假時數', '全勤': '本月全勤', ...extra };
-    const title = {
-      '支薪時數': `支薪金額 = 支薪時數 × ${FC('PAY_RATE')} 元`,
-      '請假時數': `請假扣款 = (結構性請假時數 + 當月請假時數) × ${FC('LEAVE_RATE')} 元`
-    };
-    tr.innerHTML = '<th style="text-align:left;padding-left:12px;">員工</th><th>校區</th>' +
-      fields.map(f => `<th data-col="${f.key}"${title[f.key] ? ` title="${title[f.key]}"` : ''}>${label[f.key] || f.key}</th>`).join('') +
-      '<th>加扣薪小計</th>';
-    $('mgrTable').dataset.colwKey = isKcSession() ? 'mgrTable_kc' : 'mgrTable';
-    makeColumnsResizable($('mgrTable'));
-  }
-
   function getMgrMonth() { return $('mgrMonth').value; }
   function getMgrCampus() { return $('mgrCampus').value; }
   function getMgrSearch() { return ($('mgrSearch').value || '').trim().toLowerCase(); }
@@ -7872,8 +8138,7 @@
     document.querySelectorAll('#mgrTable thead th[data-col]').forEach(th => {
       th.style.display = colPerm(th.dataset.col) === 'hidden' ? 'none' : '';
     });
-    const visibleFields = mgrFieldOrder().filter(f => colPerm(f.key) !== 'hidden');
-    renderMgrHead(visibleFields);
+    const visibleFields = MGR_FIELDS.filter(f => colPerm(f.key) !== 'hidden');
 
     const tbody = $('mgrTbody');
     if (!emps.length) {
@@ -7903,7 +8168,7 @@
           </select></td>`;
         }
         if (f.type === 'num') {
-          const num = inputNum(v);
+          const num = v == null ? 0 : v;
           return `<td><input type="number" class="num${changed}"
             data-eid="${emp['員工編號']}" data-field="${f.key}"
             min="${f.min}" max="${f.max}" step="${f.step}"
@@ -10056,7 +10321,7 @@
         return `
         <div class="field-cell wide" data-field-cell="${moneyKey}">
           <label>${spec.labelMoney}</label>
-          <input type="number" data-key="${moneyKey}" min="0" step="1" value="${inputNum(mVal)}" placeholder="主管自由輸入金額">
+          <input type="number" data-key="${moneyKey}" min="0" step="1" value="${mVal}" placeholder="主管自由輸入金額">
         </div>`;
       }
 
@@ -10076,7 +10341,7 @@
         return `
         <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelHc} <small style="color:#94a3b8;font-weight:normal;">分段</small></label>
-          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-formula="classSize" min="0" step="1" value="${inputNum(hcVal)}">
+          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-formula="classSize" min="0" step="1" value="${hcVal}">
           <small style="color:#94a3b8;font-size:11px;display:block;margin-top:4px;line-height:1.4;">${hint}</small>
         </div>
         <div class="field-cell" data-field-cell="${moneyKey}">
@@ -10093,7 +10358,7 @@
       return `
         <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelHc} <small style="color:#94a3b8;font-weight:normal;">× ${rate}元</small></label>
-          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-rate="${rate}" min="0" step="1" value="${inputNum(hcVal)}">
+          <input type="number" class="head-count-input" data-key="${hcKey}" data-money-key="${moneyKey}" data-rate="${rate}" min="0" step="1" value="${hcVal}">
         </div>
         <div class="field-cell" data-field-cell="${moneyKey}">
           <label>${spec.labelMoney}</label>
@@ -10116,7 +10381,7 @@
     const structHtml = ['底薪','年資津貼','主管津貼'].map(k => `
       <div class="field-cell" data-field-cell="${k}">
         <label>${k} (元)</label>
-        <input type="number" data-key="${k}" min="0" step="1" value="${inputNum(emp[k])}">
+        <input type="number" data-key="${k}" min="0" step="1" value="${Number(emp[k])||0}">
       </div>`).join('');
     const otherHtml = `
       <div class="field-cell wide" data-field-cell="其他津貼">
@@ -10138,7 +10403,7 @@
       </div>
       <div class="field-cell wide" data-field-cell="考試獎金">
         <label>📝 考試獎金 (元)</label>
-        <input type="number" data-key="考試獎金" min="0" step="1" value="${inputNum(emp['考試獎金'])}" placeholder="0">
+        <input type="number" data-key="考試獎金" min="0" step="1" value="${Number(emp['考試獎金'])||0}" placeholder="0">
       </div>`;
 
     return `<div class="form-section salary">
@@ -10183,7 +10448,7 @@
         } else if (f.type === 'date') {
           inputHtml = `<input type="date" class="${cls}" data-key="${f.key}" value="${v || ''}">`;
         } else if (f.type === 'money') {
-          inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${inputNum(v)}">`;
+          inputHtml = `<input type="number" class="${cls}" data-key="${f.key}" min="0" step="1" value="${v == null ? 0 : v}">`;
         } else if (f.type === 'textarea') {
           const safe = String(v == null ? '' : v).replace(/</g, '&lt;').replace(/"/g, '&quot;');
           // ── Canned-text quick-insert chips (only for 備註 field) ──
@@ -10228,7 +10493,7 @@
           const amount = mode === 'subsidy' ? sVal : dVal;
           inputHtml = `
             <div class="premium-pair" data-pair="${f.key}" data-current-mode="${mode}" data-deduct-key="${f.deductKey}" data-subsidy-key="${f.subsidyKey}">
-              <input type="number" class="premium-amount" data-pair-amount="${f.key}" min="0" step="1" value="${inputNum(amount)}">
+              <input type="number" class="premium-amount" data-pair-amount="${f.key}" min="0" step="1" value="${amount}">
               <div class="seg-toggle" data-pair-toggle="${f.key}">
                 <button type="button" class="seg-btn ${mode==='deduct'?'active':''}" data-pair-mode-btn="deduct">
                   <span class="seg-ic">🔴</span><span class="seg-tx">扣薪</span>
@@ -10334,7 +10599,7 @@
       .filter(f => !PT_HOURS_KEYS.includes(f.key) && !KC_HOURLY_ITEMS.some(i => i.hoursKey === f.key))   // 美語的時數都放在「🏰 美語部項目」
       .filter(f => !ptKeys.includes(f.key) || showPt || (Number(sal[f.key]) || 0) !== 0)
       .map(f => {
-      const v = inputNum(sal[f.key]);
+      const v = sal[f.key] == null ? 0 : sal[f.key];
       return `<div class="field-cell" data-mcol="${f.key}">
         <label>${f.label}</label>
         <input type="number" data-sal-key="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${v}">
@@ -10622,12 +10887,12 @@
     const hours = sal ? (Number(sal[p.hoursKey]) || 0) : 0;
     const pay = Math.round(hours * (rate || Number(FC(p.defKey))));
     const hoursInput = sal
-      ? `<input type="number" data-sal-key="${p.hoursKey}" data-pt-pair="${p.id}" min="0" max="9999" step="0.5" value="${inputNum(hours)}">`
+      ? `<input type="number" data-sal-key="${p.hoursKey}" data-pt-pair="${p.id}" min="0" max="9999" step="0.5" value="${hours}">`
       : `<input type="number" disabled placeholder="儲存員工後才能輸入">`;
     return `<div class="pt-pair-row">
       <div class="field-cell" data-field-cell="${p.rateKey}">
         <label>${p.rateLabel}</label>
-        <input type="number" data-key="${p.rateKey}" data-pt-pair="${p.id}" min="0" step="1" value="${inputNum(rate)}">
+        <input type="number" data-key="${p.rateKey}" data-pt-pair="${p.id}" min="0" step="1" value="${rate}">
       </div>
       <div class="field-cell" data-mcol="${p.hoursKey}">
         <label>× ${p.hoursKey}（${_drawerMonth || '本月'}）</label>
@@ -10645,7 +10910,7 @@
     const cells = KC_HOURLY_ITEMS.map(i => {
       const h = sal ? (Number(sal[i.hoursKey]) || 0) : 0;
       const inp = sal
-        ? `<input type="number" data-sal-key="${i.hoursKey}" data-kc-hour="1" min="0" max="9999" step="0.5" value="${inputNum(h)}">`
+        ? `<input type="number" data-sal-key="${i.hoursKey}" data-kc-hour="1" min="0" max="9999" step="0.5" value="${h}">`
         : `<input type="number" disabled placeholder="儲存員工後才能輸入">`;
       return `<div class="field-cell" data-mcol="${i.hoursKey}">
           <label>${i.label.replace(/（.*）/, '')} 時數（${_drawerMonth || '本月'}）</label>
@@ -11391,12 +11656,13 @@
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
     {
-      version: 'V20261023V1310', date: '2026-10-23 13:10',
+      version: 'V20261024V1200', date: '2026-10-24 12:00',
       changes: [
-        '從「🏰 美語部」登入：薪水條、主管輸入、老闆輸入、總覽的校區篩選預設為「美語部」，清單以美語老師為主（老闆仍可切回全部）',
-        '從美語部登入時，主管輸入表格的美語授課時數欄（兼職美語、與外師共同上課、V Writing、資優美語、一對一、B Reading、輔導補課）排在最前面',
-        '從美語部登入時，所有輸入欄位（主管輸入表格、員工資料、本月薪資、美語部項目）數值為 0 時顯示空白，不顯示 0；留空儲存仍視為 0',
-        '修正：主管輸入表格的表頭依欄位自動產生，與內容欄位對齊'
+        '新增「📥 資料匯入」（員工資料頁，限老闆）：用 Excel／CSV／貼上文字，一次更新多位員工的員工資料欄位與某個月份的時數',
+        '可下載範本（已帶入目前資料）：本月時數／美語部項目／全部欄位，可選員工範圍；用員工編號對應（其次身份證字號、員工姓名），空白＝不變',
+        '套用前顯示每位員工的「舊 → 新」變更，可逐列勾選；找不到員工、重複、格式錯誤的列不會套用；有填人數／班數但沒填津貼時自動依公式計算',
+        '套用前自動備份整份資料到雲端硬碟 Kidcastle_Backups，備份失敗就不匯入',
+        '修正：首頁美語部卡片英文副標顯示錯誤'
       ]
     },
     {
