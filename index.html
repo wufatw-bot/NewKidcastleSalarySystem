@@ -2252,17 +2252,17 @@
   </header>
 
   <div class="cards">
-    <!-- 林口校區 -->
-    <div class="card school1" data-school="1" tabindex="0" role="button" aria-label="進入林口校區">
+    <!-- 同安校區 -->
+    <div class="card school1" data-school="1" tabindex="0" role="button" aria-label="進入同安校區">
       <div class="top">
         <div class="icon">🏫</div>
         <div>
-          <div class="title">林口校區</div>
-          <div class="code">SCHOOL&nbsp;ONE&nbsp;·&nbsp;LINKOU</div>
+          <div class="title">同安校區</div>
+          <div class="code">SCHOOL&nbsp;ONE&nbsp;·&nbsp;TONG&nbsp;AN</div>
         </div>
       </div>
       <div class="body">
-        <p>進入林口校區之薪資管理後台，輸入工時、計算薪資、產生薪資條。</p>
+        <p>進入同安校區之薪資管理後台，輸入工時、計算薪資、產生薪資條。</p>
         <p>請使用主管或老闆帳號登入。</p>
       </div>
       <div class="emp-lookup">
@@ -2272,7 +2272,7 @@
     </div>
 
     <!-- 莊敬校區 -->
-    <div class="card school2" data-school="2" style="display:none" tabindex="0" role="button" aria-label="進入莊敬校區">
+    <div class="card school2" data-school="2" tabindex="0" role="button" aria-label="進入莊敬校區">
       <div class="top">
         <div class="icon">🎓</div>
         <div>
@@ -2290,23 +2290,23 @@
       <div class="enter">進入校區二 <span>→</span></div>
     </div>
 
-    <!-- 國中部 -->
-    <div class="card school3" data-school="3" tabindex="0" role="button" aria-label="進入國中部">
+    <!-- 美語部 -->
+    <div class="card school3" data-school="3" tabindex="0" role="button" aria-label="進入美語部">
       <div class="top">
         <div class="icon">🏰</div>
         <div>
-          <div class="title">國中部</div>
-          <div class="code">JUNIOR&nbsp;HIGH&nbsp;DIVISION</div>
+          <div class="title">美語部</div>
+          <div class="code">ENGLISH&nbsp;DEPARTMENT</div>
         </div>
       </div>
       <div class="body">
-        <p>進入國中部之薪資管理後台，含帶班數、Writing、閱讀班等項目與兼職美語時薪。</p>
+        <p>進入美語部之薪資管理後台，含帶班數、Writing、閱讀班等項目與兼職美語時薪。</p>
         <p>請使用主管或老闆帳號登入。</p>
       </div>
       <div class="emp-lookup">
         <a href="Employee_Number.html" onclick="event.stopPropagation();">查詢員工編號，點此進入</a>
       </div>
-      <div class="enter">進入國中部 <span>→</span></div>
+      <div class="enter">進入美語部 <span>→</span></div>
     </div>
   </div>
 
@@ -2324,7 +2324,7 @@
   </div>
 
   <footer class="foot-note">
-    © 2026 Kidcastle Salary System &nbsp;|&nbsp; 林口校・國中部 管理平台<br>
+    © 2026 Kidcastle Salary System &nbsp;|&nbsp; 三校共同管理平台<br>
     <span class="v">v1.0 · Homepage · 2026-05-10</span>
   </footer>
 </div>
@@ -2372,8 +2372,9 @@
         <label>校區 Campus</label>
         <select id="dashCampus">
           <option value="all">全部 / All</option>
-          <option value="林口校">林口校區</option>
-          <option value="國中部">國中部</option>
+          <option value="同安">同安校區</option>
+          <option value="莊敬">莊敬校區</option>
+          <option value="美語部">美語部</option>
         </select>
       </div>
       <div class="ctrl" style="margin-left:auto;">
@@ -2448,7 +2449,7 @@
         <h3>📋 校區比較 <span class="badge">本月</span></h3>
         <table class="compare-table" id="campusCompare">
           <thead>
-            <tr><th>項目</th><th>林口校</th><th>國中部</th><th>合計</th></tr>
+            <tr><th>項目</th><th>同安</th><th>莊敬</th><th>美語部</th><th>合計</th></tr>
           </thead>
           <tbody></tbody>
           <tfoot></tfoot>
@@ -2488,7 +2489,7 @@
       </div>
 
       <div class="backup-grid">
-        <!-- 林口校 + 莊敬 -->
+        <!-- 同安 + 莊敬 -->
         <div class="backup-col both">
           <h4>🏫🎓🏰 全部校區合併</h4>
           <div class="meta">三校全部資料於同一份檔案</div>
@@ -2501,12 +2502,12 @@
           </div>
         </div>
 
-        <!-- 林口校 -->
+        <!-- 同安校 -->
         <div class="backup-col ta">
-          <h4>🏫 林口校</h4>
+          <h4>🏫 同安校</h4>
           <div class="meta" id="bkTaCount">— 名員工</div>
           <div class="btn-stack">
-            <button class="backup-btn local" onclick="doBackup('林口校','local')">
+            <button class="backup-btn local" onclick="doBackup('同安','local')">
               <span class="ico">💾</span>
               <span class="lbl">備份到本地</span>
               <span class="arrow">↓</span>
@@ -2515,7 +2516,7 @@
         </div>
 
         <!-- 莊敬校 -->
-        <div class="backup-col zj" style="display:none">
+        <div class="backup-col zj">
           <h4>🎓 莊敬校</h4>
           <div class="meta" id="bkZjCount">— 名員工</div>
           <div class="btn-stack">
@@ -2527,12 +2528,12 @@
           </div>
         </div>
 
-        <!-- 國中部 -->
+        <!-- 美語部 -->
         <div class="backup-col kc">
-          <h4>🏰 國中部</h4>
+          <h4>🏰 美語部</h4>
           <div class="meta" id="bkKcCount">— 名員工</div>
           <div class="btn-stack">
-            <button class="backup-btn local" onclick="doBackup('國中部','local')">
+            <button class="backup-btn local" onclick="doBackup('美語部','local')">
               <span class="ico">💾</span>
               <span class="lbl">備份到本地</span>
               <span class="arrow">↓</span>
@@ -2563,8 +2564,9 @@
         <div class="meta">勾選多位老師，一次匯出他們全部的薪資資料</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
           <button class="btn-mini secondary" onclick="bkMultiSelect('all')" style="background:#E0E7FF;color:#3730A3;">✓ 全選</button>
-          <button class="btn-mini secondary" onclick="bkMultiSelect('林口校')" style="background:#DBEAFE;color:#1E40AF;">🏫 林口校全選</button>
-          <button class="btn-mini secondary" onclick="bkMultiSelect('國中部')" style="background:#F3E8FF;color:#6B21A8;">🏰 國中部全選</button>
+          <button class="btn-mini secondary" onclick="bkMultiSelect('同安')" style="background:#DBEAFE;color:#1E40AF;">🏫 同安全選</button>
+          <button class="btn-mini secondary" onclick="bkMultiSelect('莊敬')" style="background:#FFF1E5;color:#B45309;">🎓 莊敬全選</button>
+          <button class="btn-mini secondary" onclick="bkMultiSelect('美語部')" style="background:#F3E8FF;color:#6B21A8;">🏰 美語部全選</button>
           <button class="btn-mini secondary" onclick="bkMultiSelect('active')" style="background:#DCFCE7;color:#166534;">✓ 在職全選</button>
           <button class="btn-mini secondary" onclick="bkMultiSelect('none')" style="background:#FEE2E2;color:#991B1B;">✕ 清除</button>
           <span style="margin-left:auto;align-self:center;font-size:12px;color:#6D28D9;font-weight:700;">
@@ -2697,8 +2699,9 @@
           <label>校區</label>
           <select id="delCampus">
             <option value="both">全部校區</option>
-            <option value="林口校">只限林口校區</option>
-            <option value="國中部">只限國中部</option>
+            <option value="同安">只限同安校區</option>
+            <option value="莊敬">只限莊敬校區</option>
+            <option value="美語部">只限美語部</option>
           </select>
         </div>
         <div id="delPreview" style="background:#FEF2F2;border:1px solid #FECACA;padding:10px 12px;border-radius:8px;font-size:13px;color:#7F1D1D;line-height:1.7;max-height:180px;overflow:auto;"></div>
@@ -2761,8 +2764,9 @@
           <label>校區範圍</label>
           <select id="clearBonusScopeCampus">
             <option value="both">全部校區</option>
-            <option value="林口校">只清林口校區</option>
-            <option value="國中部">只清國中部</option>
+            <option value="同安">只清同安校區</option>
+            <option value="莊敬">只清莊敬校區</option>
+            <option value="美語部">只清美語部</option>
           </select>
         </div>
         <div id="clearBonusPreview" style="background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:12px;color:#475569;margin-top:8px;">
@@ -2918,11 +2922,11 @@
           <div class="field" style="margin:0;"><label>範本內容</label>
             <select id="dataImpKind">
               <option value="monthly">本月時數（加班、請假、美語授課…）</option>
-              <option value="kc">國中部項目（帶班數、職等、時薪…）</option>
+              <option value="kc">美語部項目（帶班數、職等、時薪…）</option>
               <option value="all">全部欄位</option>
             </select></div>
           <div class="field" style="margin:0;"><label>範本員工</label>
-            <select id="dataImpCampus"><option value="all">全部在職員工</option><option value="林口校">林口校</option><option value="國中部">國中部</option></select></div>
+            <select id="dataImpCampus"><option value="all">全部在職員工</option><option value="同安">同安</option><option value="莊敬">莊敬</option><option value="美語部">美語部</option></select></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn-mini secondary" onclick="downloadDataImportTemplate('xlsx')">⬇ 下載 Excel 範本</button>
             <button class="btn-mini secondary" onclick="downloadDataImportTemplate('csv')">⬇ CSV</button>
@@ -2967,7 +2971,7 @@
           ① 上傳 Excel（.xlsx / .xls）或 CSV / 文字檔，或直接把 Excel 表格複製貼到下方文字框。<br>
           ② 第一列建議是標題（如：<code>員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪</code>），欄位名稱與「⬇ 匯出 Employee Data.xlsx」相同，可直接沿用匯出檔。<br>
           ③ 沒有標題列時，依序視為：<b>員工姓名、英文姓名、校區、職位、到職日、身份證字號、底薪、Email</b>（用 Tab、逗號或「，」分隔，一行一位）。<br>
-          ④ 員工編號留空會自動產生（林口校 TA…、國中部 KC…）；登入帳號／密碼預設為身份證字號（未填則用員工編號）。沒填的欄位用下方預設值與新員工預設薪資。
+          ④ 員工編號留空會自動產生（同安 TA…、莊敬 ZJ…、美語部 KC…）；登入帳號／密碼預設為身份證字號（未填則用員工編號）。沒填的欄位用下方預設值與新員工預設薪資。
         </p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
           <button class="btn-mini secondary" onclick="downloadBulkEmpTemplate('xlsx')">⬇ 下載 Excel 範本</button>
@@ -2975,7 +2979,7 @@
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
           <div class="field"><label>預設校區（檔案沒填時）</label>
-            <select id="bulkEmpCampus"><option value="林口校">林口校</option><option value="國中部">國中部</option></select></div>
+            <select id="bulkEmpCampus"><option value="同安">同安</option><option value="莊敬">莊敬</option><option value="美語部">美語部</option></select></div>
           <div class="field"><label>預設職位（檔案沒填時）</label>
             <select id="bulkEmpPos"><option>老師</option><option>主任</option><option>組長</option><option>行政</option><option>兼職美語</option><option>其他</option></select></div>
           <div class="field"><label>預設到職日（檔案沒填時）</label>
@@ -2987,7 +2991,7 @@
         </div>
         <div class="field">
           <label>或直接貼上文字（可從 Excel 複製貼上）</label>
-          <textarea id="bulkEmpText" rows="6" oninput="if (this.value.trim()) document.getElementById('bulkEmpFile').value = ''" placeholder="員工姓名,英文姓名,校區,職位,到職日,身份證字號,底薪&#10;王小明,Tom,林口校,老師,2026-11-01,A123456789,29500&#10;李小華,,國中部,行政,2026/11/01,B223456789," style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
+          <textarea id="bulkEmpText" rows="6" oninput="if (this.value.trim()) document.getElementById('bulkEmpFile').value = ''" placeholder="員工姓名,英文姓名,校區,職位,到職日,身份證字號,底薪&#10;王小明,Tom,同安,老師,2026-11-01,A123456789,29500&#10;李小華,,莊敬,行政,2026/11/01,B223456789," style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
           <button class="btn-mini primary" onclick="parseBulkEmp()" style="background:linear-gradient(135deg,#10B981,#047857);">🔍 解析並預覽</button>
@@ -3032,7 +3036,7 @@
         </div>
         <div class="field">
           <label>或直接貼上文字（可從 Excel 複製貼上）</label>
-          <textarea id="bulkMailText" rows="5" oninput="if (this.value.trim()) document.getElementById('bulkMailFile').value = ''" placeholder="員工姓名,校區,Email&#10;王小明,林口校,tom@example.com&#10;Summer游晏慈,國中部,summer@example.com" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
+          <textarea id="bulkMailText" rows="5" oninput="if (this.value.trim()) document.getElementById('bulkMailFile').value = ''" placeholder="員工姓名,校區,Email&#10;王小明,同安,tom@example.com&#10;Summer游晏慈,莊敬,summer@example.com" style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;background:#f8fafc;resize:vertical;"></textarea>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
           <button class="btn-mini primary" onclick="parseBulkMail()" style="background:linear-gradient(135deg,#0EA5E9,#0369A1);">🔍 解析並預覽</button>
@@ -3060,8 +3064,9 @@
         <label>校區 Campus</label>
         <select id="mgrCampus">
           <option value="all">全部 / All</option>
-          <option value="林口校">林口校區</option>
-          <option value="國中部">國中部</option>
+          <option value="同安">同安校區</option>
+          <option value="莊敬">莊敬校區</option>
+          <option value="美語部">美語部</option>
         </select>
       </div>
       <div class="ctrl">
@@ -3117,8 +3122,9 @@
         <label>校區 Campus</label>
         <select id="ownCampus">
           <option value="all">全部 / All</option>
-          <option value="林口校">林口校區</option>
-          <option value="國中部">國中部</option>
+          <option value="同安">同安校區</option>
+          <option value="莊敬">莊敬校區</option>
+          <option value="美語部">美語部</option>
         </select>
       </div>
       <div class="ctrl">
@@ -3182,8 +3188,9 @@
         <label>校區篩選 Campus</label>
         <select id="psCampus">
           <option value="all">全部 / All</option>
-          <option value="林口校">林口校區</option>
-          <option value="國中部">國中部</option>
+          <option value="同安">同安校區</option>
+          <option value="莊敬">莊敬校區</option>
+          <option value="美語部">美語部</option>
         </select>
       </div>
       <div class="ctrl">
@@ -3228,8 +3235,9 @@
       <div class="ctrl">
         <label>校區 Campus</label>
         <select id="acctSchool">
-          <option value="1">林口校區 School 1</option>
-          <option value="3">國中部 School 3</option>
+          <option value="1">同安校區 School 1</option>
+          <option value="2">莊敬校區 School 2</option>
+          <option value="3">美語部 School 3</option>
         </select>
       </div>
       <div class="ctrl grow">
@@ -3537,7 +3545,7 @@
     </div>
     <div class="body">
       <p style="margin:0 0 12px;color:#475569;font-size:13px;">
-        將「林口校薪資11407起.xlsx / 莊敬薪資11407起.xlsx」解析後的薪資結構同步到雲端。
+        將「同安薪資11407起.xlsx / 莊敬薪資11407起.xlsx」解析後的薪資結構同步到雲端。
         步驟：① 從雲端讀取 → ② 預覽變更 → ③ 寫入雲端。
       </p>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
@@ -3584,13 +3592,17 @@
         月份：<b id="psSumMonth">—</b>
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <button class="btn-mini primary" onclick="exportPayslipSummary('林口校')"
+        <button class="btn-mini primary" onclick="exportPayslipSummary('同安')"
           style="padding:14px;text-align:left;background:linear-gradient(135deg,#4F8BCC,#2E5984);">
-          🏫 <b>林口校</b> · 僅林口校區員工
+          🏫 <b>同安校</b> · 僅同安校區員工
         </button>
-        <button class="btn-mini primary" onclick="exportPayslipSummary('國中部')"
+        <button class="btn-mini primary" onclick="exportPayslipSummary('莊敬')"
+          style="padding:14px;text-align:left;background:linear-gradient(135deg,#F4A340,#E07B00);">
+          🎓 <b>莊敬校</b> · 僅莊敬校區員工
+        </button>
+        <button class="btn-mini primary" onclick="exportPayslipSummary('美語部')"
           style="padding:14px;text-align:left;background:linear-gradient(135deg,#A78BFA,#6D28D9);">
-          🏰 <b>國中部</b> · 僅國中部員工
+          🏰 <b>美語部</b> · 僅美語部員工
         </button>
         <button class="btn-mini primary" onclick="exportPayslipSummary('both')"
           style="padding:14px;text-align:left;background:linear-gradient(135deg,#8B5CF6,#6D28D9);">
@@ -3610,7 +3622,7 @@
       </div>
       <div class="field">
         <label>公司全銜 Company Name</label>
-        <input type="text" id="rcCompanyName" placeholder="例：私立大立昇文理語文短期補習班林口校分班">
+        <input type="text" id="rcCompanyName" placeholder="例：私立大立昇文理語文短期補習班同安分班">
       </div>
       <div class="field">
         <label>出生日期 Birth Date</label>
@@ -3662,7 +3674,7 @@
       <div class="mail-ctrls">
         <label>月份 <select id="mailMonth"></select></label>
         <label>校區 <select id="mailCampus">
-          <option value="all">全部</option><option value="林口校">林口校</option><option value="國中部">國中部</option>
+          <option value="all">全部</option><option value="同安">同安</option><option value="莊敬">莊敬</option><option value="美語部">美語部</option>
         </select></label>
         <button type="button" class="btn-mini secondary" onclick="mailSelect('unsent')">✓ 選未寄出</button>
         <button type="button" class="btn-mini secondary" onclick="mailSelect('all')">✓ 全選</button>
@@ -3700,7 +3712,7 @@
     <div class="head">
       <div class="icon" id="mIcon">🏫</div>
       <div>
-        <h2 id="mTitle">林口校區 登入</h2>
+        <h2 id="mTitle">同安校區 登入</h2>
         <div class="s" id="mSub">SCHOOL ONE LOGIN</div>
       </div>
       <button class="close" onclick="closeModal()" aria-label="關閉">✕</button>
@@ -3755,8 +3767,8 @@
   // 帳號資料 — 預設值嵌入於下；localStorage 覆蓋
   // ==========================================================================
   const DEFAULT_CREDS = {
-    "1": { // 林口校區
-      name: "林口校", code: "School 1", icon: "🏫", cls: "school1",
+    "1": { // 同安校區
+      name: "同安校區", code: "School 1", icon: "🏫", cls: "school1",
       users: [
         { username: "boss",     password: "kidcastle2026", role: "owner",   fullName: "老闆 / Owner",         email: "boss@kidcastle.com" },
         { username: "admin1",   password: "admin1234",     role: "owner",   fullName: "行政主管 Admin",        email: "admin1@kidcastle.com" },
@@ -3775,8 +3787,8 @@
         { username: "teacher1", password: "teach1234",     role: "manager", fullName: "吳老師 Teacher Wu",    email: "wu@kidcastle.com" }
       ]
     },
-    "3": { // 國中部 — 預設只有老闆帳號，主管帳號請登入後在帳號管理新增
-      name: "國中部", code: "School 3", icon: "🏰", cls: "school3",
+    "3": { // 美語部 — 預設只有老闆帳號，主管帳號請登入後在帳號管理新增
+      name: "美語部", code: "School 3", icon: "🏰", cls: "school3",
       users: [
         { username: "boss",     password: "kidcastle2026", role: "owner",   fullName: "老闆 / Owner",         email: "boss@kidcastle.com" }
       ]
@@ -3790,10 +3802,8 @@
       if (s) {
         const parsed = JSON.parse(s);
         if (parsed && parsed["1"] && parsed["2"]) {
-          // 舊版只有兩校：補上國中部，老闆帳號沿用林口校區目前的密碼
-          // 校區改名：同安 → 林口校、美語部（吉的堡）→ 國中部
-          if (parsed["1"] && /^同安/.test(parsed["1"].name)) parsed["1"].name = '林口校';
-          if (parsed["3"] && /^(美語部|吉的堡)/.test(parsed["3"].name)) parsed["3"].name = '國中部';
+          // 舊版只有兩校：補上美語部，老闆帳號沿用同安校區目前的密碼
+          if (parsed["3"] && parsed["3"].name === '吉的堡校區') parsed["3"].name = '美語部';   // 舊名稱
           if (!parsed["3"]) {
             parsed["3"] = JSON.parse(JSON.stringify(DEFAULT_CREDS["3"]));
             const boss = (parsed["1"].users || []).find(x => x.username === 'boss');
@@ -4080,7 +4090,7 @@
     // Default tab by role
     activateTab(user.role === 'manager' ? 'manager' : 'payslip');
 
-    // 從國中部進入：所有清單的校區篩選預設為「國中部」（老闆仍可手動切回全部）
+    // 從美語部進入：所有清單的校區篩選預設為「美語部」（老闆仍可手動切回全部）
     const defCampus = isKcSession() ? KC_CAMPUS : 'all';
     ['psCampus', 'mgrCampus', 'ownCampus', 'dashCampus'].forEach(id => { if ($(id)) $(id).value = defCampus; });
 
@@ -4163,9 +4173,9 @@
   // ==========================================================================
   const FORMULA_DEFAULTS = {
     OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
-    KC_HEAD_RATE: 80, KC_WRITING_RATE: 40,                                   // 國中部：美語帶班人數津貼／Writing 人數津貼（每人）
-    KC_CLASS_BASE_N: 4, KC_CLASS_BASE_PAY: 25000, KC_CLASS_STEP: 5000,       // 國中部帶班數津貼
-    GRADE_A: 400, GRADE_B: 500, GRADE_C: 600, GRADE_D: 700,                 // 國中部授課職等時薪
+    KC_HEAD_RATE: 80, KC_WRITING_RATE: 40,                                   // 美語部：美語帶班人數津貼／Writing 人數津貼（每人）
+    KC_CLASS_BASE_N: 4, KC_CLASS_BASE_PAY: 25000, KC_CLASS_STEP: 5000,       // 美語部帶班數津貼
+    GRADE_A: 400, GRADE_B: 500, GRADE_C: 600, GRADE_D: 700,                 // 美語部授課職等時薪
     PT_TEACH_RATE: 550, PT_TEACH_MIN: 550, PT_TEACH_MAX: 580, PT_ASSIST_RATE: 400,   // 美語授課津貼／與外師共同上課津貼 時薪
     ATT_REQUIRE_NO_LEAVE: true, ATT_REQUIRE_NO_LATE: true,
     ENG_RATE: 100, MATH_RATE: 100, MIX_RATE: 500, TUTOR_FIXED: 3000,
@@ -4188,22 +4198,22 @@
   }
 
   // ==========================================================================
-  // 🏰 國中部（第三校區）與兼職美語
+  // 🏰 美語部（第三校區）與兼職美語
   // ==========================================================================
-  const KC_CAMPUS = '國中部';
-  const CAMPUS_LIST = ['林口校', '國中部'];   // 莊敬已隱藏（資料保留在 DATA.hiddenCampus）
-  const CAMPUS_PREFIX = { '林口校': 'TA', '莊敬': 'ZJ', '國中部': 'KC' };
+  const KC_CAMPUS = '美語部';
+  const CAMPUS_LIST = ['同安', '莊敬', '美語部'];
+  const CAMPUS_PREFIX = { '同安': 'TA', '莊敬': 'ZJ', '美語部': 'KC' };
   const CAMPUS_STYLE = {   // 校區標籤顏色（背景／文字）
-    '林口校': { bg: '#DBEAFE', fg: '#1E40AF', cls: 'ta', chart: '#4472C4', icon: '🏫' },
+    '同安': { bg: '#DBEAFE', fg: '#1E40AF', cls: 'ta', chart: '#4472C4', icon: '🏫' },
     '莊敬': { bg: '#FFF1E5', fg: '#B45309', cls: 'zj', chart: '#F4A340', icon: '🎓' },
-    '國中部': { bg: '#F3E8FF', fg: '#6B21A8', cls: 'kc', chart: '#8B5CF6', icon: '🏰' }
+    '美語部': { bg: '#F3E8FF', fg: '#6B21A8', cls: 'kc', chart: '#8B5CF6', icon: '🏰' }
   };
-  const campusStyle = c => CAMPUS_STYLE[c] || CAMPUS_STYLE['林口校'];
-  // 顯示用名稱：林口校 → 林口校區／林口校；國中部是部門，不加「校區」
-  const campusFull = c => c === KC_CAMPUS ? c : (/校$/.test(c) ? c + '區' : c + '校區');
-  const campusShortLabel = c => c === KC_CAMPUS || /校$/.test(c) ? c : c + '校';
+  const campusStyle = c => CAMPUS_STYLE[c] || CAMPUS_STYLE['同安'];
+  // 顯示用名稱：同安 → 同安校區／同安校；美語部是部門，不加「校區」
+  const campusFull = c => c === KC_CAMPUS ? c : c + '校區';
+  const campusShortLabel = c => c === KC_CAMPUS ? c : c + '校';
   const campusPrefix = c => CAMPUS_PREFIX[c] || 'TA';
-  // 國中部專屬固定金額（員工資料，列入 (B) 非固定支付）
+  // 美語部專屬固定金額（員工資料，列入 (B) 非固定支付）
   // 注意：key 不可用「行政津貼」— migrateEmployeeRecords 會把舊欄位「行政津貼」併入其他津貼並刪除
   const KC_MONEY_ITEMS = [
     { key: '帶班數津貼',   label: '帶班數津貼',         en: 'Class Teaching' },   // 由帶班數自動算（見 kcClassPay）
@@ -4233,20 +4243,20 @@
     const baseN = Number(FC('KC_CLASS_BASE_N'));
     return Number(FC('KC_CLASS_BASE_PAY')) + Math.max(0, Math.ceil(n) - baseN) * Number(FC('KC_CLASS_STEP'));
   }
-  // 每月時數算出的金額，computeRow 會寫回 sal（兼職美語 + 國中部授課）
+  // 每月時數算出的金額，computeRow 會寫回 sal（兼職美語 + 美語部授課）
   const KC_SAL_PAY_KEYS = ['美語授課津貼', '與外師共同上課津貼', ...KC_HOURLY_ITEMS.map(i => i.payKey)];
-  // 國中部金額項目（加總進 B）與 Excel 匯出欄位
+  // 美語部金額項目（加總進 B）與 Excel 匯出欄位
   const KC_ALLOW_KEYS = [...KC_MONEY_KEYS, ...KC_LINEAR_ITEMS.map(i => i.moneyKey)];
   const KC_EMP_EXPORT_KEYS = ['帶班數', '帶班班別', '帶班數津貼',
     ...KC_LINEAR_ITEMS.flatMap(i => [i.countKey, i.moneyKey]),
     ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數津貼').map(i => i.key), '職等', '美語授課時薪', '與外師共同上課時薪'];
   const KC_TEXT_KEYS = ['帶班班別', '職等'];
   const kcExportVal = (e, k) => KC_TEXT_KEYS.includes(k) ? (e[k] || '') : (Number(e[k]) || 0);
-  // 帶班人數津貼（分段公式，各校相同）；國中部另有「美語帶班人數 × KC_HEAD_RATE」= 美語帶班人數津貼
+  // 帶班人數津貼（分段公式，各校相同）；美語部另有「美語帶班人數 × KC_HEAD_RATE」= 美語帶班人數津貼
   function classSizeAllowanceFor(emp, headcount, monthStr) {
     return computeClassSizeAllowance(headcount, monthStr);
   }
-  // 時數 ↔ 時薪 成對顯示在員工資料「🏰 國中部項目」：時薪（員工）× 本月時數（當月薪資紀錄）= 津貼
+  // 時數 ↔ 時薪 成對顯示在員工資料「🏰 美語部項目」：時薪（員工）× 本月時數（當月薪資紀錄）= 津貼
   const PT_PAIRS = [
     { id: 'teach',  rateKey: '美語授課時薪',       hoursKey: '兼職美語授課時數',   payKey: '美語授課津貼',       defKey: 'PT_TEACH_RATE',
       get rateLabel() { return `美語授課時薪（0 = 預設 ${FC('PT_TEACH_RATE')}，可設 ${FC('PT_TEACH_MIN')}～${FC('PT_TEACH_MAX')}）`; } },
@@ -4275,7 +4285,7 @@
       return Object.assign({ hours: h, rate, pay: Math.round(h * rate) }, i);
     });
   }
-  // 薪資條用：國中部 + 兼職美語的 (B) 列（值為 0 的列在薪資條會自動隱藏）
+  // 薪資條用：美語部 + 兼職美語的 (B) 列（值為 0 的列在薪資條會自動隱藏）
   function kcPayslipRows(emp, sal, bilingual) {
     const L = (zh, en) => bilingual ? `${zh} ${en}` : zh;
     const pt = partTimePay(emp, sal);
@@ -4290,7 +4300,7 @@
     ];
   }
 
-  const DEFAULT_DATA = {"employees":[{"員工編號":"TA001","員工姓名":"陳明霞","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2010-08-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":8500,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":1998,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA002","員工姓名":"廖月櫻","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2012-03-15","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":6000,"分校人數超額獎金":7200,"美語津貼":5500,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":4000,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":0,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA003","員工姓名":"鄭錦雪","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2011-09-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":8500,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA004","員工姓名":"翁麗美","英文姓名":null,"校區":"林口校","職位":"主任","到職日":"2008-02-01","在職狀態":"在職","底薪":32500,"全勤獎金":500,"年資津貼":4000,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA005","員工姓名":"郭子綺","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2018-07-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":5000,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA006","員工姓名":"林錦雲","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2017-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":5000,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA007","員工姓名":"陳渝潔","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2019-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":1500,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA008","員工姓名":"吳鈺蘋","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2020-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA009","員工姓名":"陳允謙","英文姓名":"Charles","校區":"林口校","職位":"老師","到職日":"2024-11-11","在職狀態":"在職","底薪":29500,"全勤獎金":0,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":5000,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA010","員工姓名":"陳敬翔","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2024-11-11","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA011","員工姓名":"蕭宜帆","英文姓名":null,"校區":"林口校","職位":"主任","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2001,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA012","員工姓名":"廖繹雯","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2001,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA013","員工姓名":"謝明學","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2002,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA014","員工姓名":"蔡明孝","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2023-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2002,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA015","員工姓名":"吳芳芝","英文姓名":null,"校區":"林口校","職位":"行政","到職日":"2022-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2003,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA016","員工姓名":"呂學龍","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2021-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2003,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA017","員工姓名":"楊蕙瑀","英文姓名":null,"校區":"林口校","職位":"老師","到職日":"2025-02-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ001","員工姓名":"李如蘋","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2009-03-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":1600,"美語津貼":1100,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ002","員工姓名":"蕭羽儂","英文姓名":"Jessica","校區":"莊敬","職位":"主任","到職日":"2014-01-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":0,"主管津貼":10000,"分校人數超額獎金":0,"美語津貼":5000,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":3000,"勞保自付":738,"健保自付":2044,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ003","員工姓名":"黃玉華","英文姓名":null,"校區":"莊敬","職位":"主任","到職日":"2014-01-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":4000,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":9758,"帶班人數津貼":10240,"其他津貼":3500,"勞保自付":1349,"健保自付":0,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ004","員工姓名":"洪子彤","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2018-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ005","員工姓名":"吳湘晴","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2020-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ006","員工姓名":"胡瑄曼","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2021-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ007","員工姓名":"蕭文華","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2022-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ008","員工姓名":"游晏慈","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ009","員工姓名":"何宥蓉","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ010","員工姓名":"何革融","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null}],"salary":[{"月份":"11504","員工編號":"TA001","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA002","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA003","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA004","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA005","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA006","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA007","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA008","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA009","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA010","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA011","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA012","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA013","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA014","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA015","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA016","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA017","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ001","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ002","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ003","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ004","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ005","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ006","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ007","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ008","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ009","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ010","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null}]};
+  const DEFAULT_DATA = {"employees":[{"員工編號":"TA001","員工姓名":"陳明霞","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2010-08-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":8500,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":1998,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA002","員工姓名":"廖月櫻","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2012-03-15","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":6000,"分校人數超額獎金":7200,"美語津貼":5500,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":4000,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":0,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA003","員工姓名":"鄭錦雪","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2011-09-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":8500,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA004","員工姓名":"翁麗美","英文姓名":null,"校區":"同安","職位":"主任","到職日":"2008-02-01","在職狀態":"在職","底薪":32500,"全勤獎金":500,"年資津貼":4000,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA005","員工姓名":"郭子綺","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2018-07-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":5000,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA006","員工姓名":"林錦雲","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2017-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":5000,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA007","員工姓名":"陳渝潔","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2019-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":1500,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA008","員工姓名":"吳鈺蘋","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2020-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"TA009","員工姓名":"陳允謙","英文姓名":"Charles","校區":"同安","職位":"老師","到職日":"2024-11-11","在職狀態":"在職","底薪":29500,"全勤獎金":0,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":5000,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA010","員工姓名":"陳敬翔","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2024-11-11","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA011","員工姓名":"蕭宜帆","英文姓名":null,"校區":"同安","職位":"主任","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2001,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA012","員工姓名":"廖繹雯","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2001,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA013","員工姓名":"謝明學","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2024-11-12","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2002,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA014","員工姓名":"蔡明孝","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2023-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2002,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA015","員工姓名":"吳芳芝","英文姓名":null,"校區":"同安","職位":"行政","到職日":"2022-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2003,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA016","員工姓名":"呂學龍","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2021-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":2003,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"TA017","員工姓名":"楊蕙瑀","英文姓名":null,"校區":"同安","職位":"老師","到職日":"2025-02-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ001","員工姓名":"李如蘋","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2009-03-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":4000,"主管津貼":0,"分校人數超額獎金":1600,"美語津貼":1100,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ002","員工姓名":"蕭羽儂","英文姓名":"Jessica","校區":"莊敬","職位":"主任","到職日":"2014-01-01","在職狀態":"在職","底薪":31500,"全勤獎金":500,"年資津貼":0,"主管津貼":10000,"分校人數超額獎金":0,"美語津貼":5000,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":3000,"勞保自付":738,"健保自付":2044,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ003","員工姓名":"黃玉華","英文姓名":null,"校區":"莊敬","職位":"主任","到職日":"2014-01-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":4000,"主管津貼":5000,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":9758,"帶班人數津貼":10240,"其他津貼":3500,"勞保自付":1349,"健保自付":0,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ004","員工姓名":"洪子彤","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2018-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ005","員工姓名":"吳湘晴","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2020-09-01","在職狀態":"在職","底薪":30500,"全勤獎金":500,"年資津貼":2000,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1349,"健保自付":1271,"退休金提撥":1998,"銀行帳號":null},{"員工編號":"ZJ006","員工姓名":"胡瑄曼","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2021-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ007","員工姓名":"蕭文華","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2022-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":0,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ008","員工姓名":"游晏慈","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-08-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ009","員工姓名":"何宥蓉","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null},{"員工編號":"ZJ010","員工姓名":"何革融","英文姓名":null,"校區":"莊敬","職位":"老師","到職日":"2024-09-01","在職狀態":"在職","底薪":29500,"全勤獎金":500,"年資津貼":0,"主管津貼":0,"分校人數超額獎金":0,"美語津貼":0,"英文輔導津貼":6000,"數學班津貼":0,"混班/混校津貼":0,"帶班人數津貼":0,"其他津貼":0,"勞保自付":1196,"健保自付":0,"退休金提撥":1772,"銀行帳號":null}],"salary":[{"月份":"11504","員工編號":"TA001","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA002","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA003","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA004","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA005","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA006","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA007","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA008","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA009","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA010","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA011","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA012","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA013","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA014","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA015","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA016","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"TA017","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ001","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ002","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ003","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ004","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ005","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ006","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ007","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ008","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ009","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null},{"月份":"11504","員工編號":"ZJ010","上班時數":184,"加班時數":0,"加班費":0,"請假時數":0,"請假扣款":0,"遲到次數":0,"遲到扣款":0,"獎金":0,"扣款":0,"特殊調整":0,"備註":null}]};
 
   // -------- Data store (DATA = mutable, persisted to localStorage) --------
   const STORAGE_KEY = 'kc_salary_data_v1';
@@ -4302,18 +4312,18 @@
   function migrateEmployeeRecords(d) {
     if (!d || !Array.isArray(d.employees)) return d;
     _credentialMigrationJustRan = false;
-    // 校區改名：吉的堡／美語部 → 國中部、同安 → 林口校
+    // 第三部門改名：吉的堡 → 美語部
     d.employees.forEach(e => {
-      if (e && (e['校區'] === '吉的堡' || e['校區'] === '美語部')) e['校區'] = KC_CAMPUS;
-      if (e && e['校區'] === '同安') e['校區'] = '林口校';
+      if (e && (e['校區'] === '吉的堡' || e['校區'] === '國中部')) e['校區'] = KC_CAMPUS;
+      if (e && e['校區'] === '林口校') e['校區'] = '同安';
     });
-    // 國中部欄位改名（V20261022）：舊名稱的值搬到新名稱
+    // 美語部欄位改名（V20261022）：舊名稱的值搬到新名稱
     const renameKeys = (o, map) => Object.entries(map).forEach(([a, b]) => {
       if (o && o[a] != null) { if (o[b] == null || o[b] === '' || Number(o[b]) === 0) o[b] = o[a]; delete o[a]; }
     });
     d.employees.forEach(e => {
       renameKeys(e, { '帶班班數': '帶班數', '帶班數薪資': '帶班數津貼', '自行授課時薪': '美語授課時薪', '協助外師時薪': '與外師共同上課時薪' });
-      // 國中部原本用共用的「帶班人數」× 80 → 改用專屬的「美語帶班人數」
+      // 美語部原本用共用的「帶班人數」× 80 → 改用專屬的「美語帶班人數」
       if (e && e['校區'] === KC_CAMPUS && Number(e['帶班人數']) && e['美語帶班人數'] == null) {
         e['美語帶班人數'] = Number(e['帶班人數']);
         e['美語帶班人數津貼'] = Math.round(e['美語帶班人數'] * Number(FC('KC_HEAD_RATE')));
@@ -4829,7 +4839,7 @@
     const all = Object.assign({}, MIG_TA, MIG_ZJ);
     const out = [];
     for (const [nm, info] of Object.entries(all)) {
-      const campus = MIG_TA[nm] ? '林口校' : '莊敬';
+      const campus = MIG_TA[nm] ? '同安' : '莊敬';
       const month  = MIG_TA[nm] ? '11504' : '11505';
       const emp = _migCloudData.employees.find(e => e['員工姓名'] === nm);
       if (!emp) {
@@ -4872,7 +4882,7 @@
     let nextId = 18;
     for (const u of ups) {
       if (u.action === 'NEW') {
-        const prefix = u.campus === '林口校' ? 'TA' : 'ZJ';
+        const prefix = u.campus === '同安' ? 'TA' : 'ZJ';
         const newId = prefix + String(nextId++).padStart(3,'0');
         _migCloudData.employees.push({
           '員工編號':newId,'員工姓名':u.name,'英文姓名':null,'校區':u.campus,'職位':'老師',
@@ -5209,7 +5219,7 @@
   //          身份證字號為空時再 fallback 依「姓名」匹配
   // ═══════════════════════════════════════════════════════════════
   const HIRE_DATE_FIXES = [
-    // ── 大立昇美語（林口校 TA）──
+    // ── 大立昇美語（同安 TA）──
     { name:'謝明學', idNum:'A225593072', date:'2016-07-01', src:'加保日 105/07/01' },
     { name:'蕭宜帆', idNum:'F125666171', date:'2022-03-01', src:'加保日 111/03/01' },
     { name:'廖繹雯', idNum:'F228967140', date:'2022-03-14', src:'加保日 111/03/14' },
@@ -5218,7 +5228,7 @@
     { name:'陳允謙', idNum:'H124848206', date:'2024-11-14', src:'加保日 113/11/14' },
     { name:'蔡明孝', idNum:'H124854151', date:'2023-08-08', src:'加保日 112/08/08（蔡銘孝）' },
     { name:'吳芳芝', idNum:'H221553293', date:'2016-01-01', src:'加保日 105/01/01' },
-    // ── 林口校分班 ──
+    // ── 同安分班 ──
     { name:'陳正芬', idNum:'F220825805', date:'2024-10-01', src:'加保日 113/10/01（新員工）' },
     { name:'張濠祥', idNum:'H124265403', date:'2026-06-17', src:'加保日 115/06/17（新員工）' },
     { name:'陳敬翔', idNum:'H125559735', date:'2025-08-18', src:'加保日 114/08/18' },
@@ -5298,7 +5308,7 @@
     const tbody = $('hireDatePreviewTbody');
     let html = '';
     for (const p of _hireDatePlan) {
-      const ccls = p.campus === '林口校' ? 'background:#DBEAFE;color:#1E40AF;' : 'background:#FFF1E5;color:#B45309;';
+      const ccls = p.campus === '同安' ? 'background:#DBEAFE;color:#1E40AF;' : 'background:#FFF1E5;color:#B45309;';
       const arrow = p.unchanged ? '＝' : '→';
       const newStyle = p.unchanged ? 'color:#94a3b8;' : 'color:#059669;font-weight:700;';
       const oldStyle = p.unchanged ? 'color:#94a3b8;' : 'color:#94a3b8;text-decoration:line-through;';
@@ -5369,7 +5379,7 @@
   // 來源: 健保加保日資料（28 筆，姓名為雲端官方姓名，含 OCR 變字對應）
   // ═══════════════════════════════════════════════════════════════
   const ID_NUMBER_FIXES = [
-    // ── 大立昇美語（林口校 TA）──
+    // ── 大立昇美語（同安 TA）──
     { name:'謝明學', id:'A225593072' },
     { name:'蕭宜帆', id:'F125666171' },
     { name:'廖繹雯', id:'F228967140' },
@@ -5378,7 +5388,7 @@
     { name:'陳允謙', id:'H124848206' },
     { name:'蔡明孝', id:'H124854151' },   // OCR: 蔡銘孝
     { name:'吳芳芝', id:'H221553293' },
-    // ── 林口校分班 ──
+    // ── 同安分班 ──
     { name:'陳正芬', id:'F220825805' },
     { name:'張濠祥', id:'H124265403' },
     { name:'陳敬翔', id:'H125559735' },
@@ -5445,7 +5455,7 @@
     const tbody = $('idNumPreviewTbody');
     let html = '';
     for (const p of _idNumPlan) {
-      const ccls = p.campus === '林口校' ? 'background:#DBEAFE;color:#1E40AF;' : 'background:#FFF1E5;color:#B45309;';
+      const ccls = p.campus === '同安' ? 'background:#DBEAFE;color:#1E40AF;' : 'background:#FFF1E5;color:#B45309;';
       const arrow = p.unchanged ? '＝' : '→';
       const newStyle = p.unchanged ? 'color:#94a3b8;' : 'color:#5B21B6;font-weight:700;font-family:Courier New,monospace;';
       const oldStyle = p.unchanged ? 'color:#94a3b8;font-family:Courier New,monospace;' : 'color:#94a3b8;text-decoration:line-through;font-family:Courier New,monospace;';
@@ -5586,9 +5596,9 @@
   function bulkEmpCampus(v) {
     const s = String(v == null ? '' : v).trim().toUpperCase();
     if (!s) return '';
-    if (/^(林口|同安|TA)/.test(s)) return '林口校';
-    if (/^(莊敬|庄敬|ZJ)/.test(s)) return null;   // 莊敬已隱藏
-    if (/^(國中部|美語部|吉的堡|KC)/i.test(s)) return '國中部';
+    if (/^(同安|TA)/.test(s)) return '同安';
+    if (/^(莊敬|庄敬|ZJ)/.test(s)) return '莊敬';
+    if (/^(美語部|吉的堡|KC)/i.test(s)) return '美語部';
     return null;
   }
   // 分隔文字（Tab / 逗號 / 全形逗號 / 分號 / 空白），支援 "..." 引號
@@ -5635,7 +5645,7 @@
       toast('僅老闆可使用此功能', 'error'); return;
     }
     const oc = $('ownCampus') && $('ownCampus').value;
-    $('bulkEmpCampus').value = CAMPUS_LIST.includes(oc) ? oc : '林口校';
+    $('bulkEmpCampus').value = CAMPUS_LIST.includes(oc) ? oc : '同安';
     if (!$('bulkEmpHire').value) $('bulkEmpHire').value = bulkEmpYmd(new Date());
     $('bulkEmpOverlay').classList.add('show');
   }
@@ -5653,7 +5663,7 @@
     updateBulkEmpApplyBtn();
   }
   function downloadBulkEmpTemplate(kind) {
-    const example = { '員工姓名': '王小明', '英文姓名': 'Tom', '校區': '林口校', '職位': '老師', '到職日': '2026-11-01',
+    const example = { '員工姓名': '王小明', '英文姓名': 'Tom', '校區': '同安', '職位': '老師', '到職日': '2026-11-01',
                       '身份證字號': 'A123456789', 'Email': 'tom@example.com', '底薪': Number(FC('NEW_BASE')) };
     if (kind === 'csv') {
       const q = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
@@ -5673,10 +5683,10 @@
     ws['!cols'] = BULK_EMP_TEMPLATE_COLS.map(h => ({ wch: /帳號|Email|身份證/.test(h) ? 18 : 12 }));
     const help = [
       ['欄位', '說明', '範例'],
-      ['員工編號', '可留空，系統依校區自動產生（林口校 TA…、國中部 KC…）', ''],
+      ['員工編號', '可留空，系統依校區自動產生（同安 TA…、莊敬 ZJ…、美語部 KC…）', ''],
       ['員工姓名', '必填', example['員工姓名']],
       ['英文姓名', '選填', example['英文姓名']],
-      ['校區', '林口校 或 國中部；留空用畫面上的預設校區', example['校區']],
+      ['校區', '同安、莊敬 或 美語部；留空用畫面上的預設校區', example['校區']],
       ['職位', '老師／主任／組長／行政／兼職美語／其他；留空用預設職位', example['職位']],
       ['到職日', '2026-11-01、2026/11/1 或 民國 115/11/01；留空用預設到職日', example['到職日']],
       ['身份證字號', '員工首次登入的帳號與密碼', example['身份證字號']],
@@ -5753,7 +5763,7 @@
       });
       const name = String(given['員工姓名'] || '').trim();
       const campus = given['校區'] != null ? bulkEmpCampus(given['校區']) : defCampus;
-      if (campus === null) errors.push(`校區須為 林口校 或 國中部（「${given['校區']}」）`);
+      if (campus === null) errors.push(`校區須為 同安、莊敬 或 美語部（「${given['校區']}」）`);
       const c = campus || defCampus;
 
       const emp = {
@@ -6031,7 +6041,7 @@
         return v == null ? '' : v;
       });
     })];
-    const kindLabel = { monthly: '本月時數', kc: '國中部項目', all: '全部欄位' }[kind];
+    const kindLabel = { monthly: '本月時數', kc: '美語部項目', all: '全部欄位' }[kind];
     const fname = `資料匯入範本_${kindLabel}_${campus === 'all' ? '全部' : campus}_${month}`;
     if (fmt === 'csv') {
       const q = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
@@ -6529,7 +6539,7 @@
     const pt = partTimePay(emp, sal);   // 美語授課津貼／與外師共同上課津貼 = 時數 × 時薪
     sal['美語授課津貼'] = pt.teach;
     sal['與外師共同上課津貼'] = pt.assist;
-    kcHourlyPay(emp, sal).forEach(h => { sal[h.payKey] = h.pay; });   // 國中部授課：時數 × 職等時薪
+    kcHourlyPay(emp, sal).forEach(h => { sal[h.payKey] = h.pay; });   // 美語部授課：時數 × 職等時薪
     const extraMoney = monthlyExtraMoney(sal);   // 考試津貼 + 預繳津貼 + 兼職美語（本月輸入）
 
     const allowKeys = ['年資津貼','主管津貼',
@@ -6559,16 +6569,16 @@
     return { hourly, otPay, payAmt, leaveD, lateD, attBonus, extraMoney, allowSum, gross, totalDeduct, cashPay, net };
   }
 
-  // Helper: convert "林口校區" → "林口校" so we can compare with employee 校區 field
+  // Helper: convert "同安校區" → "同安" so we can compare with employee 校區 field
   function campusShort(schoolId) {
     if (!schoolId || !CREDENTIALS[schoolId]) return '';
     return String(CREDENTIALS[schoolId].name || '').replace(/校區$/, '');
   }
-  // 從「🏰 國中部」登入：清單預設只列國中部（美語老師），輸入欄位為 0 時顯示空白
+  // 從「🏰 美語部」登入：清單預設只列美語部（美語老師），輸入欄位為 0 時顯示空白
   function isKcSession() {
     return !!(currentUser && campusShort(currentUser.schoolId) === KC_CAMPUS);
   }
-  // 數字輸入框的顯示值：國中部登入時 0／未填 → 空白（存檔時空白仍視為 0）
+  // 數字輸入框的顯示值：美語部登入時 0／未填 → 空白（存檔時空白仍視為 0）
   function inputNum(v) {
     if (isKcSession() && (v == null || v === '' || Number(v) === 0)) return '';
     return v == null ? 0 : v;
@@ -7244,7 +7254,7 @@
   }
 
   // 🧪 寄送測試信（V20261018V1930）— 只寄一句測試文字，不含薪資內容，不標記已寄
-  const TEST_MAIL_TEXT = '這是Kidcastle林口校及國中部的薪水條系統寄送測試';
+  const TEST_MAIL_TEXT = '這是Kidcastle莊敬同安校及美語部的薪水條系統寄送測試';
   async function sendTestMails() {
     if (_mailSending) return;
     if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可寄送測試信', 'error'); return; }
@@ -7398,7 +7408,7 @@
       ['留班獎金 Retention Bonus', emp['留班獎金']],
       ['考試獎金 Exam Bonus', emp['考試獎金']],
       ...itemizedPayslipRows('其他津貼 Others', emp['其他津貼'], emp['其他津貼明細']),
-      ...kcPayslipRows(emp, sal, true),                 // 國中部項目＋兼職美語
+      ...kcPayslipRows(emp, sal, true),                 // 美語部項目＋兼職美語
       ['補貼公會投保勞保 Guild Labor Ins Subsidy', emp['補貼公會投保勞保']],
       ['補貼公會健保自付 Guild Health Ins Subsidy', emp['補貼公會健保自付']],
       ['補貼健保眷屬 Health Dependent Subsidy', emp['補貼健保眷屬']],
@@ -7654,7 +7664,7 @@
       ['留班獎金',      emp['留班獎金']],
       ['考試獎金',      emp['考試獎金']],
       ...itemizedPayslipRows('其他津貼', emp['其他津貼'], emp['其他津貼明細']),
-      ...kcPayslipRows(emp, sal, false),   // 國中部項目＋兼職美語
+      ...kcPayslipRows(emp, sal, false),   // 美語部項目＋兼職美語
       ['補貼公會投保勞保', emp['補貼公會投保勞保']],
       ['補貼公會健保自付', emp['補貼公會健保自付']],
       ['補貼健保眷屬',     emp['補貼健保眷屬']],
@@ -7781,16 +7791,16 @@
         ['留班獎金',          '留班獎金 Retention Bonus'],
         ['考試獎金',          '考試獎金 Exam Bonus'],
         ['其他津貼',          '其他津貼 Others'],
-        ['帶班數津貼',        '帶班數津貼 Class Teaching（國中部）'],
-        ['美語帶班人數津貼',  '美語帶班人數津貼（國中部）'],
-        ['Writing 人數津貼',  'Writing 人數津貼（國中部）'],
-        ['V Writing',         'V Writing（國中部）'],
-        ['資優美語',          '資優美語（國中部）'],
-        ['一對一',            '一對一（國中部）'],
-        ['B Reading',         'B Reading 閱讀班（國中部）'],
-        ['輔導補課',          '輔導補課（國中部）'],
-        ['奇趣線上教材',      '奇趣線上教材（國中部）'],
-        ['行政',              '行政（國中部）'],
+        ['帶班數津貼',        '帶班數津貼 Class Teaching（美語部）'],
+        ['美語帶班人數津貼',  '美語帶班人數津貼（美語部）'],
+        ['Writing 人數津貼',  'Writing 人數津貼（美語部）'],
+        ['V Writing',         'V Writing（美語部）'],
+        ['資優美語',          '資優美語（美語部）'],
+        ['一對一',            '一對一（美語部）'],
+        ['B Reading',         'B Reading 閱讀班（美語部）'],
+        ['輔導補課',          '輔導補課（美語部）'],
+        ['奇趣線上教材',      '奇趣線上教材（美語部）'],
+        ['行政',              '行政（美語部）'],
         ['補貼公會投保勞保',  '補貼公會投保勞保 Guild Labor'],
         ['補貼公會健保自付',  '補貼公會健保自付 Guild Health'],
         ['補貼退休金',        '補貼退休金 Retirement Subsidy']
@@ -8086,7 +8096,7 @@
     { key: '備註',     type: 'text' }
   ].filter(f => !REMOVED_INPUT_KEYS.includes(f.key));
 
-  // 國中部登入：美語老師的授課時數欄放最前面
+  // 美語部登入：美語老師的授課時數欄放最前面
   function mgrFieldOrder() {
     if (!isKcSession()) return MGR_FIELDS;
     const isHours = f => monthlyExtraFields().some(x => x.key === f.key && x.kind === 'hours');
@@ -9022,7 +9032,7 @@
 
     // Update campus counts
     if ($('bkTaCount')) {
-      const taCount = DATA.employees.filter(e => e['校區'] === '林口校').length;
+      const taCount = DATA.employees.filter(e => e['校區'] === '同安').length;
       $('bkTaCount').textContent = `${taCount} 名員工`;
     }
     if ($('bkZjCount')) {
@@ -9231,7 +9241,7 @@
       const newHeaders = keepIdx.map(i => headers[i]);
       return { headers: newHeaders, mapRow: row => keepIdx.map(i => row[i]) };
     };
-    // Scope can be 'both' / '林口校' / '莊敬' / 'emp:<員工編號>' / 'emps:<id1,id2,...>'
+    // Scope can be 'both' / '同安' / '莊敬' / 'emp:<員工編號>' / 'emps:<id1,id2,...>'
     const isEmpScope     = campusScope && campusScope.startsWith('emp:');
     const isMultiEmpScope = campusScope && campusScope.startsWith('emps:');
     const targetEid      = isEmpScope ? campusScope.slice(4) : null;
@@ -9539,8 +9549,8 @@
       ]
     },
     {
-      // 國中部員工、或職位為「兼職美語」時才顯示（見 syncKcSection）
-      title: '國中部項目 Kidcastle Items',
+      // 美語部員工、或職位為「兼職美語」時才顯示（見 syncKcSection）
+      title: '美語部項目 Kidcastle Items',
       cls: 'kc',
       badge: '🏰',
       fields: [
@@ -9732,7 +9742,7 @@
     'J校安親本月人數 J After-school',
     'S校安親人數 S After-school',
     'S校美語人數 S English',
-    '林口校美語總人數 TA English Total',
+    '同安美語總人數 TA English Total',
     '莊敬美語總人數 ZJ English Total',
     '莊敬安親本月人數 ZJ After-school'
   ];
@@ -9897,7 +9907,7 @@
     { title: '④ 員工登入帳號 Login', keys: ['登入帳號','登入密碼','Email'] },
     { title: '⑤ 特休管理 Annual Leave', keys: ['特休資訊','可休日數_手動','已休日數'] },
     { title: '⑥ 備註 Notes', keys: ['備註'] },
-    { title: '🏰 國中部項目 Kidcastle', keys: ['帶班數','帶班班別','帶班數津貼','職等', ...KC_LINEAR_ITEMS.map(i => i.moneyKey), ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數津貼').map(i => i.key), '美語授課時薪','與外師共同上課時薪'] },
+    { title: '🏰 美語部項目 Kidcastle', keys: ['帶班數','帶班班別','帶班數津貼','職等', ...KC_LINEAR_ITEMS.map(i => i.moneyKey), ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數津貼').map(i => i.key), '美語授課時薪','與外師共同上課時薪'] },
     { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款', ...monthlyExtraKeys().map(k => 'mgr:' + k), 'mgr:備註'].filter(k => !REMOVED_INPUT_KEYS.includes(k.slice(4))) }
   ];
   const MGR_PERM_LABELS = {
@@ -10153,7 +10163,7 @@
   function openAddEmployee() {
     const next = nextEmpId(DATA.employees);
     const draft = {
-      '員工編號': next, '員工姓名': '', '英文姓名': '', '校區': ($('ownCampus') && CAMPUS_LIST.includes($('ownCampus').value)) ? $('ownCampus').value : '林口校', '職位': '老師',
+      '員工編號': next, '員工姓名': '', '英文姓名': '', '校區': ($('ownCampus') && CAMPUS_LIST.includes($('ownCampus').value)) ? $('ownCampus').value : '同安', '職位': '老師',
       '到職日': new Date().toISOString().substr(0,10), '離職日': '', '在職狀態': '在職',
       '底薪': Number(FC('NEW_BASE')), '全勤獎金': Number(FC('NEW_ATT')), '年資津貼': 0, '主管津貼': 0,
       '分校人數超額獎金': 0, '美語津貼': 0,
@@ -10180,7 +10190,7 @@
   function nextEmpId(emps) {
     // Default prefix based on owner's current campus; fall back to TA
     const campus = $('ownCampus') && $('ownCampus').value && $('ownCampus').value !== 'all'
-      ? $('ownCampus').value : '林口校';
+      ? $('ownCampus').value : '同安';
     const prefix = campusPrefix(campus);
     const nums = emps
       .filter(e => String(e['員工編號']).startsWith(prefix))
@@ -10493,8 +10503,9 @@
               <div class="canned-bulk no-print" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding:8px 10px;background:#EFF6FF;border:1px dashed #3B82F6;border-radius:8px;">
                 <div style="width:100%;font-size:11px;color:#1E40AF;font-weight:600;margin-bottom:2px;">📋 將本欄備註複製到（限老闆）</div>
                 <button type="button" class="bulk-note-btn" data-scope="all" style="padding:5px 12px;background:#fff;border:1.5px solid #3B82F6;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📋 複製到所有員工</button>
-                <button type="button" class="bulk-note-btn" data-scope="林口校" style="padding:5px 12px;background:#fff;border:1.5px solid #1E40AF;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🏫 複製到林口校員工</button>
-                <button type="button" class="bulk-note-btn" data-scope="國中部" style="padding:5px 12px;background:#fff;border:1.5px solid #6D28D9;color:#6B21A8;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🏰 複製到國中部員工</button>
+                <button type="button" class="bulk-note-btn" data-scope="同安" style="padding:5px 12px;background:#fff;border:1.5px solid #1E40AF;color:#1E40AF;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🏫 複製到同安員工</button>
+                <button type="button" class="bulk-note-btn" data-scope="美語部" style="padding:5px 12px;background:#fff;border:1.5px solid #6D28D9;color:#6B21A8;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🏰 複製到美語部員工</button>
+                <button type="button" class="bulk-note-btn" data-scope="莊敬" style="padding:5px 12px;background:#fff;border:1.5px solid #B45309;color:#92400E;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🎓 複製到莊敬員工</button>
                 <div style="width:100%;font-size:11px;color:#0F766E;font-weight:600;margin:8px 0 2px;padding-top:6px;border-top:1px dashed #99F6E4;">📅 將本欄備註複製到本員工的（限老闆）</div>
                 <button type="button" class="bulk-note-btn" data-scope="next-month" style="padding:5px 12px;background:#fff;border:1.5px solid #14B8A6;color:#0F766E;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">📅 複製到下個月份</button>
                 <button type="button" class="bulk-note-btn" data-scope="year" style="padding:5px 12px;background:#fff;border:1.5px solid #06B6D4;color:#155E75;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;">🗓 複製到整年份</button>
@@ -10624,11 +10635,11 @@
     const emp = findEmployee(_editingEid);
     if (emp) computeRow(emp, sal);   // refresh sal['加班費'] 等自動計算欄位
     const otPay = Number(sal['加班費']) || 0;
-    // 兼職美語時數只給國中部／兼職美語員工（或本月已有時數）顯示
+    // 兼職美語時數只給美語部／兼職美語員工（或本月已有時數）顯示
     const ptKeys = monthlyExtraFields().filter(f => f.kind === 'hours').map(f => f.key);
     const showPt = emp && (emp['校區'] === KC_CAMPUS || emp['職位'] === '兼職美語');
     const fieldsHtml = DRAWER_MONTHLY_FIELDS
-      .filter(f => !PT_HOURS_KEYS.includes(f.key) && !KC_HOURLY_ITEMS.some(i => i.hoursKey === f.key))   // 美語的時數都放在「🏰 國中部項目」
+      .filter(f => !PT_HOURS_KEYS.includes(f.key) && !KC_HOURLY_ITEMS.some(i => i.hoursKey === f.key))   // 美語的時數都放在「🏰 美語部項目」
       .filter(f => !ptKeys.includes(f.key) || showPt || (Number(sal[f.key]) || 0) !== 0)
       .map(f => {
       const v = inputNum(sal[f.key]);
@@ -10935,7 +10946,7 @@
         <input type="number" data-pt-out="${p.id}" value="${pay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
       </div></div>`;
   }
-  // 國中部授課：各項本月時數（存在當月薪資）× 職等時薪
+  // 美語部授課：各項本月時數（存在當月薪資）× 職等時薪
   function renderKcHours(emp, isNew) {
     const sal = (!isNew && _editingEid && _drawerMonth) ? ensureSalaryRecord(_editingEid, _drawerMonth) : null;
     const rate = gradeRate(emp);
@@ -10982,7 +10993,7 @@
     const emp = findEmployee(_editingEid);
     return emp ? emp['校區'] : '';
   }
-  // 國中部項目區塊：國中部員工、兼職美語、或已有國中部金額時才顯示
+  // 美語部項目區塊：美語部員工、兼職美語、或已有美語部金額時才顯示
   function syncKcSection() {
     const body = $('drawerBody'); if (!body) return;
     const sec = body.querySelector('.form-section.kc'); if (!sec) return;
@@ -10995,7 +11006,7 @@
     const k = e.target && e.target.dataset && e.target.dataset.key;
     if (!(k === '校區' || k === '職位') || !e.target.closest('#drawerBody')) return;
     syncKcSection();
-    // 換校區時重算帶班人數津貼（國中部每人計、其他校分段）
+    // 換校區時重算帶班人數津貼（美語部每人計、其他校分段）
     const hc = $('drawerBody').querySelector('[data-key="帶班人數"]');
     if (k === '校區' && hc) hc.dispatchEvent(new Event('input', { bubbles: true }));
   });
@@ -11095,14 +11106,14 @@
       setTimeout(() => { ta.style.background = '#fff'; }, 400);
       return;
     }
-    // Bulk-copy 備註 to all / 林口校 / 莊敬 / next-month / year
+    // Bulk-copy 備註 to all / 同安 / 莊敬 / next-month / year
     const bulkBtn = e.target.closest('.bulk-note-btn');
     if (bulkBtn) {
       e.preventDefault();
       if (!currentUser || currentUser.role !== 'owner') {
         toast('僅老闆可使用此功能', 'error'); return;
       }
-      const scope = bulkBtn.dataset.scope;   // 'all' | '林口校' | '莊敬' | 'next-month' | 'year'
+      const scope = bulkBtn.dataset.scope;   // 'all' | '同安' | '莊敬' | 'next-month' | 'year'
       const ta = $('drawerBody') && $('drawerBody').querySelector('textarea[data-key="備註"]');
       if (!ta) return;
       const content = (ta.value || '').trim();
@@ -11154,7 +11165,7 @@
         return;
       }
 
-      // ── 員工範圍複製：all / 林口校 / 莊敬 ──
+      // ── 員工範圍複製：all / 同安 / 莊敬 ──
       // Filter targets
       const targets = DATA.employees.filter(emp => {
         if (emp['員工編號'] === _editingEid) return false;   // skip self
@@ -11242,7 +11253,7 @@
     // Validate required
     if (!form['員工編號']) { toast('員工編號為必填', 'error'); return; }
     if (!form['員工姓名']) { toast('員工姓名為必填', 'error'); return; }
-    if (!CAMPUS_LIST.includes(form['校區'])) { toast('校區須為 林口校 或 國中部', 'error'); return; }
+    if (!CAMPUS_LIST.includes(form['校區'])) { toast('校區須為 同安、莊敬 或 美語部', 'error'); return; }
     const ptRate = Number(form['美語授課時薪']) || 0;
     if (ptRate && (ptRate < Number(FC('PT_TEACH_MIN')) || ptRate > Number(FC('PT_TEACH_MAX')))) {
       toast(`美語授課時薪須在 ${FC('PT_TEACH_MIN')}～${FC('PT_TEACH_MAX')} 之間（0 = 用預設 ${FC('PT_TEACH_RATE')}）；範圍可在公式設定頁調整`, 'error'); return;
@@ -11688,12 +11699,11 @@
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
     {
-      version: 'V20261024V1700', date: '2026-10-24 17:00',
+      version: 'V20261024V1715', date: '2026-10-24 17:15',
       changes: [
-        '校區改為「林口校」（原同安，員工編號 TA）與「國中部」（原美語部，員工編號 KC，美語部項目與兼職美語功能都套用在國中部）；莊敬校區隱藏（資料保留在 hiddenCampus，不會刪除）',
-        '首頁、所有校區選單、總覽比較、備份、薪資條匯總、批次新增、資料匯入都改用林口校／國中部；薪資條標題顯示「林口校區」「國中部」',
-        '舊名稱的資料（同安／美語部／吉的堡）載入時自動改為新名稱；本機記住的登入校區名稱也會自動更新',
-        '合併 V20261023V1310 的改進（10/24 上傳時被覆蓋）：從國中部登入時清單預設國中部、時數欄排最前、0 顯示空白'
+        '校區維持「同安、莊敬、美語部」三校；雲端資料中的「林口校」改回同安、「國中部」改回美語部，原本隱藏的莊敬員工與薪資放回莊敬校區',
+        '合併 V20261023V1310 的改進（10/24 上傳時被覆蓋）：從美語部登入時清單預設美語部、時數欄排最前、0 顯示空白',
+        '舊名稱（林口校／國中部／吉的堡）的資料載入時自動改回同安／美語部'
       ]
     },
     {
@@ -12062,9 +12072,9 @@
     { id: 'MIX_RATE', label: '混班津貼費率', col: 0, g: 'P', desc: '每個混班校區的津貼', formula: '預設 500 元／校', where: [W_FORM], who: '老闆' },
     { id: 'TUTOR_FIXED', label: '美語輔導固定額', col: 0, g: 'P', desc: '美語輔導津貼每月固定金額', formula: '預設 3,000 元／月', where: [W_FORM], who: '老闆' },
     { id: 'KC_HEAD_RATE', label: '美語帶班人數費率', col: 0, g: 'P', desc: '美語帶班人數津貼每人金額', formula: '預設 80 元／人', where: [W_FORM], who: '老闆' },
-    { id: 'KC_WRITING_RATE', label: 'Writing 人數費率', col: 0, g: 'P', desc: '國中部 Writing 人數津貼每人金額', formula: '預設 40 元／人', where: [W_FORM], who: '老闆' },
-    { id: 'KC_CLASS_PARAMS', label: '帶班數津貼規則', col: 0, g: 'P', desc: '國中部帶班數津貼的班數規則', formula: '≤ 4 班 → 以 4 班計 25,000\n超過 4 班 → 每多 1 班 +5,000', where: [W_FORM], who: '老闆' },
-    { id: 'GRADE_RATES', label: '職等時薪', col: 0, g: 'P', desc: '國中部授課項目（V Writing、資優美語、一對一、B Reading、輔導補課）依員工職等的時薪', formula: 'A 400／B 500／C 600／D 700 元/時', where: [W_FORM], who: '老闆' },
+    { id: 'KC_WRITING_RATE', label: 'Writing 人數費率', col: 0, g: 'P', desc: '美語部 Writing 人數津貼每人金額', formula: '預設 40 元／人', where: [W_FORM], who: '老闆' },
+    { id: 'KC_CLASS_PARAMS', label: '帶班數津貼規則', col: 0, g: 'P', desc: '美語部帶班數津貼的班數規則', formula: '≤ 4 班 → 以 4 班計 25,000\n超過 4 班 → 每多 1 班 +5,000', where: [W_FORM], who: '老闆' },
+    { id: 'GRADE_RATES', label: '職等時薪', col: 0, g: 'P', desc: '美語部授課項目（V Writing、資優美語、一對一、B Reading、輔導補課）依員工職等的時薪', formula: 'A 400／B 500／C 600／D 700 元/時', where: [W_FORM], who: '老闆' },
     { id: 'PT_TEACH_RATE', label: '美語授課時薪', col: 0, g: 'P', desc: '美語授課津貼的預設時薪與可設範圍（員工資料可個別設定）', formula: '預設 550 元／小時\n可設 550～580', where: [W_FORM, W_OWNER('美語授課時薪')], who: '老闆' },
     { id: 'PT_ASSIST_RATE', label: '與外師共同上課時薪', col: 0, g: 'P', desc: '與外師共同上課津貼的預設時薪（員工資料可個別設定）', formula: '預設 400 元／小時', where: [W_FORM, W_OWNER('與外師共同上課時薪')], who: '老闆' },
     { id: 'CS_PARAMS', label: '帶班人數分段', col: 0, g: 'P', desc: '帶班人數津貼的分段公式參數（平時／暑期 7、8 月不同費率）', formula: '基準 15 人、分段 20 人\n平時：每人 500／1,000\n暑期：每人 1,000／1,500', where: [W_FORM], who: '老闆' },
@@ -12074,9 +12084,9 @@
     { id: '支薪時數', col: 1, g: 'M', desc: '當月另外支薪的時數', where: [W_MGR('支薪時數'), W_SAL('支薪時數')], who: '主管、老闆' },
     { id: '請假時數', col: 1, g: 'M', desc: '當月請假時數', where: [W_MGR('請假時數'), W_SAL('請假時數')], who: '主管、老闆' },
     { id: '遲到次數', col: 1, g: 'M', desc: '當月遲到次數', where: [W_MGR('遲到次數'), W_SAL('遲到次數')], who: '主管、老闆' },
-    { id: '兼職美語授課時數', col: 1, g: 'M', desc: '當月兼職美語授課時數（國中部／兼職美語）', where: [W_MGR('兼職美語授課時數'), W_SAL('兼職美語授課時數')], who: '主管、老闆' },
-    { id: '與外師共同上課時數', col: 1, g: 'M', desc: '當月與外師共同上課時數（國中部／兼職美語）', where: [W_MGR('與外師共同上課時數'), W_SAL('與外師共同上課時數')], who: '主管、老闆' },
-    { id: '授課時數', label: '國中部授課時數', col: 1, g: 'M', desc: '國中部每月授課時數：V Writing、資優美語、一對一、B Reading、輔導補課（各自一欄）', where: [W_MGR('VWriting時數'), W_SAL('VWriting時數')], who: '主管、老闆' },
+    { id: '兼職美語授課時數', col: 1, g: 'M', desc: '當月兼職美語授課時數（美語部／兼職美語）', where: [W_MGR('兼職美語授課時數'), W_SAL('兼職美語授課時數')], who: '主管、老闆' },
+    { id: '與外師共同上課時數', col: 1, g: 'M', desc: '當月與外師共同上課時數（美語部／兼職美語）', where: [W_MGR('與外師共同上課時數'), W_SAL('與外師共同上課時數')], who: '主管、老闆' },
+    { id: '授課時數', label: '美語部授課時數', col: 1, g: 'M', desc: '美語部每月授課時數：V Writing、資優美語、一對一、B Reading、輔導補課（各自一欄）', where: [W_MGR('VWriting時數'), W_SAL('VWriting時數')], who: '主管、老闆' },
     { id: '本月備註', col: 1, g: 'M', desc: '只顯示在當月薪資條的備註', where: [W_MGR('備註'), W_SAL('備註')], who: '主管、老闆' },
     { id: '獎金', col: 1, g: 'L', desc: '當月獎金（輸入畫面已停用；有舊值時老闆可在本月薪資修改或清除）', where: [W_SAL('獎金')], who: '老闆' },
     { id: '扣款', col: 1, g: 'L', desc: '當月其他扣款（已停用欄位）', where: [W_SAL('扣款')], who: '老闆' },
@@ -12087,10 +12097,10 @@
     { id: '數學班人數', col: 1, g: 'H', desc: '數學班學生人數', where: [W_OWNER('數學班人數')], who: '老闆' },
     { id: '帶班人數', col: 1, g: 'H', desc: '帶班學生人數（可有小數）', where: [W_OWNER('帶班人數')], who: '老闆' },
     { id: '混班校數', col: 1, g: 'H', desc: '混班／混校的校區數', where: [W_OWNER('混班校數')], who: '老闆' },
-    { id: '美語帶班人數', col: 1, g: 'H', desc: '國中部帶班學生人數', where: [W_OWNER('美語帶班人數')], who: '老闆' },
-    { id: '帶班數', col: 1, g: 'H', desc: '國中部帶班數（班別寫在「帶班班別」，例 C2/T2/B2/S1）', where: [W_OWNER('帶班數')], who: '老闆' },
-    { id: '職等', label: '授課職等', col: 1, g: 'H', desc: '國中部員工的職等 A／B／C／D，決定授課時薪', where: [W_OWNER('職等')], who: '老闆' },
-    { id: 'Writing人數', label: 'Writing 人數', col: 1, g: 'H', desc: '國中部 Writing 學生人數', where: [W_OWNER('Writing人數')], who: '老闆' },
+    { id: '美語帶班人數', col: 1, g: 'H', desc: '美語部帶班學生人數', where: [W_OWNER('美語帶班人數')], who: '老闆' },
+    { id: '帶班數', col: 1, g: 'H', desc: '美語部帶班數（班別寫在「帶班班別」，例 C2/T2/B2/S1）', where: [W_OWNER('帶班數')], who: '老闆' },
+    { id: '職等', label: '授課職等', col: 1, g: 'H', desc: '美語部員工的職等 A／B／C／D，決定授課時薪', where: [W_OWNER('職等')], who: '老闆' },
+    { id: 'Writing人數', label: 'Writing 人數', col: 1, g: 'H', desc: '美語部 Writing 學生人數', where: [W_OWNER('Writing人數')], who: '老闆' },
     { id: '結構性請假時數', col: 1, g: 'H', desc: '每月固定的請假時數（例如固定少上班的時數）', where: [W_OWNER('結構性請假時數')], who: '老闆' },
     // ③ 員工固定金額
     { id: '底薪', col: 2, g: 'F', desc: '每月底薪', where: [W_OWNER('底薪'), W_OWNTAB], who: '老闆' },
@@ -12101,7 +12111,7 @@
     { id: '留班獎金', col: 2, g: 'F', desc: '自由輸入的留班獎金', where: [W_OWNER('留班獎金')], who: '老闆' },
     { id: '考試獎金', col: 2, g: 'F', desc: '考試相關獎金（員工固定項目）', where: [W_OWNER('考試獎金')], who: '老闆' },
     { id: '其他津貼', col: 2, g: 'F', desc: '可逐項輸入名目／金額／說明，自動加總；明細會寫進薪資條備註', where: [W_OWNER('其他津貼')], who: '老闆' },
-    { id: '國中部固定項目', label: '國中部固定項目', col: 2, g: 'F', desc: '國中部逐人輸入的固定金額：奇趣線上教材、行政，列入 B', where: [W_OWNER('奇趣線上教材')], who: '老闆' },
+    { id: '美語部固定項目', label: '美語部固定項目', col: 2, g: 'F', desc: '美語部逐人輸入的固定金額：奇趣線上教材、行政，列入 B', where: [W_OWNER('奇趣線上教材')], who: '老闆' },
     { id: '勞保自付', col: 2, g: 'I', desc: '勞保（選「🔴 扣薪」時由員工付，列入 C）', where: [W_OWNER('勞保自付額')], who: '老闆' },
     { id: '健保自付', col: 2, g: 'I', desc: '健保（選「🔴 扣薪」時由員工付，列入 C）', where: [W_OWNER('健保自付額')], who: '老闆' },
     { id: '健保眷屬自付', col: 2, g: 'I', desc: '健保眷屬（扣薪模式）', where: [W_OWNER('健保眷屬扣款')], who: '老闆' },
@@ -12120,13 +12130,13 @@
     { id: '混班津貼', col: 3, g: 'C', desc: '輸入校數時自動帶出（也可手動改）', formula: '混班津貼 = 混班校數 × 混班津貼費率', deps: ['混班校數', 'MIX_RATE'], where: [W_OWNER('混班津貼')], who: '自動（老闆可改）' },
     { id: '美語輔導津貼', col: 3, g: 'C', desc: '固定金額', formula: '美語輔導津貼 = 美語輔導固定額', deps: ['TUTOR_FIXED'], where: [W_OWNER('美語輔導津貼')], who: '自動（老闆可改）' },
     { id: '帶班數津貼', col: 3, g: 'C', desc: '輸入班數時自動帶出（也可手動改）', formula: '班數 = 0 → 0\n班數 ≤ 4 → 25,000（以 4 班計）\n班數 > 4 → 25,000 + (班數 − 4) × 5,000', deps: ['帶班數', 'KC_CLASS_PARAMS'], where: [W_OWNER('帶班數津貼')], who: '自動（老闆可改）' },
-    { id: '授課金額', label: '國中部授課金額', col: 3, g: 'C', desc: '自動計算', formula: '每個授課項目 = 該項時數 × 職等時薪\n（V Writing、資優美語、一對一、B Reading、輔導補課）', deps: ['授課時數', '職等', 'GRADE_RATES'], where: [W_PS], who: '自動' },
+    { id: '授課金額', label: '美語部授課金額', col: 3, g: 'C', desc: '自動計算', formula: '每個授課項目 = 該項時數 × 職等時薪\n（V Writing、資優美語、一對一、B Reading、輔導補課）', deps: ['授課時數', '職等', 'GRADE_RATES'], where: [W_PS], who: '自動' },
     { id: '美語帶班人數津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: '美語帶班人數津貼 = 美語帶班人數 × 美語帶班人數費率', deps: ['美語帶班人數', 'KC_HEAD_RATE'], where: [W_OWNER('美語帶班人數津貼')], who: '自動（老闆可改）' },
     { id: 'Writing人數津貼', label: 'Writing 人數津貼', col: 3, g: 'C', desc: '輸入人數時自動帶出（也可手動改）', formula: 'Writing 人數津貼 = Writing 人數 × Writing 人數費率', deps: ['Writing人數', 'KC_WRITING_RATE'], where: [W_OWNER('Writing人數津貼')], who: '自動（老闆可改）' },
     { id: '兼職美語薪資', label: '美語授課／與外師共同上課津貼', col: 3, g: 'C', desc: '自動計算', formula: '美語授課津貼 = 兼職美語授課時數 × 美語授課時薪\n與外師共同上課津貼 = 與外師共同上課時數 × 與外師共同上課時薪\n（員工沒設時薪就用公式設定頁預設）', deps: ['兼職美語授課時數', '與外師共同上課時數', 'PT_TEACH_RATE', 'PT_ASSIST_RATE'], where: [W_SAL('兼職美語授課時數'), W_PS], who: '自動' },
     // ⑤ 小計
     { id: 'A', label: '(A) 約定薪資', col: 4, g: 'S', desc: '薪資條第一區', formula: 'A = 底薪 + 全勤獎金（實發）+ 年資津貼', deps: ['底薪', '全勤獎金實發', '年資津貼'], where: [W_PS], who: '自動' },
-    { id: 'B', label: '(B) 非固定支付', col: 4, g: 'S', desc: '薪資條第二區', formula: 'B = 主管 + 美語 + 美語輔導 + 數學班\n  + 帶班人數 + 混班 + 數學(手動) + 留班\n  + 考試獎金 + 其他津貼 + 補貼（勞健保／退休金）\n  + 帶班數津貼 + 授課(時數×職等) + 奇趣/行政\n  + 美語帶班人數 + Writing + 美語授課 + 與外師共同上課\n  + 加班費 + 支薪金額 + 考試津貼 + 預繳津貼 + 獎金', deps: ['主管津貼', '美語津貼', '美語輔導津貼', '數學班津貼', '帶班人數津貼', '混班津貼', '數學津貼', '留班獎金', '考試獎金', '其他津貼', '補貼勞健保退休', '帶班數津貼', '美語帶班人數津貼', '授課金額', '國中部固定項目', 'Writing人數津貼', '兼職美語薪資', '加班費', '支薪金額', '考試津貼', '預繳津貼', '獎金'], where: [W_PS], who: '自動' },
+    { id: 'B', label: '(B) 非固定支付', col: 4, g: 'S', desc: '薪資條第二區', formula: 'B = 主管 + 美語 + 美語輔導 + 數學班\n  + 帶班人數 + 混班 + 數學(手動) + 留班\n  + 考試獎金 + 其他津貼 + 補貼（勞健保／退休金）\n  + 帶班數津貼 + 授課(時數×職等) + 奇趣/行政\n  + 美語帶班人數 + Writing + 美語授課 + 與外師共同上課\n  + 加班費 + 支薪金額 + 考試津貼 + 預繳津貼 + 獎金', deps: ['主管津貼', '美語津貼', '美語輔導津貼', '數學班津貼', '帶班人數津貼', '混班津貼', '數學津貼', '留班獎金', '考試獎金', '其他津貼', '補貼勞健保退休', '帶班數津貼', '美語帶班人數津貼', '授課金額', '美語部固定項目', 'Writing人數津貼', '兼職美語薪資', '加班費', '支薪金額', '考試津貼', '預繳津貼', '獎金'], where: [W_PS], who: '自動' },
     { id: 'C', label: '(C) 應代扣', col: 4, g: 'S', desc: '薪資條第三區', formula: 'C = 勞保自付 + 健保自付 + 健保眷屬\n  + 退休金提撥 + 請假扣款 + 遲到扣款 + 扣款', deps: ['勞保自付', '健保自付', '健保眷屬自付', '退休金提撥', '請假扣款', '遲到扣款', '扣款'], where: [W_PS], who: '自動' },
     { id: 'D', label: '(D) 現金給付', col: 4, g: 'S', desc: '薪資條第四區', formula: 'D = 現金給付', deps: ['現金給付'], where: [W_PS], who: '自動' },
     // ⑥ 結果

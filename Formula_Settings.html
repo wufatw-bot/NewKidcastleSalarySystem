@@ -210,7 +210,7 @@ const DEFAULTS = {
 };
 const LABELS = {
   OT_RATE:'加班費率', PAY_RATE:'支薪費率', LEAVE_RATE:'請假扣款費率', LATE_FEE:'遲到扣款',
-  KC_HEAD_RATE:'美語帶班人數津貼', KC_WRITING_RATE:'國中部 Writing 人數津貼',
+  KC_HEAD_RATE:'美語帶班人數津貼', KC_WRITING_RATE:'美語部 Writing 人數津貼',
   KC_CLASS_BASE_N:'帶班數基本班數', KC_CLASS_BASE_PAY:'帶班數基本薪資', KC_CLASS_STEP:'每多一班加給',
   GRADE_A:'A 職等時薪', GRADE_B:'B 職等時薪', GRADE_C:'C 職等時薪', GRADE_D:'D 職等時薪',
   PT_TEACH_RATE:'美語授課預設時薪', PT_TEACH_MIN:'美語授課時薪下限', PT_TEACH_MAX:'美語授課時薪上限', PT_ASSIST_RATE:'與外師共同上課時薪',
@@ -340,8 +340,8 @@ function render() {
   </div>
 
   <div class="card" style="--c:#6D28D9">
-    <h2><span class="no">🏰</span> 國中部 · 兼職美語 Kidcastle</h2>
-    <div class="desc">只套用在校區為「國中部」的員工，以及職位為「兼職美語」的員工。奇趣線上教材、行政為固定金額，在員工資料的「🏰 國中部項目」逐人輸入。</div>
+    <h2><span class="no">🏰</span> 美語部 · 兼職美語 Kidcastle</h2>
+    <div class="desc">只套用在校區為「美語部」的員工，以及職位為「兼職美語」的員工。奇趣線上教材、行政為固定金額，在員工資料的「🏰 美語部項目」逐人輸入。</div>
     <div class="f" style="--c:#6D28D9">
       <div class="name">帶班數津貼 <small>② 非固定支付</small></div>
       <div class="expr">${V('帶班數')} ${O('≤')} ${P('KC_CLASS_BASE_N','班')} ${O('→')} 以此班數計 ${P('KC_CLASS_BASE_PAY','元')}</div>
@@ -360,7 +360,7 @@ function render() {
     <div class="f" style="--c:#6D28D9">
       <div class="name">美語帶班人數津貼 <small>② 非固定支付</small></div>
       <div class="expr">${V('美語帶班人數')} ${O('×')} ${P('KC_HEAD_RATE','元／人')}</div>
-      <div class="note">國中部專用欄位；原本的「帶班人數津貼」仍用上方「4 帶班人數津貼（分段）」的規則。</div>
+      <div class="note">美語部專用欄位；原本的「帶班人數津貼」仍用上方「4 帶班人數津貼（分段）」的規則。</div>
       <div class="try">試算：<input type="number" data-try="kchead" value="40"> 人 → <span class="out" id="o_kchead"></span></div>
     </div>
     <div class="f" style="--c:#6D28D9">
@@ -400,7 +400,7 @@ function render() {
     <div class="desc">項目歸屬與加總方式，對應「📄 薪水條」頁面。</div>
     <div class="struct">
       <div class="sbox a"><h4>(A) 約定薪資結構</h4>底薪 + 全勤獎金 + 年資津貼</div>
-      <div class="sbox b"><h4>(B) 非固定支付</h4>主管 + 美語 + 美語輔導 + 數學班 + 帶班人數 + 混班 + 數學(手動) + 留班 + 考試 + 其他 + <b>國中部（帶班數津貼＋美語帶班人數津貼＋授課時數×職等＋奇趣線上教材＋行政＋Writing）</b> + <b>美語授課津貼＋與外師共同上課津貼</b> + 補貼公會勞保 + 補貼公會健保 + 補貼健保眷屬 + 補貼退休金 + 加班費 + 支薪金額 + <b>考試津貼</b> + <b>預繳津貼</b> + 獎金</div>
+      <div class="sbox b"><h4>(B) 非固定支付</h4>主管 + 美語 + 美語輔導 + 數學班 + 帶班人數 + 混班 + 數學(手動) + 留班 + 考試 + 其他 + <b>美語部（帶班數津貼＋美語帶班人數津貼＋授課時數×職等＋奇趣線上教材＋行政＋Writing）</b> + <b>美語授課津貼＋與外師共同上課津貼</b> + 補貼公會勞保 + 補貼公會健保 + 補貼健保眷屬 + 補貼退休金 + 加班費 + 支薪金額 + <b>考試津貼</b> + <b>預繳津貼</b> + 獎金</div>
       <div class="sbox c"><h4>(C) 應代扣項目</h4>勞保自付 + 健保自付 + 健保眷屬扣款 + 退休金提撥 + 請假扣款 + 遲到扣款 + 扣款</div>
       <div class="sbox d"><h4>(D) 現金給付</h4>已用現金支付的部分</div>
     </div>
@@ -416,7 +416,7 @@ function render() {
         • 投保級距、加班時數、帶班人數、混班校數為資訊欄位，不計入加總<br>
         • 考試津貼、預繳津貼由主管／老闆每月輸入，直接以金額計入 (B)<br>
         • 本月人數欄位只顯示、不計入加總：安親人數、混班數<br>
-        • 協助S校＋莊敬校、J校／S校安親、S校美語、林口校／莊敬美語總人數、莊敬安親等項目已改為「其他津貼」罐頭項目，以金額逐項計入 (B)
+        • 協助S校＋莊敬校、J校／S校安親、S校美語、同安／莊敬美語總人數、莊敬安親等項目已改為「其他津貼」罐頭項目，以金額逐項計入 (B)
       </div>
     </div>
   </div>
@@ -657,7 +657,7 @@ function toast(msg, type) {
 
 load();
 </script>
-<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261024V1700</div>
+<div style="position:fixed;right:12px;bottom:10px;z-index:9999;font:700 12px 'Courier New',monospace;color:#475569;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.12)" title="版本（修改記錄請見主系統右下角）">V20261024V1715</div>
 <!-- 👁 密碼顯示／隱藏按鈕：自動加到每一個密碼欄位（含之後才產生的欄位） -->
 <style>
   .pwd-eye-wrap { position: relative; vertical-align: middle; max-width: 100%; }
