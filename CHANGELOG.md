@@ -3,6 +3,13 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261025V0930（2026-10-25 09:30）
+- 複製、刪除、備份時顯示 Google 雲端硬碟名稱（帳號）、資料夾與檔名（確認視窗、進度、完成／失敗訊息、變更紀錄）
+- 涵蓋 executeDelData、applyDataImport、doBackup（Drive／本地）、copyPrevMonth、copyPrevMonthInDrawer、newMonth、resetData
+- 新增 DriveInfo.gs：`drive_info` 回傳 account、driveName、dataFile（DATA_FILE）、dataFolder、backupFolders；未安裝時前端用預設值 castlepartywu@gmail.com › 我的雲端硬碟
+- 安裝：Code.gs doGet() 加 `if (action === 'drive_info') return ok(driveInfo_());`，再部署新版本
+- toast 長訊息改多行、停留 7 秒
+
 ## V20261024V1715（2026-10-24 17:15）
 - 雲端資料以「清空前備份_2026-10-24T08-19-08.json」還原，並改回三校：林口校 → 同安、國中部 → 美語部，hiddenCampus 內的莊敬員工與薪資放回主資料（hiddenCampus 移除）
 - 還原前的雲端內容：雲端目前資料備份_2026-10-24T16-41-43.json；改回三校前：雲端資料備份_改回三校前_2026-10-24T16-59-27.json（都在下載項目）

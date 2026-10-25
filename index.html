@@ -1174,6 +1174,7 @@
   .mgr-log .empty-log { color: #94a3b8; font-style: italic; font-size: 12px; padding: 8px 0; }
 
   /* Toast */
+  .toast.multi { white-space: pre-line; border-radius: 14px; text-align: left; max-width: min(92vw, 640px); word-break: break-all; line-height: 1.6; }
   .toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(20px);
@@ -2645,7 +2646,7 @@
       </div>
       <div class="body">
         <p style="margin:0 0 12px;color:#991B1B;font-size:13px;background:#FEF2F2;padding:8px 12px;border-radius:6px;border-left:3px solid #DC2626;">
-          ⚠ 可刪除「個人」、「月份」或「項目」資料。刪除前系統會自動備份到 Google 雲端硬碟的 Kidcastle_Backups 資料夾。
+          ⚠ 可刪除「個人」、「月份」或「項目」資料。刪除前系統會自動備份到 Google 雲端硬碟（castlepartywu@gmail.com › 我的雲端硬碟）的 Kidcastle_Backups 資料夾，檔名「刪除前備份_日期時間.json」。確認視窗會列出備份檔與被刪除的資料檔的雲端硬碟、資料夾、檔名。
         </p>
         <div class="alert error" id="delDataPwdErr">⚠ <span id="delDataPwdErrMsg">—</span></div>
         <div class="field">
@@ -4045,6 +4046,7 @@
       DATA = await loadData();
       CHANGE_LOG = await loadLog();
       _dataReady = true;
+      loadDriveInfo();   // 背景取得雲端硬碟名稱／檔名（不等待）
     } catch(e) {
       hideLoadingOverlay();
       toast('雲端載入失敗：' + e.message + '\n請檢查網路或重新設定雲端網址', 'error');
@@ -4533,6 +4535,52 @@
     return j.time || true;
   }
 
+  // ☁ 雲端硬碟名稱／檔名 — 複製、刪除、備份時顯示資料存在哪裡
+  //   有安裝 DriveInfo.gs 時由後端回傳（drive_info）；沒有安裝就用下面的預設值
+  const DRIVE_INFO_DEFAULT = {
+    account: 'castlepartywu@gmail.com',   // Apps Script 部署帳號 = 檔案所在的雲端硬碟
+    driveName: '我的雲端硬碟',
+    dataFile: '薪資主資料檔（JSON）',
+    dataFolder: '我的雲端硬碟'
+  };
+  let DRIVE_INFO = Object.assign({}, DRIVE_INFO_DEFAULT);
+  let _driveInfoLoaded = false;
+  async function loadDriveInfo() {
+    if (_driveInfoLoaded) return DRIVE_INFO;
+    try {
+      const j = await cloudGet('drive_info');
+      const d = (j && (j.data || j.info)) || j || {};
+      ['account', 'driveName', 'dataFile', 'dataFolder', 'dataFileUrl', 'backupFolders'].forEach(k => {
+        if (d[k]) DRIVE_INFO[k] = d[k];
+      });
+      _driveInfoLoaded = true;
+    } catch (_) { /* 後端尚未安裝 DriveInfo.gs → 使用預設值 */ }
+    return DRIVE_INFO;
+  }
+  function driveBackupPath(folder) {
+    const bf = DRIVE_INFO.backupFolders && DRIVE_INFO.backupFolders[folder];
+    return (bf && bf.path) || `${DRIVE_INFO.driveName}/${folder}`;
+  }
+  // 多行（用在確認視窗）：雲端硬碟、資料夾、檔名
+  function driveWhereText(folder, filename) {
+    return `Google 雲端硬碟：${DRIVE_INFO.account}（${DRIVE_INFO.driveName}）\n` +
+           `資料夾：${driveBackupPath(folder)}\n` +
+           `檔名：${filename}`;
+  }
+  // 一行（用在變更紀錄、提示訊息）
+  function driveWhereLine(folder, filename) {
+    return `${DRIVE_INFO.account} › ${driveBackupPath(folder)}/${filename}`;
+  }
+  // 主資料檔（複製、刪除寫入的位置）
+  function driveDataText() {
+    return `Google 雲端硬碟：${DRIVE_INFO.account}（${DRIVE_INFO.driveName}）\n` +
+           `資料夾：${DRIVE_INFO.dataFolder}\n` +
+           `檔名：${DRIVE_INFO.dataFile}`;
+  }
+  function driveDataLine() {
+    return `${DRIVE_INFO.account} › ${DRIVE_INFO.dataFolder}/${DRIVE_INFO.dataFile}`;
+  }
+
   // High-level load/save (replaces localStorage versions)
   async function loadData() {
     try {
@@ -4601,7 +4649,8 @@
   }
 
   async function resetData() {
-    if (!confirm('確定要清除雲端資料、恢復原始資料嗎？\n（會將 Google Drive 中的薪資 JSON 改回預設值）')) return;
+    await loadDriveInfo();
+    if (!confirm(`確定要清除雲端資料、恢復原始資料嗎？\n會把這個檔案改回預設值：\n${driveDataText()}`)) return;
     DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
     CHANGE_LOG = [];
     try {
@@ -4614,7 +4663,8 @@
     renderManagerTable();
     renderPayslip();
     renderChangeLog();
-    toast('已還原為原始資料（雲端 + 記憶體）', 'success');
+    appendLog({ time: nowTimestamp(), user: currentUser ? currentUser.fullName : '系統', text: `清除雲端資料、還原為原始資料（${driveDataLine()}）` });
+    toast(`已還原為原始資料（雲端 + 記憶體）\n檔案：${driveDataLine()}`, 'success');
   }
 
   // Manual sync from cloud — flush + reload + re-render
@@ -5073,18 +5123,21 @@
     const n = plan.empDel.length + plan.salDel.length + plan.clear.length;
     if (!n) { toast('沒有可刪除的資料', 'error'); return; }
     if (($('delConfirmText').value || '').trim() !== '刪除') { toast('請在確認欄輸入「刪除」兩個字', 'error'); $('delConfirmText').focus(); return; }
-    if (!confirm(`最後確認：${plan.summary}\n\n系統會先備份到雲端硬碟，再執行刪除。確定嗎？`)) return;
-    closeDelData();
-    // 1) 先備份（失敗就停止，不刪除）
-    showLoadingOverlay('☁ 正在備份資料到雲端硬碟…');
+    await loadDriveInfo();
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const backupName = `刪除前備份_${stamp}.json`;
+    if (!confirm(`最後確認：${plan.summary}\n\n` +
+      `① 先備份到：\n${driveWhereText('Kidcastle_Backups', backupName)}\n\n` +
+      `② 再從這個檔案刪除：\n${driveDataText()}\n\n確定嗎？`)) return;
+    closeDelData();
+    // 1) 先備份（失敗就停止，不刪除）
+    showLoadingOverlay(`☁ 正在備份到 ${driveWhereLine('Kidcastle_Backups', backupName)}…`);
     try {
       await cloudPost('backup', { folder: 'Kidcastle_Backups', filename: backupName, mime: 'application/json',
         contentBase64: utf8ToBase64(JSON.stringify(DATA)) });
     } catch (e) {
       hideLoadingOverlay();
-      toast('備份失敗，已取消刪除：' + e.message, 'error');
+      toast(`備份失敗，已取消刪除（${driveWhereLine('Kidcastle_Backups', backupName)}）：` + e.message, 'error');
       return;
     }
     // 2) 刪除
@@ -5096,21 +5149,21 @@
       if (c.key === '其他津貼') c.rec['其他津貼明細'] = [];
       if (c.rec['月份'] && c.emp) { try { computeRow(c.emp, c.rec); } catch (_) {} }   // 重算加班費／扣款等
     });
-    showLoadingOverlay('☁ 正在寫入雲端…');
+    showLoadingOverlay(`☁ 正在寫入 ${driveDataLine()}…`);
     try {
       await doPersistNow();
       hideLoadingOverlay();
-      appendLog({ time: nowTimestamp(), user: currentUser.fullName, text: `🗑 刪除資料 — ${plan.summary}（已備份：Kidcastle_Backups/${backupName}）` });
+      appendLog({ time: nowTimestamp(), user: currentUser.fullName, text: `🗑 刪除資料 — ${plan.summary}（刪除位置：${driveDataLine()}；已備份：${driveWhereLine('Kidcastle_Backups', backupName)}）` });
       try { populatePayslipSelectors(); } catch (_) {}
       try { populateManagerSelectors(); } catch (_) {}
       try { renderManagerTable(); } catch (_) {}
       try { renderOwnerTable(); } catch (_) {}
       try { renderPayslip(); } catch (_) {}
       try { populateDashMonth(); renderDashboard(); } catch (_) {}
-      toast(`✓ 已完成：${plan.summary}`, 'success');
+      toast(`✓ 已完成：${plan.summary}\n刪除位置：${driveDataLine()}\n備份檔：${driveWhereLine('Kidcastle_Backups', backupName)}`, 'success');
     } catch (e) {
       hideLoadingOverlay();
-      toast('雲端寫入失敗：' + e.message + '（備份檔：' + backupName + '）', 'error');
+      toast('雲端寫入失敗：' + e.message + '（備份檔：' + driveWhereLine('Kidcastle_Backups', backupName) + '）', 'error');
     }
   }
   document.addEventListener('change', e => {
@@ -6154,13 +6207,17 @@
     if (!todo.length) return;
     const month = $('dataImpMonth').value;
     const nChg = todo.reduce((t, p) => t + p.changes.length, 0);
-    if (!confirm(`確認套用 ${todo.length} 位員工、共 ${nChg} 個欄位的變更？\n時數寫入 ${month}。\n\n會先備份整份資料到雲端硬碟，再寫入雲端。`)) return;
-    showLoadingOverlay('☁ 正在備份資料到雲端硬碟…');
+    await loadDriveInfo();
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const impBackupName = `資料匯入前備份_${stamp}.json`;
+    if (!confirm(`確認套用 ${todo.length} 位員工、共 ${nChg} 個欄位的變更？\n時數寫入 ${month}。\n\n` +
+      `① 先備份到：\n${driveWhereText('Kidcastle_Backups', impBackupName)}\n\n` +
+      `② 再寫入：\n${driveDataText()}`)) return;
+    showLoadingOverlay(`☁ 正在備份到 ${driveWhereLine('Kidcastle_Backups', impBackupName)}…`);
     try {
-      await cloudPost('backup', { folder: 'Kidcastle_Backups', filename: `資料匯入前備份_${stamp}.json`, mime: 'application/json',
+      await cloudPost('backup', { folder: 'Kidcastle_Backups', filename: impBackupName, mime: 'application/json',
         contentBase64: utf8ToBase64(JSON.stringify(DATA)) });
-    } catch (e) { hideLoadingOverlay(); toast('備份失敗，已取消匯入：' + e.message, 'error'); return; }
+    } catch (e) { hideLoadingOverlay(); toast(`備份失敗，已取消匯入（${driveWhereLine('Kidcastle_Backups', impBackupName)}）：` + e.message, 'error'); return; }
     if (!DATA.ownerBaseline) DATA.ownerBaseline = {};
     todo.forEach(p => {
       const emp = findEmployee(p.eid); if (!emp) return;
@@ -6176,10 +6233,10 @@
     try { await doPersistNow(); } finally { hideLoadingOverlay(); }
     appendLog({
       time: nowTimestamp(), user: currentUser ? currentUser.fullName : '系統',
-      text: `📥 資料匯入（${month}）：${todo.length} 位員工、${nChg} 個欄位 — ${todo.slice(0, 10).map(p => p.label).join('、')}${todo.length > 10 ? '…' : ''}`
+      text: `📥 資料匯入（${month}）：${todo.length} 位員工、${nChg} 個欄位 — ${todo.slice(0, 10).map(p => p.label).join('、')}${todo.length > 10 ? '…' : ''}（寫入：${driveDataLine()}；已備份：${driveWhereLine('Kidcastle_Backups', impBackupName)}）`
     });
     [renderOwnerTable, renderManagerTable, renderPayslip, renderDashboard].forEach(fn => { try { fn(); } catch (_) {} });
-    toast(`✓ 已匯入 ${todo.length} 位員工的資料`, 'success');
+    toast(`✓ 已匯入 ${todo.length} 位員工的資料\n備份檔：${driveWhereLine('Kidcastle_Backups', impBackupName)}`, 'success');
     resetDataImport();
     closeDataImport();
   }
@@ -6400,9 +6457,10 @@
   function toast(msg, type) {
     const t = $('toast'); if (!t) return;
     t.textContent = msg;
-    t.className = 'toast show ' + (type || '');
+    const long = /\n/.test(String(msg)) || String(msg).length > 60;   // 含雲端硬碟／檔名的訊息較長 → 多行、停留久一點
+    t.className = 'toast show ' + (type || '') + (long ? ' multi' : '');
     clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(() => t.className = 'toast', 2200);
+    _toastTimer = setTimeout(() => t.className = 'toast', long ? 7000 : 2200);
   }
 
   // 其他津貼：有逐項明細時，薪資條改成每個津貼名稱各佔一行（例：其他津貼・戶外教學 3,000）
@@ -9442,9 +9500,9 @@
       appendLog({
         time: nowTimestamp(),
         user: currentUser.fullName,
-        text: `備份 → 本地 · ${filename}`
+        text: `備份 → 本地 · 下載資料夾/${filename}`
       });
-      toast(`💾 已備份到本地下載資料夾`, 'success');
+      toast(`💾 已備份到本地下載資料夾\n檔名：${filename}`, 'success');
       return;
     }
 
@@ -9462,7 +9520,8 @@
       : 'Kidcastle_Backups_Old';
     const destLabel = destination === 'gdrive-new' ? '新 GDrive' : '舊 GDrive';
 
-    showLoadingOverlay(`☁ 正在上傳到 Google Drive (${destLabel}) …`);
+    await loadDriveInfo();
+    showLoadingOverlay(`☁ 正在上傳到 ${driveWhereLine(folderName, filename)} …`);
     try {
       const b64 = arrayBufferToBase64(xlsxArray);
       const j = await cloudPost('backup', {
@@ -9475,13 +9534,13 @@
       appendLog({
         time: nowTimestamp(),
         user: currentUser.fullName,
-        text: `備份 → ${destLabel} · ${filename}（已上傳）`
+        text: `備份 → ${destLabel} · ${driveWhereLine(folderName, filename)}（已上傳）`
       });
-      toast(`✅ 已備份到 Google Drive：${folderName}/${filename}`, 'success');
+      toast(`✅ 已備份到 Google 雲端硬碟：${driveWhereLine(folderName, filename)}`, 'success');
       // Offer to open the file
       if (j && j.url) {
         setTimeout(() => {
-          if (confirm(`備份完成！\n資料夾：${folderName}\n檔案：${filename}\n\n要在新分頁開啟此檔案嗎？`)) {
+          if (confirm(`備份完成！\n${driveWhereText(folderName, filename)}\n\n要在新分頁開啟此檔案嗎？`)) {
             window.open(j.url, '_blank');
           }
         }, 200);
@@ -9489,7 +9548,7 @@
     } catch (e) {
       hideLoadingOverlay();
       console.error('Drive backup failed', e);
-      toast('Drive 備份失敗：' + e.message, 'error');
+      toast(`Drive 備份失敗（${driveWhereLine(folderName, filename)}）：` + e.message, 'error');
     }
   }
 
@@ -9871,7 +9930,7 @@
     }
     const emp = findEmployee(_editingEid);
     const empName = emp ? emp['員工姓名'] : _editingEid;
-    if (!confirm(`將 ${empName} 的 ${prevMonth} 月資料複製到 ${_drawerMonth} 月？\n（會覆蓋目前 ${_drawerMonth} 的工時/獎金/扣款等）`)) return;
+    if (!confirm(`將 ${empName} 的 ${prevMonth} 月資料複製到 ${_drawerMonth} 月？\n（會覆蓋目前 ${_drawerMonth} 的工時/獎金/扣款等）\n\n複製後寫入：\n${driveDataText()}`)) return;
     const dst = ensureSalaryRecord(_editingEid, _drawerMonth);
     const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','備註', ...monthlyExtraKeys()];
     fields.forEach(f => { dst[f] = src[f]; });
@@ -9879,7 +9938,7 @@
     appendLog({
       time: nowTimestamp(),
       user: currentUser.fullName,
-      text: `[抽屜] 複製 ${empName} (${_editingEid}) ${prevMonth} → ${_drawerMonth}`
+      text: `[抽屜] 複製 ${empName} (${_editingEid}) ${prevMonth} → ${_drawerMonth}（寫入：${driveDataLine()}）`
     });
     refreshDrawerMonthlySection();
     updateNetPreview();
@@ -9887,7 +9946,7 @@
     if (typeof renderManagerTable === 'function' && $('mgrMonth') && $('mgrMonth').value === _drawerMonth) {
       renderManagerTable();
     }
-    toast(`✓ 已複製 ${prevMonth} → ${_drawerMonth}`, 'success');
+    toast(`✓ 已複製 ${prevMonth} → ${_drawerMonth}\n寫入：${driveDataLine()}`, 'success');
   }
   // Fields that managers (主管) cannot modify — these stay locked even in edit mode
   const MANAGER_LOCKED_FIELDS = ['員工編號', '底薪', '勞保自付', '健保自付', '退休金提撥', '登入帳號', '登入密碼'];
@@ -11445,13 +11504,13 @@
     appendLog({
       time: nowTimestamp(),
       user: currentUser ? currentUser.fullName : '系統',
-      text: `新增月份 ${next}，建立 ${cloned} 筆空白薪資紀錄`
+      text: `新增月份 ${next}，建立 ${cloned} 筆空白薪資紀錄（寫入：${driveDataLine()}）`
     });
     populateManagerSelectors();
     populatePayslipSelectors();
     $('mgrMonth').value = next;
     renderManagerTable();
-    toast(`已新增月份 ${next}，預載 ${cloned} 筆`, 'success');
+    toast(`已新增月份 ${next}，預載 ${cloned} 筆\n寫入：${driveDataLine()}`, 'success');
   }
   function incrMonth(m) {
     // 11504 → 11505 → 11506 → 11507 → 11508 → 11509 → 11510 → 11511 → 11512 → 11601
@@ -11499,7 +11558,8 @@
       `將「${prevMonth} 月」的薪資資料複製到「${targetMonth} 月」？\n\n` +
       `範圍：${emps.length} 名在職員工（${isOwner ? '全部' : campusShortLabel(userCampus)}）\n` +
       `會覆蓋：上班時數、加班時數、請假、遲到、獎金、扣款、備註\n` +
-      `不影響：員工資料 / 底薪 / 津貼設定 / 勞健保`
+      `不影響：員工資料 / 底薪 / 津貼設定 / 勞健保\n\n` +
+      `複製後寫入：\n${driveDataText()}`
     )) return;
 
     const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','備註', ...monthlyExtraKeys()];
@@ -11523,7 +11583,7 @@
     appendLog({
       time: nowTimestamp(),
       user: currentUser.fullName,
-      text: `複製上月資料 ${prevMonth} → ${targetMonth} (${copied} 名員工)`
+      text: `複製上月資料 ${prevMonth} → ${targetMonth} (${copied} 名員工)（寫入：${driveDataLine()}）`
     });
 
     // Re-render visible pages
@@ -11532,7 +11592,7 @@
     renderPayslip();
     renderDashboard();
 
-    toast(`✓ 已複製 ${copied} 筆資料 (${prevMonth} → ${targetMonth})`, 'success');
+    toast(`✓ 已複製 ${copied} 筆資料 (${prevMonth} → ${targetMonth})\n寫入：${driveDataLine()}`, 'success');
   }
 
   // Aliases for HTML onclick
@@ -11698,6 +11758,15 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261025V0930', date: '2026-10-25 09:30',
+      changes: [
+        '複製、刪除、備份時顯示 Google 雲端硬碟名稱（帳號）、資料夾與檔名：確認視窗、進度畫面、完成／失敗訊息與變更紀錄都會列出',
+        '涵蓋：🗑 刪除資料（刪除前備份檔＋被刪除的主資料檔）、📥 資料匯入前備份、備份到 Google Drive、備份到本地、📋 複製上個月的資料（主管／老闆／員工側欄）、➕ 新增月份、清除雲端資料',
+        '後端新增 DriveInfo.gs（drive_info）回傳實際帳號、主資料檔名與資料夾路徑；尚未安裝時使用預設值 castlepartywu@gmail.com › 我的雲端硬碟',
+        '較長的提示訊息改為多行顯示、停留 7 秒'
+      ]
+    },
     {
       version: 'V20261024V1715', date: '2026-10-24 17:15',
       changes: [
