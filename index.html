@@ -2225,7 +2225,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V1845</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V1900</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -3019,6 +3019,43 @@
     </div>
   </div>
 
+  <!-- ♻ 叫回校區資料（從備份檔還原某校區的員工＋薪資）V20261115V1900 -->
+  <div class="small-modal-overlay" id="recallOverlay" onclick="closeCampusRecall(event)">
+    <div class="small-modal" style="max-width:1000px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#F59E0B,#B45309);">
+        <div class="icon-l">♻</div>
+        <h2>叫回校區資料 — 從備份檔還原員工與薪資</h2>
+        <button class="close" onclick="closeCampusRecall()">✕</button>
+      </div>
+      <div class="body" style="max-height:72vh;overflow:auto;">
+        <p style="margin:0 0 12px;color:#92400E;font-size:13px;background:#FFFBEB;padding:8px 12px;border-radius:6px;border-left:3px solid #F59E0B;line-height:1.75;">
+          ① 從 Google 雲端硬碟 <b>Kidcastle_Backups</b> 下載備份檔（建議用 <code>.json</code>：刪除前備份、資料匯入前備份、清空前備份…；也可用「完整備份」<code>.xlsx</code>）。<br>
+          ② 選要叫回的校區 → 「🔍 解析備份檔」→ 確認清單 → 「✅ 確認叫回」。<br>
+          ③ 預設只<b>補回目前沒有的</b>員工與月份薪資紀錄，不動現有資料；勾選「覆蓋」才會用備份內容取代同編號的資料。叫回前會先備份目前資料。
+        </p>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:end;margin-bottom:10px;">
+          <div class="field" style="margin:0;"><label>備份檔（.json / .xlsx）</label>
+            <input type="file" id="recallFile" accept=".json,.xlsx,.xls"></div>
+          <div class="field" style="margin:0;"><label>叫回校區</label>
+            <select id="recallCampus"><option value="莊敬">莊敬</option><option value="同安">同安</option><option value="美語部">美語部</option></select></div>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:10px;cursor:pointer;">
+          <input type="checkbox" id="recallOverwrite"> 覆蓋目前已存在的同編號員工資料與同月份薪資紀錄（不勾＝只補回缺少的）
+        </label>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="btn-mini primary" onclick="parseCampusRecall()" style="background:linear-gradient(135deg,#F59E0B,#B45309);">🔍 解析備份檔</button>
+        </div>
+        <div id="recallSummary" style="display:none;background:#f8fafc;padding:10px 12px;border-radius:8px;font-size:13px;color:#475569;margin-bottom:10px;line-height:1.7;"></div>
+        <div style="overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead id="recallThead"></thead><tbody id="recallTbody"></tbody></table></div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeCampusRecall()">取消</button>
+        <button class="btn-mini primary" id="recallApplyBtn" onclick="applyCampusRecall()" disabled style="opacity:.5;background:linear-gradient(135deg,#F59E0B,#B45309);">✅ 確認叫回</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 📧 批次匯入 Email（Excel / CSV / 文字）V20261018V1945 -->
   <div class="small-modal-overlay" id="bulkMailOverlay" onclick="closeBulkMail(event)">
     <div class="small-modal" style="max-width:1080px;" onclick="event.stopPropagation()">
@@ -3153,6 +3190,7 @@
         <button class="btn-mini secondary" onclick="openBulkEmp()" title="從 Excel / CSV / 貼上文字 一次新增多位員工">📥 批次新增員工</button>
         <button class="btn-mini secondary" onclick="openBulkMail()" title="從 Excel / CSV / Google 表單回覆 一次填入多位員工的 Email">📧 批次匯入 Email</button>
         <button class="btn-mini primary" onclick="openDataImport()" style="background:linear-gradient(135deg,#6366F1,#4338CA);" title="從 Excel / CSV 一次更新多位員工的資料與本月時數（先預覽再套用）">📥 資料匯入</button>
+        <button class="btn-mini primary" onclick="openCampusRecall()" style="background:linear-gradient(135deg,#F59E0B,#B45309);" title="從備份檔（.json / 備份 .xlsx）把某個校區的員工與薪資資料叫回">♻ 叫回校區資料</button>
         <button class="btn-mini primary" onclick="openMgrPerms()" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);" title="設定主管可以看到 / 編輯哪些欄位">🛡 主管權限設定</button>
         <button class="btn-mini secondary" onclick="openPayslipSettings()" style="background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;" title="設定薪水條上哪些項目即使為 0 也要顯示">⚙ 薪水條顯示項目</button>
         <button class="btn-mini primary" onclick="exportEmployees()">⬇ 匯出 Employee Data.xlsx</button>
@@ -6297,6 +6335,134 @@
     toast(`✓ 已匯入 ${todo.length} 位員工的資料\n備份檔：${driveWhereLine('Kidcastle_Backups', impBackupName)}`, 'success');
     resetDataImport();
     closeDataImport();
+  }
+
+  // ==========================================================================
+  // ♻ 叫回校區資料（V20261115V1900）：從備份檔把某校區的員工＋薪資紀錄放回主資料
+  // ==========================================================================
+  let _recallPlan = null;
+  function openCampusRecall() {
+    if (!currentUser || currentUser.role !== 'owner') { toast('僅老闆可使用叫回校區資料', 'error'); return; }
+    _recallPlan = null;
+    $('recallFile').value = ''; $('recallOverwrite').checked = false;
+    $('recallSummary').style.display = 'none'; $('recallThead').innerHTML = ''; $('recallTbody').innerHTML = '';
+    recallSyncBtn();
+    $('recallOverlay').classList.add('show');
+  }
+  function closeCampusRecall(e) { if (e && e.target !== e.currentTarget) return; $('recallOverlay').classList.remove('show'); }
+  function recallSyncBtn() {
+    const b = $('recallApplyBtn');
+    const n = _recallPlan ? _recallPlan.emps.length + _recallPlan.sals.length : 0;
+    b.disabled = !n; b.style.opacity = n ? '1' : '.5';
+    b.textContent = n ? `✅ 確認叫回（員工 ${_recallPlan.emps.length} 位、薪資紀錄 ${_recallPlan.sals.length} 筆）` : '✅ 確認叫回';
+  }
+  // 讀備份檔 → { employees, salary }
+  async function recallReadBackup(file) {
+    const buf = await file.arrayBuffer();
+    if (/\.json$/i.test(file.name)) {
+      const d = JSON.parse(new TextDecoder('utf-8').decode(buf));
+      const data = d && d.data && d.data.employees ? d.data : d;   // 也接受 { data: {...} } 包一層
+      if (!data || !Array.isArray(data.employees)) throw new Error('這個 .json 不是薪資系統的備份檔（找不到 employees）');
+      // 舊版曾把校區資料暫存在 hiddenCampus
+      const emps = [...data.employees], sals = [...(data.salary || [])];
+      if (data.hiddenCampus) Object.values(data.hiddenCampus).forEach(h => {
+        if (h && Array.isArray(h.employees)) emps.push(...h.employees);
+        if (h && Array.isArray(h.salary)) sals.push(...h.salary);
+      });
+      return { employees: emps, salary: sals };
+    }
+    if (typeof XLSX === 'undefined') throw new Error('SheetJS 未載入，無法讀取 Excel');
+    const wb = XLSX.read(buf, { type: 'array', cellDates: false });
+    const rowsOf = re => { const n = wb.SheetNames.find(x => re.test(x)); return n ? XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: null, raw: true }) : []; };
+    const empRows = rowsOf(/員工資料|Employees/i);
+    if (!empRows.length) throw new Error('Excel 裡找不到「員工資料 Employees」工作表');
+    const clean = o => { const r = {}; Object.entries(o).forEach(([k, v]) => { r[k] = v === '' ? null : v; }); return r; };
+    const salKeep = ['月份', '員工編號', '上班時數', '加班時數', '假日加班時數', '支薪時數', '請假時數', '遲到次數', '獎金', '扣款', '備註', ...monthlyExtraKeys(), ...KC_HOURLY_ITEMS.map(i => i.hoursKey)];
+    const salary = rowsOf(/薪資資料|Salary/i).map(r => {
+      const o = {}; salKeep.forEach(k => { if (r[k] !== undefined && r[k] !== null && r[k] !== '') o[k] = r[k]; });
+      if (o['全勤'] === '自動') o['全勤'] = '';
+      if (o['月份'] != null) o['月份'] = String(o['月份']);
+      return o;
+    }).filter(o => o['月份'] && o['員工編號']);
+    return { employees: empRows.map(clean).filter(e => e['員工編號']), salary };
+  }
+  async function parseCampusRecall() {
+    const f = $('recallFile').files[0];
+    if (!f) { toast('請先選擇備份檔', 'error'); return; }
+    let bk;
+    try { bk = await recallReadBackup(f); } catch (e) { toast('讀取失敗：' + e.message, 'error'); return; }
+    const campus = $('recallCampus').value, overwrite = $('recallOverwrite').checked;
+    const bkEmps = bk.employees.filter(e => String(e['校區'] || '').trim() === campus ||
+      (campus === '莊敬' && /^ZJ/i.test(String(e['員工編號']))));
+    if (!bkEmps.length) { toast(`備份檔裡沒有「${campus}」的員工`, 'error'); return; }
+    const ids = new Set(bkEmps.map(e => String(e['員工編號'])));
+    const emps = [], sals = [], rows = [];
+    bkEmps.sort((a, b) => String(a['員工編號']).localeCompare(String(b['員工編號']))).forEach(be => {
+      const id = String(be['員工編號']);
+      const cur = findEmployee(id);
+      const empAct = !cur ? 'add' : overwrite ? 'overwrite' : 'skip';
+      if (empAct !== 'skip') emps.push({ act: empAct, rec: JSON.parse(JSON.stringify(be)) });
+      const bs = bk.salary.filter(s => String(s['員工編號']) === id);
+      let add = 0, ow = 0, skip = 0;
+      bs.forEach(s => {
+        const ex = findSalary(id, s['月份']);
+        if (!ex) { add++; sals.push({ act: 'add', rec: JSON.parse(JSON.stringify(s)) }); }
+        else if (overwrite) { ow++; sals.push({ act: 'overwrite', rec: JSON.parse(JSON.stringify(s)) }); }
+        else skip++;
+      });
+      const months = [...new Set(bs.map(s => String(s['月份'])))].sort();
+      rows.push({ id, name: be['員工姓名'] || '', status: be['在職狀態'] || '', curStatus: cur ? (cur['在職狀態'] || '') : '', empAct, add, ow, skip,
+        months: months.length ? (months.length > 3 ? `${months[0]}～${months[months.length - 1]}（${months.length} 個月）` : months.join('、')) : '—' });
+    });
+    _recallPlan = { campus, overwrite, emps, sals, fileName: f.name };
+    const nAdd = emps.filter(x => x.act === 'add').length, nOw = emps.filter(x => x.act === 'overwrite').length;
+    const sum = $('recallSummary'); sum.style.display = '';
+    sum.innerHTML = `備份檔 <b>${bulkEmpEsc(f.name)}</b> 裡「${campus}」共 <b>${bkEmps.length}</b> 位員工。<br>` +
+      `將叫回：員工 <b style="color:#059669;">新增 ${nAdd}</b>${overwrite ? `、<b style="color:#B45309;">覆蓋 ${nOw}</b>` : ''} 位；` +
+      `薪資紀錄 <b style="color:#059669;">新增 ${sals.filter(x => x.act === 'add').length}</b>${overwrite ? `、<b style="color:#B45309;">覆蓋 ${sals.filter(x => x.act === 'overwrite').length}</b>` : ''} 筆。` +
+      (!overwrite && rows.some(r => r.empAct === 'skip' || r.skip) ? '<br>灰色＝目前已有，不會變動（要用備份取代請勾「覆蓋」再解析一次）。' : '');
+    const th = h => `<th style="padding:6px 8px;text-align:left;border-bottom:1px solid #fcd34d;white-space:nowrap;">${h}</th>`;
+    $('recallThead').innerHTML = `<tr style="background:#FFFBEB;">${['員工編號', '姓名', '備份中狀態', '目前', '員工資料', '薪資紀錄（新增／覆蓋／略過）', '月份'].map(th).join('')}</tr>`;
+    const tag = a => a === 'add' ? '<span style="color:#059669;font-weight:600;">＋ 新增</span>' : a === 'overwrite' ? '<span style="color:#B45309;font-weight:600;">↺ 覆蓋</span>' : '<span style="color:#94a3b8;">已存在，略過</span>';
+    $('recallTbody').innerHTML = rows.map(r => `<tr style="border-bottom:1px solid #f1f5f9;${r.empAct === 'skip' && !r.add && !r.ow ? 'color:#94a3b8;' : ''}">
+      <td style="padding:6px 8px;">${bulkEmpEsc(r.id)}</td><td style="padding:6px 8px;white-space:nowrap;">${bulkEmpEsc(r.name)}</td>
+      <td style="padding:6px 8px;">${bulkEmpEsc(r.status || '—')}</td><td style="padding:6px 8px;">${r.curStatus ? bulkEmpEsc(r.curStatus) : '<span style="color:#DC2626;">（不在系統）</span>'}</td>
+      <td style="padding:6px 8px;">${tag(r.empAct)}</td><td style="padding:6px 8px;">${r.add}／${r.ow}／${r.skip}</td>
+      <td style="padding:6px 8px;color:#64748b;">${r.months}</td></tr>`).join('');
+    recallSyncBtn();
+  }
+  async function applyCampusRecall() {
+    const plan = _recallPlan;
+    if (!plan || !(plan.emps.length + plan.sals.length)) return;
+    await loadDriveInfo();
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const backupName = `叫回${plan.campus}前備份_${stamp}.json`;
+    if (!confirm(`確認從「${plan.fileName}」叫回「${plan.campus}」：員工 ${plan.emps.length} 位、薪資紀錄 ${plan.sals.length} 筆？\n\n` +
+      `① 先備份目前資料到：\n${driveWhereText('Kidcastle_Backups', backupName)}\n\n② 再寫入：\n${driveDataText()}`)) return;
+    showLoadingOverlay(`☁ 正在備份到 ${driveWhereLine('Kidcastle_Backups', backupName)}…`);
+    try {
+      await cloudPost('backup', { folder: 'Kidcastle_Backups', filename: backupName, mime: 'application/json', contentBase64: utf8ToBase64(JSON.stringify(DATA)) });
+    } catch (e) { hideLoadingOverlay(); toast(`備份失敗，已取消叫回：` + e.message, 'error'); return; }
+    plan.emps.forEach(x => {
+      const i = DATA.employees.findIndex(e => String(e['員工編號']) === String(x.rec['員工編號']));
+      if (i >= 0) DATA.employees[i] = x.rec; else DATA.employees.push(x.rec);
+    });
+    plan.sals.forEach(x => {
+      const i = DATA.salary.findIndex(s => String(s['員工編號']) === String(x.rec['員工編號']) && String(s['月份']) === String(x.rec['月份']));
+      if (i >= 0) DATA.salary[i] = x.rec; else DATA.salary.push(x.rec);
+    });
+    try { migrateEmployeeRecords(DATA); } catch (_) {}
+    DATA.salary.forEach(s => { if (plan.sals.some(x => x.rec === s)) { const emp = findEmployee(s['員工編號']); if (emp) { try { computeRow(emp, s); } catch (_) {} } } });
+    showLoadingOverlay('☁ 正在寫入雲端…');
+    try { await doPersistNow(); } catch (e) { hideLoadingOverlay(); toast('雲端寫入失敗：' + e.message + `（已備份：${driveWhereLine('Kidcastle_Backups', backupName)}）`, 'error'); return; }
+    hideLoadingOverlay();
+    appendLog({ time: nowTimestamp(), user: currentUser ? currentUser.fullName : '系統',
+      text: `♻ 叫回${plan.campus}資料（來源：${plan.fileName}）：員工 ${plan.emps.length} 位、薪資紀錄 ${plan.sals.length} 筆（寫入：${driveDataLine()}；已備份：${driveWhereLine('Kidcastle_Backups', backupName)}）` });
+    [populatePayslipSelectors, populateManagerSelectors, renderOwnerTable, renderManagerTable, renderPayslip, () => { populateDashMonth(); renderDashboard(); }]
+      .forEach(fn => { try { fn(); } catch (_) {} });
+    toast(`✓ 已叫回「${plan.campus}」：員工 ${plan.emps.length} 位、薪資紀錄 ${plan.sals.length} 筆\n備份檔：${driveWhereLine('Kidcastle_Backups', backupName)}`, 'success');
+    _recallPlan = null;
+    closeCampusRecall();
   }
 
   // Enter key triggers password validate
@@ -11824,6 +11990,13 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261115V1900', date: '2026-11-15 19:00',
+      changes: [
+        '♻ 新增「叫回校區資料」（員工資料頁工具列，限老闆）：上傳 Kidcastle_Backups 的備份檔（.json 或完整備份 .xlsx），選校區（預設莊敬）→ 預覽 → 叫回該校區的員工與各月薪資紀錄',
+        '預設只補回目前沒有的員工／月份；勾「覆蓋」才取代同編號資料；叫回前先備份目前資料（叫回莊敬前備份_時間.json）；也會讀取舊版 hiddenCampus 內暫存的資料'
+      ]
+    },
     {
       version: 'V20261115V1845', date: '2026-11-15 18:45',
       changes: [
