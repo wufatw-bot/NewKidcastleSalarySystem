@@ -2225,7 +2225,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V1830</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V1845</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2923,6 +2923,7 @@
           <div class="field" style="margin:0;"><label>時數寫入月份</label><select id="dataImpMonth"></select></div>
           <div class="field" style="margin:0;"><label>範本內容</label>
             <select id="dataImpKind">
+              <option value="emp">員工資料（職位、到職日、底薪、各項津貼、勞健保…）</option>
               <option value="monthly">本月時數（加班、請假、美語授課…）</option>
               <option value="kc">美語部項目（帶班數、職等、時薪…）</option>
               <option value="all">全部欄位</option>
@@ -6083,6 +6084,7 @@
     if (kind === 'kc') return kc;
     const defs = dataImpFieldDefs();
     const empKeys = [...defs.values()].filter(d => d.scope === 'emp').map(d => d.key).filter(k => !kc.includes(k));
+    if (kind === 'emp') return [...empKeys, ...kc];   // 員工資料：全部員工資料欄位（含美語部項目），不含本月時數（V20261115V1845）
     return [...monthly, ...kc, ...empKeys];
   }
   function downloadDataImportTemplate(fmt) {
@@ -6100,7 +6102,7 @@
         return v == null ? '' : v;
       });
     })];
-    const kindLabel = { monthly: '本月時數', kc: '美語部項目', all: '全部欄位' }[kind];
+    const kindLabel = { emp: '員工資料', monthly: '本月時數', kc: '美語部項目', all: '全部欄位' }[kind];
     const fname = `資料匯入範本_${kindLabel}_${campus === 'all' ? '全部' : campus}_${month}`;
     if (fmt === 'csv') {
       const q = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
@@ -11822,6 +11824,12 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261115V1845', date: '2026-11-15 18:45',
+      changes: [
+        '📥 資料匯入：範本內容新增「員工資料」— 下載的 Excel 範本帶入每位員工目前的員工資料欄位（職位、到職日、底薪、各項津貼、勞健保、美語部項目…），修改後可直接上傳匯入'
+      ]
+    },
     {
       version: 'V20261115V1830', date: '2026-11-15 18:30',
       changes: [
