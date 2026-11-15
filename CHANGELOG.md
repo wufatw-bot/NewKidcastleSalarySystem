@@ -3,6 +3,11 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261115V1830（2026-11-15 18:30）
+- 📅 本月薪資：加班時數下方新增「假日加班時數」；加班費 = 加班時數 × OT_RATE ＋ 假日加班時數 × HOLIDAY_OT_RATE（新參數，預設 180，公式設定頁可改）；sal['假日加班費'] 另存明細
+- 同步：主管輸入表格（MGR_FIELDS、權限）、資料匯入範本、複製上月／編輯計數、DEL_MONTH_ITEMS、薪資條資訊列、Employee_Salary_View.html、Formula_Settings.html、變數關係圖
+- 其他津貼罐頭項目新增「季獎金 Quarterly Bonus」
+
 ## V20261115V1700（2026-11-15 17:00）
 - 📥 資料匯入：自動找標題列（前 30 列中含員工編號／姓名、可辨識欄位最多的一列）
 - 📥 資料匯入：空白列（無員工編號／身份證字號／姓名）直接刪除，不列入預覽

@@ -2225,7 +2225,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V1700</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V1830</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -4179,7 +4179,7 @@
   // 這裡是預設值；雲端有設定時以雲端為準
   // ==========================================================================
   const FORMULA_DEFAULTS = {
-    OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
+    OT_RATE: 180, HOLIDAY_OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,   // HOLIDAY_OT_RATE：假日加班費率
     KC_HEAD_RATE: 80, KC_WRITING_RATE: 40,                                   // 美語部：美語帶班人數津貼／Writing 人數津貼（每人）
     KC_CLASS_BASE_N: 4, KC_CLASS_BASE_PAY: 25000, KC_CLASS_STEP: 5000,       // 美語部帶班數津貼
     GRADE_A: 400, GRADE_B: 500, GRADE_C: 600, GRADE_D: 700,                 // 美語部授課職等時薪
@@ -4985,7 +4985,7 @@
   //   項目：把某個項目歸零（本月項目可限月份；可限員工、校區）
   //   執行前自動備份整份資料到雲端硬碟 Kidcastle_Backups；備份失敗就不刪除
   // ==========================================================================
-  const DEL_MONTH_ITEMS = ['加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','考試津貼','預繳津貼','安親人數','混班數','兼職美語授課時數','與外師共同上課時數','全勤','備註'];
+  const DEL_MONTH_ITEMS = ['加班時數','假日加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','考試津貼','預繳津貼','安親人數','混班數','兼職美語授課時數','與外師共同上課時數','全勤','備註'];
   const DEL_EMP_ITEMS = ['年資津貼','主管津貼','美語津貼','美語輔導津貼','數學班津貼','帶班人數津貼','混班津貼','數學津貼',
                          '留班獎金','考試獎金','其他津貼','補貼公會投保勞保','補貼公會健保自付','補貼健保眷屬','補貼退休金','現金給付',
                          ...KC_EMP_EXPORT_KEYS.filter(k => k !== '帶班班別')];
@@ -6076,7 +6076,7 @@
     dataImpBackToPreview();
   }
   function dataImpTemplateCols(kind) {
-    const monthly = ['加班時數', '支薪時數', '請假時數', '遲到次數', '全勤', ...PT_HOURS_KEYS, ...KC_HOURLY_ITEMS.map(i => i.hoursKey), '本月備註'];
+    const monthly = ['加班時數', '假日加班時數', '支薪時數', '請假時數', '遲到次數', '全勤', ...PT_HOURS_KEYS, ...KC_HOURLY_ITEMS.map(i => i.hoursKey), '本月備註'];
     const kc = ['帶班數', '帶班班別', '帶班數津貼', '職等', '美語帶班人數', '美語帶班人數津貼', 'Writing人數', 'Writing人數津貼',
                 '奇趣線上教材', '美語部行政', ...PT_PAIRS.map(p => p.rateKey)];
     if (kind === 'monthly') return monthly;
@@ -6554,7 +6554,7 @@
         o['員工編號'] === s['員工編號'] && String(o['月份']) === String(s['月份'])
       );
       if (!orig) { n++; return; }
-      const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','備註', ...monthlyExtraKeys()];
+      const fields = ['上班時數','加班時數','假日加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','備註', ...monthlyExtraKeys()];
       for (const k of fields) {
         const blank = (k === '備註' || k === '全勤') ? '' : 0;
         const a = s[k] == null ? blank : s[k];
@@ -6638,7 +6638,9 @@
     const OT_RATE = Number(FC('OT_RATE'));   // 加班費率（公式設定頁可改）
     const hourly = OT_RATE;
     const otHours = Number(sal['加班時數']) || 0;
-    const otPay = Math.round(otHours * OT_RATE);
+    const holHours = Number(sal['假日加班時數']) || 0;   // 假日加班時數 × 假日加班費率（V20261115V1830）
+    const holOtPay = Math.round(holHours * Number(FC('HOLIDAY_OT_RATE')));
+    const otPay = Math.round(otHours * OT_RATE) + holOtPay;   // 加班費 = 平日加班費 + 假日加班費
     // 支薪金額 = 支薪時數 × 180 元/小時
     const PAY_RATE = Number(FC('PAY_RATE'));
     const payHours = Number(sal['支薪時數']) || 0;
@@ -6676,6 +6678,7 @@
 
     // Cache computed fields back into the record so Excel & UI stay in sync
     sal['加班費'] = otPay;
+    sal['假日加班費'] = holOtPay;
     sal['支薪金額'] = payAmt;
     sal['請假扣款'] = leaveD;
     sal['遲到扣款'] = lateD;
@@ -7529,6 +7532,7 @@
       ['補貼退休金 Retirement Subsidy', emp['補貼退休金']],
       ['加班費 OT Pay', sal['加班費']],
       ['加班時數 OT Hours', sal['加班時數']],
+      ['假日加班時數 Holiday OT Hours', sal['假日加班時數']],
       [`支薪金額 Paid Hours Pay (×${FC('PAY_RATE')}/hr)`, Math.round((Number(sal['支薪時數'])||0) * Number(FC('PAY_RATE')))],
       ['支薪時數 Paid Hours', sal['支薪時數']],
       ...extraMoneyRows,                                // 考試津貼／預繳津貼（本月輸入）
@@ -7542,7 +7546,7 @@
     // also starts with '帶班人數', so a startsWith() check here was wrongly stripping that
     // allowance out of the total too.
     const subB = variable.filter(([k]) =>
-      k !== '加班時數 OT Hours' && k !== '支薪時數 Paid Hours' && k !== '帶班人數 Class Size (人)' && k !== '混班校數 Mixed Class (校)' &&
+      k !== '加班時數 OT Hours' && k !== '假日加班時數 Holiday OT Hours' && k !== '支薪時數 Paid Hours' && k !== '帶班人數 Class Size (人)' && k !== '混班校數 Mixed Class (校)' &&
       !extraCountLabels.includes(k)
     ).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
 
@@ -7925,6 +7929,7 @@
       items: [
         ['加班費',     '加班費 OT Pay'],
         ['加班時數',   '加班時數 OT Hours'],
+        ['假日加班時數', '假日加班時數 Holiday OT Hours'],
         ['支薪金額',   '支薪金額 Paid Hours Pay'],
         ['支薪時數',   '支薪時數 Paid Hours'],
         ['美語授課津貼',       '美語授課津貼 English Teaching'],
@@ -8198,6 +8203,7 @@
   // ==========================================================================
   const MGR_FIELDS = [
     { key: '加班時數', type: 'num', min: 0, max: 200, step: 0.5 },
+    { key: '假日加班時數', type: 'num', min: 0, max: 200, step: 0.5 },
     { key: '支薪時數', type: 'num', min: 0, max: 400, step: 0.5 },
     { key: '請假時數', type: 'num', min: 0, max: 200, step: 0.5 },
     { key: '遲到次數', type: 'num', min: 0, max: 50,  step: 1 },
@@ -9859,7 +9865,8 @@
     'S校美語人數 S English',
     '同安美語總人數 TA English Total',
     '莊敬美語總人數 ZJ English Total',
-    '莊敬安親本月人數 ZJ After-school'
+    '莊敬安親本月人數 ZJ After-school',
+    '季獎金 Quarterly Bonus'
   ];
   function otherPresetHtml(slug) {
     if (slug !== 'other') return '';
@@ -9988,7 +9995,7 @@
     const empName = emp ? emp['員工姓名'] : _editingEid;
     if (!confirm(`將 ${empName} 的 ${prevMonth} 月資料複製到 ${_drawerMonth} 月？\n（會覆蓋目前 ${_drawerMonth} 的工時/獎金/扣款等）\n\n複製後寫入：\n${driveDataText()}`)) return;
     const dst = ensureSalaryRecord(_editingEid, _drawerMonth);
-    const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','備註', ...monthlyExtraKeys()];
+    const fields = ['上班時數','加班時數','假日加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','備註', ...monthlyExtraKeys()];
     fields.forEach(f => { dst[f] = src[f]; });
     persistData();
     appendLog({
@@ -10023,7 +10030,7 @@
     { title: '⑤ 特休管理 Annual Leave', keys: ['特休資訊','可休日數_手動','已休日數'] },
     { title: '⑥ 備註 Notes', keys: ['備註'] },
     { title: '🏰 美語部項目 Kidcastle', keys: ['帶班數','帶班班別','帶班數津貼','職等', ...KC_LINEAR_ITEMS.map(i => i.moneyKey), ...KC_MONEY_ITEMS.filter(i => i.key !== '帶班數津貼').map(i => i.key), '美語授課時薪','與外師共同上課時薪'] },
-    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款', ...monthlyExtraKeys().map(k => 'mgr:' + k), 'mgr:備註'].filter(k => !REMOVED_INPUT_KEYS.includes(k.slice(4))) }
+    { title: '📝 主管輸入頁 · 本月薪資欄位', keys: ['mgr:加班時數','mgr:假日加班時數','mgr:支薪時數','mgr:請假時數','mgr:遲到次數','mgr:獎金','mgr:扣款', ...monthlyExtraKeys().map(k => 'mgr:' + k), 'mgr:備註'].filter(k => !REMOVED_INPUT_KEYS.includes(k.slice(4))) }
   ];
   const MGR_PERM_LABELS = {
     '全勤獎金': '全勤狀態 (全勤/非全勤)', '特休資訊': '特休資訊卡 (只能看)',
@@ -10733,6 +10740,7 @@
   const DRAWER_MONTHLY_FIELDS_ALL = [
     { key: '加班時數', label: '加班時數 OT Hours',      min: 0,       max: 200,    step: 0.5 },
     { key: '支薪時數', label: '支薪時數 Paid Hours',    min: 0,       max: 400,    step: 0.5 },
+    { key: '假日加班時數', label: '假日加班時數 Holiday OT Hours', min: 0, max: 200, step: 0.5 },   // 2 欄排版：落在加班時數正下方
     { key: '請假時數', label: '請假時數 Leave Hours',    min: 0,       max: 200,    step: 0.5 },
     { key: '遲到次數', label: '遲到次數 Late Count',     min: 0,       max: 50,     step: 1 },
     { key: '獎金',     label: '獎金 Bonus',              min: 0,       max: 999999, step: 1 },
@@ -10788,7 +10796,7 @@
       ${legacyHtml}
       ${legacyAttHtml}
       <div class="field-cell" data-mcol="加班時數">
-        <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數 × ${FC('OT_RATE')}元/小時)</small></label>
+        <label>加班費 OT Pay <small style="font-weight:normal;color:#94a3b8;">(自動＝加班時數 × ${FC('OT_RATE')} ＋ 假日加班時數 × ${FC('HOLIDAY_OT_RATE')} 元/小時)</small></label>
         <input type="number" id="drawerOtPayDisplay" value="${otPay}" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
       </div>
       <div class="field-cell" data-mcol="支薪時數">
@@ -11618,7 +11626,7 @@
       `複製後寫入：\n${driveDataText()}`
     )) return;
 
-    const fields = ['上班時數','加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','備註', ...monthlyExtraKeys()];
+    const fields = ['上班時數','加班時數','假日加班時數','支薪時數','請假時數','遲到次數','獎金','扣款','備註', ...monthlyExtraKeys()];
     let copied = 0;
     emps.forEach(emp => {
       const src = DATA.salary.find(s =>
@@ -11814,6 +11822,14 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261115V1830', date: '2026-11-15 18:30',
+      changes: [
+        '📅 本月薪資：加班時數下方新增「假日加班時數」；加班費 = 加班時數 × 加班費率 ＋ 假日加班時數 × 假日加班費率（預設 180，可在公式設定頁修改）',
+        '主管輸入表格、資料匯入範本、複製上月、刪除月份資料、薪資條（資訊列）、員工查詢頁同步加入假日加班時數',
+        '其他津貼明細：罐頭項目新增「季獎金 Quarterly Bonus」'
+      ]
+    },
     {
       version: 'V20261115V1700', date: '2026-11-15 17:00',
       changes: [
@@ -12196,6 +12212,7 @@
   const N = [
     // ① 公式參數
     { id: 'OT_RATE', label: '加班費率', col: 0, g: 'P', desc: '每小時加班費', formula: '預設 180 元／小時', where: [W_FORM], who: '老闆' },
+    { id: 'HOLIDAY_OT_RATE', label: '假日加班費率', col: 0, g: 'P', desc: '假日加班每小時加班費', formula: '預設 180 元／小時', where: [W_FORM], who: '老闆' },
     { id: 'PAY_RATE', label: '支薪費率', col: 0, g: 'P', desc: '支薪時數的時薪', formula: '預設 180 元／小時', where: [W_FORM], who: '老闆' },
     { id: 'LEAVE_RATE', label: '請假扣款費率', col: 0, g: 'P', desc: '每請假 1 小時扣多少', formula: '預設 133 元／小時', where: [W_FORM], who: '老闆' },
     { id: 'LATE_FEE', label: '遲到扣款', col: 0, g: 'P', desc: '每遲到 1 次扣多少', formula: '預設 100 元／次', where: [W_FORM], who: '老闆' },
@@ -12214,6 +12231,7 @@
     { id: 'UNLOCK_DAY', label: '薪資條開放日', col: 0, g: 'P', desc: '員工每月幾號起可以查詢當月薪資條', formula: '預設每月 17 日（遇假日順延，開放 7 天）', where: [W_FORM, { text: '老闆設定面板（ReadWindowAdmin.html）', go: { url: 'ReadWindowAdmin.html' } }], who: '老闆' },
     // ② 每月輸入
     { id: '加班時數', col: 1, g: 'M', desc: '當月加班時數', where: [W_MGR('加班時數'), W_SAL('加班時數')], who: '主管、老闆' },
+    { id: '假日加班時數', col: 1, g: 'M', desc: '當月假日加班時數', where: [W_MGR('假日加班時數'), W_SAL('假日加班時數')], who: '主管、老闆' },
     { id: '支薪時數', col: 1, g: 'M', desc: '當月另外支薪的時數', where: [W_MGR('支薪時數'), W_SAL('支薪時數')], who: '主管、老闆' },
     { id: '請假時數', col: 1, g: 'M', desc: '當月請假時數', where: [W_MGR('請假時數'), W_SAL('請假時數')], who: '主管、老闆' },
     { id: '遲到次數', col: 1, g: 'M', desc: '當月遲到次數', where: [W_MGR('遲到次數'), W_SAL('遲到次數')], who: '主管、老闆' },
@@ -12252,7 +12270,7 @@
     { id: '補貼勞健保退休', label: '補貼（勞健保／退休金）', col: 2, g: 'I', desc: '同一欄位選「🟢 補貼」時改由公司付：補貼公會投保勞保、補貼公會健保自付、補貼健保眷屬、補貼退休金，列入 B', where: [W_OWNER('勞保自付額')], who: '老闆' },
     { id: '現金給付', col: 2, g: 'F', desc: '已用現金先付給員工的金額，轉帳時扣除', where: [W_OWNER('現金給付')], who: '老闆' },
     // ④ 自動計算
-    { id: '加班費', col: 3, g: 'C', desc: '自動計算', formula: '加班費 = 加班時數 × 加班費率', deps: ['加班時數', 'OT_RATE'], where: [W_SAL('加班時數'), W_PS], who: '自動' },
+    { id: '加班費', col: 3, g: 'C', desc: '自動計算', formula: '加班費 = 加班時數 × 加班費率\n  + 假日加班時數 × 假日加班費率', deps: ['加班時數', 'OT_RATE', '假日加班時數', 'HOLIDAY_OT_RATE'], where: [W_SAL('加班時數'), W_PS], who: '自動' },
     { id: '支薪金額', col: 3, g: 'C', desc: '自動計算', formula: '支薪金額 = 支薪時數 × 支薪費率', deps: ['支薪時數', 'PAY_RATE'], where: [W_SAL('支薪時數'), W_PS], who: '自動' },
     { id: '請假扣款', col: 3, g: 'C', desc: '自動計算', formula: '請假扣款 = (請假時數 + 結構性請假時數) × 請假扣款費率', deps: ['請假時數', '結構性請假時數', 'LEAVE_RATE'], where: [W_PS], who: '自動' },
     { id: '遲到扣款', col: 3, g: 'C', desc: '自動計算', formula: '遲到扣款 = 遲到次數 × 遲到扣款', deps: ['遲到次數', 'LATE_FEE'], where: [W_PS], who: '自動' },

@@ -195,7 +195,7 @@ function cloudUrl() { try { return localStorage.getItem('kc_cloud_url_v1') || CL
 
 // 預設值必須與 index.html 的 FORMULA_DEFAULTS 一致
 const DEFAULTS = {
-  OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
+  OT_RATE: 180, HOLIDAY_OT_RATE: 180, PAY_RATE: 180, LEAVE_RATE: 133, LATE_FEE: 100,
   ATT_REQUIRE_NO_LEAVE: true, ATT_REQUIRE_NO_LATE: true,
   ENG_RATE: 100, MATH_RATE: 100, MIX_RATE: 500, TUTOR_FIXED: 3000,
   CS_BASE: 15, CS_TIER: 20, CS_N1: 500, CS_N2: 1000, CS_S1: 1000, CS_S2: 1500, CS_SUMMER: '7,8',
@@ -205,7 +205,7 @@ const DEFAULTS = {
   NEW_BASE: 29500, NEW_ATT: 500, NEW_LABOR: 1196, NEW_RETIRE: 1772
 };
 const LABELS = {
-  OT_RATE:'加班費率', PAY_RATE:'支薪費率', LEAVE_RATE:'請假扣款費率', LATE_FEE:'遲到扣款',
+  OT_RATE:'加班費率', HOLIDAY_OT_RATE:'假日加班費率', PAY_RATE:'支薪費率', LEAVE_RATE:'請假扣款費率', LATE_FEE:'遲到扣款',
   ATT_REQUIRE_NO_LEAVE:'全勤條件：無請假', ATT_REQUIRE_NO_LATE:'全勤條件：無遲到',
   ENG_RATE:'美語津貼費率', MATH_RATE:'數學班津貼費率', MIX_RATE:'混班津貼費率', TUTOR_FIXED:'美語輔導津貼',
   CS_BASE:'帶班基準人數', CS_TIER:'帶班分段人數', CS_N1:'平時第一段', CS_N2:'平時第二段',
@@ -263,6 +263,11 @@ function render() {
       <div class="name">加班費 <small>② 非固定支付</small></div>
       <div class="expr">${V('加班時數')} ${O('×')} ${P('OT_RATE','元／小時')}</div>
       <div class="try">試算：<input type="number" data-try="ot" value="4"> 小時 → <span class="out" id="o_ot"></span></div>
+    </div>
+    <div class="f" style="--c:#0EA5E9">
+      <div class="name">假日加班費 <small>② 非固定支付（併入加班費）</small></div>
+      <div class="expr">${V('假日加班時數')} ${O('×')} ${P('HOLIDAY_OT_RATE','元／小時')}</div>
+      <div class="try">試算：<input type="number" data-try="hot" value="4"> 小時 → <span class="out" id="o_hot"></span></div>
     </div>
     <div class="f" style="--c:#0EA5E9">
       <div class="name">支薪金額 <small>② 非固定支付</small></div>
@@ -413,6 +418,7 @@ function calc() {
   const t = k => Number((document.querySelector(`[data-try="${k}"]`) || {}).value) || 0;
   const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
   set('o_ot', 'NT$ ' + fmt(Math.round(t('ot') * cfg.OT_RATE)));
+  set('o_hot', 'NT$ ' + fmt(Math.round(t('hot') * cfg.HOLIDAY_OT_RATE)));
   set('o_pay', 'NT$ ' + fmt(Math.round(t('pay') * cfg.PAY_RATE)));
   set('o_leave', '扣 NT$ ' + fmt(Math.round(t('leave') * cfg.LEAVE_RATE)));
   set('o_late', '扣 NT$ ' + fmt(t('late') * cfg.LATE_FEE));
