@@ -3,6 +3,15 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261115V2000（2026-11-15 20:00）
+- 🗑 刪除資料：executeDelData 不再用 confirm()，改開 delFinalOverlay（列出刪除內容）並需再輸入 boss 密碼；通過後才執行 runDelData（備份→刪除）
+
+## V20261115V1900（2026-11-15 19:00）
+- ♻ 叫回校區資料：從備份檔（.json／完整備份 .xlsx）把指定校區（預設莊敬）的員工＋薪資紀錄放回主資料；預設只補缺少的，可選覆蓋；叫回前備份；支援舊 hiddenCampus
+
+## V20261115V1845（2026-11-15 18:45）
+- 📥 資料匯入：範本內容新增「員工資料」（emp）— 全部員工資料欄位＋美語部項目，帶入目前資料
+
 ## V20261115V1830（2026-11-15 18:30）
 - 📅 本月薪資：加班時數下方新增「假日加班時數」；加班費 = 加班時數 × OT_RATE ＋ 假日加班時數 × HOLIDAY_OT_RATE（新參數，預設 180，公式設定頁可改）；sal['假日加班費'] 另存明細
 - 同步：主管輸入表格（MGR_FIELDS、權限）、資料匯入範本、複製上月／編輯計數、DEL_MONTH_ITEMS、薪資條資訊列、Employee_Salary_View.html、Formula_Settings.html、變數關係圖

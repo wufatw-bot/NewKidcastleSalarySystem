@@ -2225,7 +2225,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V1900</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V2000</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2657,6 +2657,29 @@
       <div class="foot">
         <button class="btn-mini secondary" onclick="closeDelDataPwd()">取消</button>
         <button class="btn-mini primary" onclick="validateDelDataPwd()" style="background:linear-gradient(135deg,#DC2626,#7F1D1D);">🔓 解鎖</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🗑 刪除資料 — 最後確認畫面：列出要刪除的內容，必須再輸入老闆密碼（V20261115V2000） -->
+  <div class="small-modal-overlay" id="delFinalOverlay" onclick="closeDelFinal(event)" style="z-index:170;">
+    <div class="small-modal" style="max-width:640px;" onclick="event.stopPropagation()">
+      <div class="head" style="background:linear-gradient(135deg,#DC2626,#7F1D1D);">
+        <div class="icon-l">⚠</div>
+        <h2>最後確認刪除 — 請再輸入老闆密碼</h2>
+        <button class="close" onclick="closeDelFinal()">✕</button>
+      </div>
+      <div class="body" style="max-height:70vh;overflow:auto;">
+        <div id="delFinalInfo"></div>
+        <div class="alert error" id="delFinalErr">⚠ <span id="delFinalErrMsg">—</span></div>
+        <div class="field">
+          <label>老闆密碼（Boss 密碼）</label>
+          <input type="password" id="delFinalPwd" placeholder="再次輸入 boss 密碼才會刪除" autocomplete="off" onkeydown="if(event.key==='Enter')confirmDelFinal()">
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn-mini secondary" onclick="closeDelFinal()">← 返回</button>
+        <button class="btn-mini primary" id="delFinalGo" onclick="confirmDelFinal()" style="background:linear-gradient(135deg,#DC2626,#7F1D1D);">🗑 確認刪除</button>
       </div>
     </div>
   </div>
@@ -5170,9 +5193,51 @@
     await loadDriveInfo();
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const backupName = `刪除前備份_${stamp}.json`;
-    if (!confirm(`最後確認：${plan.summary}\n\n` +
-      `① 先備份到：\n${driveWhereText('Kidcastle_Backups', backupName)}\n\n` +
-      `② 再從這個檔案刪除：\n${driveDataText()}\n\n確定嗎？`)) return;
+    openDelFinal(plan, backupName);   // 新畫面：列出刪除內容＋再輸入老闆密碼，通過後才執行 runDelData
+  }
+  // ── 刪除前最後確認畫面（V20261115V2000）──
+  let _delFinal = null;
+  function openDelFinal(plan, backupName) {
+    _delFinal = { plan, backupName };
+    const esc = bulkEmpEsc;
+    const empList = plan.empDel.map(e => `<li>${esc(e['員工編號'])} ${esc(e['員工姓名'] || '')}（${esc(e['校區'] || '')}・${esc(e['在職狀態'] || '')}）</li>`).join('');
+    const months = [...new Set(plan.salDel.map(s => String(s['月份'])))].sort();
+    $('delFinalInfo').innerHTML = `
+      <div style="background:#FEF2F2;border-left:3px solid #DC2626;padding:10px 12px;border-radius:6px;font-size:13px;color:#7F1D1D;line-height:1.8;margin-bottom:12px;">
+        <b>即將刪除：</b>${esc(plan.summary)}<br>
+        ${plan.empDel.length ? `<b>員工資料 ${plan.empDel.length} 筆：</b><ul style="margin:4px 0 4px 18px;padding:0;">${empList}</ul>` : ''}
+        ${plan.salDel.length ? `<b>薪資紀錄 ${plan.salDel.length} 筆</b>（月份：${esc(months.join('、'))}）<br>` : ''}
+        ${plan.clear.length ? `<b>清除欄位 ${plan.clear.length} 個</b><br>` : ''}
+      </div>
+      <div style="font-size:12px;color:#475569;line-height:1.8;margin-bottom:12px;">
+        ① 先備份到：${esc(driveWhereLine('Kidcastle_Backups', backupName))}<br>
+        ② 再從這個檔案刪除：${esc(driveDataLine())}
+      </div>`;
+    $('delFinalPwd').value = '';
+    $('delFinalErr').classList.remove('show');
+    if (window.resetPwdEyes) resetPwdEyes($('delFinalOverlay'));
+    $('delFinalOverlay').classList.add('show');
+    setTimeout(() => $('delFinalPwd').focus(), 80);
+  }
+  function closeDelFinal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    $('delFinalOverlay').classList.remove('show');
+    _delFinal = null;
+  }
+  function confirmDelFinal() {
+    const pwd = ($('delFinalPwd').value || '').trim();
+    const err = m => { $('delFinalErrMsg').textContent = m; $('delFinalErr').classList.add('show'); };
+    if (!pwd) return err('請輸入老闆密碼');
+    const sid = currentUser && currentUser.schoolId;
+    const boss = sid && CREDENTIALS[sid] && CREDENTIALS[sid].users.find(u => u.username === 'boss');
+    if (!boss) return err('本校區無 boss 帳號');
+    if (pwd !== boss.password) { $('delFinalPwd').value = ''; return err('密碼錯誤，未刪除任何資料'); }
+    const job = _delFinal;
+    $('delFinalOverlay').classList.remove('show');
+    _delFinal = null;
+    if (job) runDelData(job.plan, job.backupName);
+  }
+  async function runDelData(plan, backupName) {
     closeDelData();
     // 1) 先備份（失敗就停止，不刪除）
     showLoadingOverlay(`☁ 正在備份到 ${driveWhereLine('Kidcastle_Backups', backupName)}…`);
@@ -11990,6 +12055,12 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261115V2000', date: '2026-11-15 20:00',
+      changes: [
+        '🗑 刪除資料：按「備份並刪除」後改為新的「最後確認刪除」畫面，列出要刪除的員工、薪資紀錄月份、備份與刪除位置，必須再輸入老闆（boss）密碼才會刪除；密碼錯誤不刪除任何資料'
+      ]
+    },
     {
       version: 'V20261115V1900', date: '2026-11-15 19:00',
       changes: [
