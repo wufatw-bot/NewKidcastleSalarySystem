@@ -3,6 +3,11 @@
 版本格式：`VyyyymmddVhhmm`（例：V20261009V2100 = 2026/10/09 21:00）
 每次修改：在最上面新增一筆，並同步更新 index.html 的 `APP_CHANGELOG` 與 Code.gs 的 `BACKEND_CHANGELOG`。
 
+## V20261115V1700（2026-11-15 17:00）
+- 📥 資料匯入：自動找標題列（前 30 列中含員工編號／姓名、可辨識欄位最多的一列）
+- 📥 資料匯入：空白列（無員工編號／身份證字號／姓名）直接刪除，不列入預覽
+- 📥 資料匯入：套用前顯示「即將匯入的資料」確認頁（員工／欄位／寫入位置／目前 → 匯入後），取代原本的 confirm() 視窗
+
 ## V20261025V0930（2026-10-25 09:30）
 - 複製、刪除、備份時顯示 Google 雲端硬碟名稱（帳號）、資料夾與檔名（確認視窗、進度、完成／失敗訊息、變更紀錄）
 - 涵蓋 executeDelData、applyDataImport、doBackup（Drive／本地）、copyPrevMonth、copyPrevMonthInDrawer、newMonth、resetData

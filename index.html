@@ -2225,7 +2225,7 @@
 <body>
 
 <!-- 右下角版本 — 每次修改：在下方 APP_CHANGELOG 最上面加一筆（版本格式 VyyyymmddVhhmm），版本號會自動顯示 -->
-<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261018V2030</div>
+<div id="editStamp" class="no-print" title="點我查看修改記錄" onclick="openChangelog()">V20261115V1700</div>
 
 <!-- 修改記錄視窗 -->
 <div id="changelogModal" class="no-print" onclick="if(event.target===this)closeChangelog()">
@@ -2912,6 +2912,7 @@
         <button class="close" onclick="closeDataImport()">✕</button>
       </div>
       <div class="body" style="max-height:72vh;overflow:auto;">
+        <div id="dataImpStep1">
         <p style="margin:0 0 12px;color:#3730A3;font-size:13px;background:#EEF2FF;padding:8px 12px;border-radius:6px;border-left:3px solid #6366F1;line-height:1.75;">
           ① 先按「⬇ 下載範本」：範本已帶入目前資料，直接在 Excel 修改後上傳即可（也可貼上從 Excel 複製的表格）。<br>
           ② 用 <b>員工編號</b> 對應員工（沒有員工編號時用身份證字號，再沒有用員工姓名）；員工姓名、身份證字號只用來對應，不會被修改。<br>
@@ -2952,10 +2953,14 @@
             <tbody id="dataImpTbody"></tbody>
           </table>
         </div>
+        </div><!-- /dataImpStep1 -->
+        <!-- 匯入前確認頁：列出即將寫入的資料 -->
+        <div id="dataImpConfirm" style="display:none;"></div>
       </div>
       <div class="foot">
+        <button class="btn-mini secondary" id="dataImpBackBtn" onclick="dataImpBackToPreview()" style="display:none;">← 返回修改</button>
         <button class="btn-mini secondary" onclick="closeDataImport()">取消</button>
-        <button class="btn-mini primary" id="dataImpApplyBtn" onclick="applyDataImport()" disabled style="opacity:.5;background:linear-gradient(135deg,#6366F1,#4338CA);">✅ 套用變更</button>
+        <button class="btn-mini primary" id="dataImpApplyBtn" onclick="showDataImportConfirm()" disabled style="opacity:.5;background:linear-gradient(135deg,#6366F1,#4338CA);">✅ 套用變更</button>
       </div>
     </div>
   </div>
@@ -4540,7 +4545,7 @@
   const DRIVE_INFO_DEFAULT = {
     account: 'castlepartywu@gmail.com',   // Apps Script 部署帳號 = 檔案所在的雲端硬碟
     driveName: '我的雲端硬碟',
-    dataFile: 'KidcastleSalary_Data.json',   // Code.gs 的 DATA_FILE（存在我的雲端硬碟根目錄）
+    dataFile: '薪資主資料檔（JSON）',
     dataFolder: '我的雲端硬碟'
   };
   let DRIVE_INFO = Object.assign({}, DRIVE_INFO_DEFAULT);
@@ -6068,6 +6073,7 @@
     $('dataImpFile').value = ''; $('dataImpText').value = '';
     $('dataImpSummary').style.display = 'none'; $('dataImpThead').innerHTML = ''; $('dataImpTbody').innerHTML = '';
     const b = $('dataImpApplyBtn'); b.disabled = true; b.style.opacity = '.5';
+    dataImpBackToPreview();
   }
   function dataImpTemplateCols(kind) {
     const monthly = ['加班時數', '支薪時數', '請假時數', '遲到次數', '全勤', ...PT_HOURS_KEYS, ...KC_HOURLY_ITEMS.map(i => i.hoursKey), '本月備註'];
@@ -6127,16 +6133,28 @@
     rows = (rows || []).filter(r => r && r.some(c => String(c == null ? '' : c).trim() !== ''));
     if (rows.length < 2) { toast('至少需要標題列＋一列資料', 'error'); return; }
     const defs = dataImpFieldDefs();
-    const header = rows[0].map(h => dataImpMapHeader(h, defs));
-    const unknown = rows[0].filter((h, i) => String(h).trim() && !header[i]).map(h => String(h).trim());
+    // 自動找標題列：前 30 列中，含「員工編號／身份證字號／員工姓名」且可辨識欄位最多的那一列（V20261115V1700）
+    let hi = 0, best = -1;
+    rows.slice(0, 30).forEach((r, i) => {
+      const m = r.map(h => dataImpMapHeader(h, defs));
+      if (!m.some(k => k && DATA_IMP_MATCH_ONLY.includes(k))) return;
+      const n = m.filter(Boolean).length;
+      if (n > best) { best = n; hi = i; }
+    });
+    const headerRow = rows[hi];
+    const header = headerRow.map(h => dataImpMapHeader(h, defs));
+    const unknown = headerRow.filter((h, i) => String(h).trim() && !header[i]).map(h => String(h).trim());
     if (!header.some(k => k && ['員工編號', '身份證字號', '員工姓名'].includes(k))) { toast('找不到「員工編號」（或身份證字號／員工姓名）欄位', 'error'); return; }
     const month = $('dataImpMonth').value;
     const seen = new Map();
-    _dataImpPlan = rows.slice(1).map((cells, ri) => {
+    let blankRows = 0;
+    _dataImpPlan = rows.slice(hi + 1).map((cells, ri0) => {
+      const ri = ri0 + hi;   // 讓「列」號對應原始資料位置
       const rec = {}; header.forEach((k, i) => { if (k) rec[k] = cells[i]; });
       const id = String(rec['員工編號'] == null ? '' : rec['員工編號']).trim().toUpperCase();
       const idn = String(rec['身份證字號'] == null ? '' : rec['身份證字號']).trim().toUpperCase();
       const nm = String(rec['員工姓名'] == null ? '' : rec['員工姓名']).trim();
+      if (!id && !idn && !nm) { blankRows++; return null; }   // 沒有員工編號／身份證／姓名 → 空白列，直接刪除不顯示
       let emp = null, by = '';
       if (id) { emp = DATA.employees.find(e => String(e['員工編號']).toUpperCase() === id); by = '員工編號'; }
       if (!emp && idn) { emp = DATA.employees.find(e => String(e['身份證字號'] || '').toUpperCase() === idn); by = '身份證字號'; }
@@ -6169,10 +6187,11 @@
         if ((Number(emp[spec.moneyKey]) || 0) !== val) changes.push({ scope: 'emp', key: spec.moneyKey, label: spec.moneyKey + '（自動）', old: emp[spec.moneyKey], val });
       });
       return { line: ri + 2, eid: emp['員工編號'], label, by, changes, errors, ok: !errors.length && changes.length > 0, selected: !errors.length && changes.length > 0 };
-    });
-    renderDataImportPreview(unknown, month);
+    }).filter(Boolean);
+    renderDataImportPreview(unknown, month, blankRows, hi + 1);
   }
-  function renderDataImportPreview(unknown, month) {
+  function renderDataImportPreview(unknown, month, blankRows, headerLine) {
+    dataImpBackToPreview();
     const plan = _dataImpPlan;
     const okRows = plan.filter(p => p.ok), errRows = plan.filter(p => p.errors.length), noChg = plan.filter(p => !p.errors.length && !p.changes.length);
     const nChg = okRows.reduce((t, p) => t + p.changes.length, 0);
@@ -6180,6 +6199,8 @@
     sum.style.display = '';
     sum.innerHTML = `共 <b>${plan.length}</b> 列：<b style="color:#4338CA;">${okRows.length}</b> 位員工有變更（${nChg} 個欄位），` +
       `<b>${noChg.length}</b> 位沒有變更，<b style="color:#DC2626;">${errRows.length}</b> 列有問題（不會套用）。時數寫入 <b>${month}</b>。` +
+      (headerLine > 1 ? `<br>標題列：第 <b>${headerLine}</b> 列（上方列已略過）` : '') +
+      (blankRows ? `<br>已刪除 <b>${blankRows}</b> 列空白列（沒有員工編號／姓名）` : '') +
       (unknown.length ? `<br>⚠ 無法辨識、已略過的欄位：${unknown.map(bulkEmpEsc).join('、')}` : '');
     $('dataImpThead').innerHTML = `<tr style="background:#EEF2FF;">${['', '列', '員工', '對應方式', '變更內容（舊 → 新）', '狀態'].map(h => `<th style="padding:6px 8px;text-align:left;border-bottom:1px solid #c7d2fe;">${h}</th>`).join('')}</tr>`;
     $('dataImpTbody').innerHTML = plan.map((p, i) => {
@@ -6202,17 +6223,52 @@
     const n = _dataImpPlan.filter(p => p.ok && p.selected).length, b = $('dataImpApplyBtn');
     b.disabled = !n; b.style.opacity = n ? '1' : '.5'; b.textContent = n ? `✅ 套用 ${n} 位員工的變更` : '✅ 套用變更';
   }
+  // 匯入前確認頁（V20261115V1700）：列出即將寫入的每位員工、每個欄位
+  let _dataImpBackupName = '';
+  function dataImpBackToPreview() {
+    if (!$('dataImpConfirm')) return;
+    $('dataImpConfirm').style.display = 'none'; $('dataImpStep1').style.display = '';
+    $('dataImpBackBtn').style.display = 'none';
+    const b = $('dataImpApplyBtn'); b.onclick = showDataImportConfirm;
+    if (typeof dataImpSyncBtn === 'function' && _dataImpPlan) dataImpSyncBtn();
+  }
+  async function showDataImportConfirm() {
+    const todo = _dataImpPlan.filter(p => p.ok && p.selected);
+    if (!todo.length) return;
+    const month = $('dataImpMonth').value;
+    const nChg = todo.reduce((t, p) => t + p.changes.length, 0);
+    try { await loadDriveInfo(); } catch (_) {}
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    _dataImpBackupName = `資料匯入前備份_${stamp}.json`;
+    const th = h => `<th style="padding:7px 10px;text-align:left;border-bottom:1px solid #c7d2fe;white-space:nowrap;">${h}</th>`;
+    const td = (v, st = '') => `<td style="padding:6px 10px;${st}">${v}</td>`;
+    const body = todo.map(p => p.changes.map((c, j) => `<tr style="border-bottom:1px solid #eef2f7;${j === 0 ? 'border-top:2px solid #e0e7ff;' : ''}">
+        ${j === 0 ? `<td rowspan="${p.changes.length}" style="padding:6px 10px;vertical-align:top;white-space:nowrap;font-weight:600;">${bulkEmpEsc(p.label)}</td>` : ''}
+        ${td(bulkEmpEsc(c.label), 'white-space:nowrap;')}
+        ${td(c.scope === 'sal' ? `<span style="background:#FEF3C7;padding:1px 7px;border-radius:999px;">${month} 月薪資</span>` : '<span style="background:#EEF2FF;padding:1px 7px;border-radius:999px;">員工資料</span>', 'white-space:nowrap;')}
+        ${td(bulkEmpEsc(dataImpFmt(c.old)), 'color:#94a3b8;text-align:right;')}
+        ${td('→', 'color:#94a3b8;')}
+        ${td('<b>' + bulkEmpEsc(dataImpFmt(c.val)) + '</b>', 'text-align:right;color:#4338CA;')}</tr>`).join('')).join('');
+    $('dataImpConfirm').innerHTML = `
+      <div style="background:#ECFDF5;border-left:3px solid #059669;padding:10px 12px;border-radius:6px;font-size:13px;color:#065F46;line-height:1.8;margin-bottom:12px;">
+        📋 <b>即將匯入的資料</b>：<b>${todo.length}</b> 位員工、共 <b>${nChg}</b> 個欄位；本月欄位寫入 <b>${month}</b>。請確認無誤後按「✅ 確認匯入」。<br>
+        ① 先備份到：${bulkEmpEsc(driveWhereLine('Kidcastle_Backups', _dataImpBackupName))}<br>
+        ② 再寫入：${bulkEmpEsc(driveDataLine())}
+      </div>
+      <div style="overflow:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="background:#EEF2FF;">${['員工', '欄位', '寫入位置', '目前', '', '匯入後'].map(th).join('')}</tr></thead>
+        <tbody>${body}</tbody></table></div>`;
+    $('dataImpStep1').style.display = 'none'; $('dataImpConfirm').style.display = '';
+    $('dataImpBackBtn').style.display = '';
+    const b = $('dataImpApplyBtn'); b.textContent = `✅ 確認匯入（${todo.length} 位、${nChg} 欄）`; b.onclick = applyDataImport;
+    $('dataImpConfirm').scrollIntoView({ block: 'start' });
+  }
   async function applyDataImport() {
     const todo = _dataImpPlan.filter(p => p.ok && p.selected);
     if (!todo.length) return;
     const month = $('dataImpMonth').value;
     const nChg = todo.reduce((t, p) => t + p.changes.length, 0);
-    await loadDriveInfo();
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const impBackupName = `資料匯入前備份_${stamp}.json`;
-    if (!confirm(`確認套用 ${todo.length} 位員工、共 ${nChg} 個欄位的變更？\n時數寫入 ${month}。\n\n` +
-      `① 先備份到：\n${driveWhereText('Kidcastle_Backups', impBackupName)}\n\n` +
-      `② 再寫入：\n${driveDataText()}`)) return;
+    const impBackupName = _dataImpBackupName || `資料匯入前備份_${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.json`;
     showLoadingOverlay(`☁ 正在備份到 ${driveWhereLine('Kidcastle_Backups', impBackupName)}…`);
     try {
       await cloudPost('backup', { folder: 'Kidcastle_Backups', filename: impBackupName, mime: 'application/json',
@@ -11758,6 +11814,14 @@
   // ── 版本與修改記錄 ──────────────────────────────────────────────
   // 每次修改系統：在陣列「最上面」新增一筆。版本格式 VyyyymmddVhhmm（例：V20261009V2100 = 2026/10/09 21:00）
   const APP_CHANGELOG = [
+    {
+      version: 'V20261115V1700', date: '2026-11-15 17:00',
+      changes: [
+        '📥 資料匯入：自動找標題列（前 30 列中含員工編號／姓名且可辨識欄位最多的一列），上方標題、說明列自動略過',
+        '📥 資料匯入：沒有員工編號／身份證字號／姓名的空白列直接刪除，不再顯示「（空白）找不到員工」，摘要顯示刪除列數',
+        '📥 資料匯入：按「套用」後先顯示「即將匯入的資料」確認頁（員工、欄位、寫入位置、目前 → 匯入後、備份與寫入位置），可「← 返回修改」或「✅ 確認匯入」'
+      ]
+    },
     {
       version: 'V20261025V0930', date: '2026-10-25 09:30',
       changes: [
